@@ -23,7 +23,7 @@ dependencies = [
 "pyproj",
 "lxml",
 "sgp4",
-"astropy>=7.1",
+"astropy>=6.1",
 "pykml",
 "cartopy",
 "basemap",
