@@ -28,7 +28,7 @@ dependencies = [
 "cartopy",
 "basemap",
 "sphinx>=4.0.0",
-"sphinx-rtd-theme>=0.5.2"
+"sphinx-rtd-theme>=0.5.2",
 "myst-parser>=0.15.1"
 ]
 
