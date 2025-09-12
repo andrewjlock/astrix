@@ -1,9 +1,9 @@
-ASTrIX (AeroSpace Trajectory Imaging toolboX)
-=================================
+AsTrIX Documentation
+===================
 
 .. toctree::
    :maxdepth: 2
-   :caption: User Guide:
+   :caption: User Guide
 
    README.md
 
@@ -11,11 +11,8 @@ ASTrIX (AeroSpace Trajectory Imaging toolboX)
    :maxdepth: 2
    :caption: API Reference
 
-   modules
-
-Indices and tables
-==================
+   astrix
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
+* :ref:`search` 

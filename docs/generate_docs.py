@@ -2,38 +2,35 @@
 
 import os
 import sys
+import subprocess
+
 
 def generate_module_docs():
-
-    for file in os.listdir('.'):
-        if file.endswith('.rst') and file not in ['index.rst', 'conf.rst']:
+    # Clean up old RST files first (except the important ones)
+    for file in os.listdir("."):
+        if file.endswith(".rst") and file not in ["index.rst", "conf.rst"]:
             os.remove(file)
-    
-    print("Removed old .rst files")
 
-    cmd = 'sphinx-apidoc -f -e -M -P -o . ..'
-    print(f"Running: {cmd}")
-    os.system(cmd)
-    
-    # Ensure modules.rst exists and has the right content
-    with open('modules.rst', 'w') as f:
-        f.write("API Reference\n")
-        f.write("============\n\n")
-        f.write(".. toctree::\n")
-        f.write("   :maxdepth: 4\n\n")
-        
-        # Add all generated RST files that correspond to Python packages
-        for file in sorted(os.listdir('.')):
-            if file.endswith('.rst') and file not in ['index.rst', 'modules.rst', 'conf.rst']:
-                module_name = file[:-4]  # Remove .rst extension
-                f.write(f"   {module_name}\n")
+    # Run sphinx-apidoc with minimal options
+    cmd = [
+        "sphinx-apidoc",
+        "-f",  # Force overwrite of existing files
+        "--module-first",  # Module documentation first
+        "-e",  # Documentation for each module on it's own page (?)
+        "-o",  
+        ".",
+        "../src/astrix/",
+        "../tests",
+    ]
+    subprocess.run(cmd, check=True)
 
-if __name__ == '__main__':
+    print("API documentation files generated. Run 'make html' to build the docs.")
+
+
+if __name__ == "__main__":
     # Make sure we're in the docs directory
-    current_dir = os.path.basename(os.getcwd())
-    if current_dir != 'docs':
+    if os.path.basename(os.getcwd()) != "docs":
         print("This script should be run from the docs directory.")
         sys.exit(1)
-    
+
     generate_module_docs()
-    print("Run 'make html' to build the documentation.")

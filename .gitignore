@@ -70,6 +70,7 @@ instance/
 # Sphinx documentation
 docs/_build/
 docs/*.rst
+docs/*.bat
 !docs/index.rst
 !docs/README.rst
 !docs/contributing.rst
