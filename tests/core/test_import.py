@@ -1,2 +1,3 @@
-import numpy as np
-import astrix
+
+def test_import():
+    import astrix
