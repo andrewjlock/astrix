@@ -1,4 +1,4 @@
-# AsTrIX: AeroSpace Trajectory Imaging toolboX 
+# ASTrIX: AeroSpace Trajectory Imaging toolboX 
 
 A Python tool package for planning and analysing aerospace remote imaging and diagnostic experiments.
 
