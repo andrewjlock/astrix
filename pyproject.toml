@@ -29,7 +29,7 @@ dependencies = [
 "basemap",
 "sphinx>=4.0.0",
 "sphinx-rtd-theme>=0.5.2",
-"myst-parser>=0.15.1"
+"myst-parser>=0.15.1",
 "sphinx-autodoc-typehints>=3.2.0"
 ]
 
