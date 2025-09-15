@@ -5,8 +5,8 @@ from typing import Final, Optional, Union
 from types import ModuleType
 from functools import lru_cache
 from importlib.util import find_spec
-import array_api_compat
-from array_api._2024_12 import Array, ArrayNamespace, ShapedAnyArray
+# Array API types imported from this module for forward compatibility
+from array_api._2024_12 import Array, ArrayNamespace 
 
 HAS_JAX: Final = (find_spec("jax") is not None) and (find_spec("jaxlib") is not None)
 

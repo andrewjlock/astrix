@@ -13,10 +13,10 @@ class Time:
     """
 
     def __init__(self, secs: Array, backend: BackendArg = None):
-        self.xp = resolve_backend(backend)
-        self.secs = ensure_1d(secs, xp=self.xp)
+        self.xp : ArrayNamespace = resolve_backend(backend)
+        self.secs : Array = ensure_1d(secs, xp=self.xp)
 
-    def is_in_bounds(self, sec: Time) -> Array:
+    def is_in_bounds(self, sec: Time) -> bool:
         """Check if the given time(s) are within the bounds of this Time object."""
         return (self.xp.min(sec.secs) >= self.xp.min(self.secs)) & (
             self.xp.max(sec.secs) <= self.xp.max(self.secs)
