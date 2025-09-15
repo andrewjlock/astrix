@@ -49,8 +49,8 @@ def enforce_cpu_x64():
         devs = [d.platform for d in jax.devices()]
         if (not x64) or backend != "cpu" or any(p != "cpu" for p in devs):
             warnings.warn(
-                f"JAX not in CPU+x64 mode (x64={x64}, backend={
-                    backend}, devices={devs}). "
+                f"JAX not in CPU+x64 mode (x64={x64}, backend= \
+                {backend}, devices={devs}). "
                 "Set JAX_ENABLE_X64=1 and JAX_PLATFORMS=cpu before importing JAX.",
                 stacklevel=2,
             )
