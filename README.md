@@ -26,14 +26,18 @@ You will need to manually install the following dependency using apt
 $ sudo apt -y install libgeos-dev
 ```
 
-## Array API Compatibility and Jax
+## Backend Compatibility - Numpy and Jax
 
-This project implements most core functions using [Array API](https://data-apis.org/array-api/) standard functions to enable switching between NumPy and [Jax](https://jax.readthedocs.io/en/latest/). 
+This project utilises the [Array API](https://data-apis.org/array-api/) standard to enable switching between NumPy and [Jax](https://jax.readthedocs.io/en/latest/) for some core classes and functions, using their common native API. 
 Numpy is the default, and superior for most use cases. 
 Jax provides two extra capabilities: automatic differentiation and JIT compilation, which can be useful for optimisation and estimation problems.
 However, Jax is slower than Numpy for most use cases. 
 Note that Jax backend is implemented on CPU only, and 64-bit precision is encorced (Jax defaults to 32-bit). 
+The backend is specified per-instance, as there are use cases when both may be wanted simultaneously.
 Be careful not to mix NumPy- and Jax-backend objects unintentionally, as this can lead to hard-to-diagnose bugs.
+
+Classes and functions which support both backends have a `backend` argument, which can be set to either `'numpy'`/`'np'` or `'jax'`/`'jnp'`, or a reference to either namespace.
+Those that have no need for Jax capabilities are implemented in NumPy only.
 
 
 ## Data Conventions
@@ -43,6 +47,15 @@ The following conventions are used:
 - Time series data is represented as 2D arrays of shape `(N, D)`, where `N` is the number of time steps and `D` is the dimensionality of the vector (e.g., 3 for 3D position).
 - Single vectors are represented as 1D arrays of shape `(D,)`.
 
+## Tests
+
+Tests are implemented using pytest. To run the tests:
+
+```bash
+$ pytest tests/
+```
+If Jax is installed, tests will be run using both Numpy and Jax backends. 
+If Jax is not installed, only Numpy backend tests will be run.
 
 ## Documentation
 
