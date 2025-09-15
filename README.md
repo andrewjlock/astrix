@@ -18,6 +18,15 @@ For a lean install you can ommit the `[jax]` extra,
 $ python3 -m pip install -e .
 ```
 
+### Array API Compatibility and Jax
+
+This project implements most core functions using [Array API](https://data-apis.org/array-api/) standard functions to enable switching between NumPy and [Jax](https://jax.readthedocs.io/en/latest/). 
+Numpy is the default, and superior for most use cases. 
+Jax provides two extra capabilities: automatic differentiation and JIT compilation, which can be useful for optimisation and estimation problems.
+However, Jax is slower than Numpy for most use cases. 
+Note that Jax backend is implemented on CPU only, and 64-bit precision is encorced (Jax defaults to 32-bit). 
+
+
 ### Dependencies
 
 You will need to manually install the following dependency using apt
@@ -37,6 +46,3 @@ Documentation is generated using Sphinx. To build the documentation:
 2. Navigate to the docs directory: `cd docs`
 3. Build the docs: `make html`
 
-## Jax
-
-Jax functionality is currently only supported on CPU backend. Given the nature of the computations, GPU/TPU backends are not expected to provide significant performance improvements and likely inferior performance due to data transfer overheads.
