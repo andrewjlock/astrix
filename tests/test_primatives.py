@@ -13,6 +13,7 @@ def test_time(xp):
     assert t.secs.shape == (3,)
     assert all(isinstance(dt_i, dt.datetime) for dt_i in t.to_datetime())
     assert t.is_in_bounds(t)
+    assert t[1].to_datetime()[0] == times[1]
 
     t2 = Time(xp.asarray([t.secs[0] - 1000, t.secs[-1] + 1000]), backend=xp)
     assert not t.is_in_bounds(t2)
@@ -26,3 +27,5 @@ def test_time(xp):
     ]
     with pytest.raises(ValueError):
         Time.from_datetime(times_naive, backend=xp)
+
+

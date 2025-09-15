@@ -4,7 +4,7 @@ from ._backend_utils import resolve_backend, Array, ArrayNamespace, BackendArg
 import numpy as np
 
 
-def ensure_1d(x: Array, xp: Optional[ModuleType] = None) -> Array:
+def ensure_1d(x: Array, xp: Optional[ArrayNamespace] = None) -> Array:
     """Ensure the input array is 1-dimensional. 
     Scalars are converted to shape (1,).
     If not specified, the default backend ('xp') is NumPy.
@@ -19,7 +19,7 @@ def ensure_1d(x: Array, xp: Optional[ModuleType] = None) -> Array:
     return x
 
 
-def ensure_2d(x: Array, n: Optional[int] = None, xp: Optional[ModuleType] = None) -> Array:
+def ensure_2d(x: Array, n: Optional[int] = None, xp: Optional[ArrayNamespace] = None) -> Array:
     """Ensure the input array is 2-dimensional. 
     If n is given, ensure the second dimensionn has size n.
     if not specified, the default backend ('xp') is NumPy.

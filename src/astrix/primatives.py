@@ -13,8 +13,8 @@ class Time:
     """
 
     def __init__(self, secs: Array, backend: BackendArg = None):
-        self.xp : ArrayNamespace = resolve_backend(backend)
-        self.secs : Array = ensure_1d(secs, xp=self.xp)
+        self.xp: ArrayNamespace = resolve_backend(backend)
+        self.secs: Array = ensure_1d(secs, xp=self.xp)
 
     def is_in_bounds(self, sec: Time) -> bool:
         """Check if the given time(s) are within the bounds of this Time object."""
@@ -26,8 +26,8 @@ class Time:
     def from_datetime(
         cls, times: list[dt.datetime], backend: BackendArg = None
     ) -> Time:
-        """Create a Time object from a list of datetime objects.
-        Note: Will not accept timezone-unaware datetime obejects due to likely ambiguity.
+        """Create a Time object from a list of datetime objects. \
+        Will not accept timezone-unaware datetime obejects due to ambiguity.
         """
 
         if not all(
@@ -43,6 +43,9 @@ class Time:
         return [
             dt.datetime.fromtimestamp(float(s), tz=dt.timezone.utc) for s in self.secs
         ]
+
+    def __getitem__(self, index) -> Time:
+        return Time(self.secs[index], backend=self.xp)
 
 
 @dataclass
