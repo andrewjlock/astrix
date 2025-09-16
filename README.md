@@ -26,8 +26,9 @@ You will need to manually install the following dependency using apt
 $ sudo apt -y install libgeos-dev
 ```
 
-Running the repository is tested on Python 3.10 (default on Ubuntu 22.04 LTS) and Python 3.12 (default on Ubuntu 24.04 LTS).
+Package execution is tested on Python 3.10 (default on Ubuntu 22.04 LTS) and Python 3.12 (default on Ubuntu 24.04 LTS).
 However, type checking implements features of the Python Array API standard which require Python 3.12.
+Therefore, Python 3.12 is recommended for development.
 
 ## Backend Compatibility - Numpy and Jax
 
