@@ -26,6 +26,9 @@ You will need to manually install the following dependency using apt
 $ sudo apt -y install libgeos-dev
 ```
 
+Running the repository is tested on Python 3.10 (default on Ubuntu 22.04 LTS) and Python 3.12 (default on Ubuntu 24.04 LTS).
+However, type checking implements features of the Python Array API standard which require Python 3.12.
+
 ## Backend Compatibility - Numpy and Jax
 
 This project utilises the [Array API](https://data-apis.org/array-api/) standard to enable switching between NumPy and [Jax](https://jax.readthedocs.io/en/latest/) for some core classes and functions, using their common native API. 
@@ -38,6 +41,8 @@ Be careful not to mix NumPy- and Jax-backend objects unintentionally, as this ca
 
 Classes and functions which support both backends have a `backend` argument, which can be set to either `'numpy'`/`'np'` or `'jax'`/`'jnp'`, or a reference to either namespace.
 Those that have no need for Jax capabilities are implemented in NumPy only.
+
+
 
 
 ## Data Conventions
