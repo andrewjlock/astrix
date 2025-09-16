@@ -2,8 +2,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 import datetime as dt
 
-from ._backend_utils import resolve_backend, Array, ArrayNamespace, BackendArg
+from ._backend_utils import resolve_backend, Array, ArrayNS, BackendArg
 from .utils import ensure_1d, ensure_2d
+
 
 
 @dataclass
@@ -11,16 +12,18 @@ class Time:
     """One or more time values. Stored as Unix timestamps (seconds since epoch),
     adjusted for leap seconds.
     """
+    secs: Array
+    xp: ArrayNS
 
     def __init__(self, secs: Array, backend: BackendArg = None):
-        self.xp: ArrayNamespace = resolve_backend(backend)
-        self.secs: Array = ensure_1d(secs, xp=self.xp)
+        self.xp = resolve_backend(backend)
+        self.secs = ensure_1d(secs, xp=self.xp)
 
     def is_in_bounds(self, sec: Time) -> bool:
         """Check if the given time(s) are within the bounds of this Time object."""
-        return (self.xp.min(sec.secs) >= self.xp.min(self.secs)) & (
+        return bool((self.xp.min(sec.secs) >= self.xp.min(self.secs)) & (
             self.xp.max(sec.secs) <= self.xp.max(self.secs)
-        )
+        ))
 
     @classmethod
     def from_datetime(
@@ -44,13 +47,16 @@ class Time:
             dt.datetime.fromtimestamp(float(s), tz=dt.timezone.utc) for s in self.secs
         ]
 
-    def __getitem__(self, index) -> Time:
+    def __getitem__(self, index: int) -> Time:
         return Time(self.secs[index], backend=self.xp)
 
 
 @dataclass
 class Point:
-    pass
+    def __init__(self, ecef: Array, backend: BackendArg = None):
+        self.xp: ArrayNS = resolve_backend(backend)
+        self.ecef: Array = ensure_2d(ecef, n=3, xp=self.xp)
+
 
 
 class Path:

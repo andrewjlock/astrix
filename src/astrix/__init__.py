@@ -12,4 +12,3 @@ if _backend_utils.HAS_JAX:
     _backend_utils.enforce_cpu_x64()
 
 __all__ = ['primatives', 'utils']
-
