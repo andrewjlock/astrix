@@ -4,14 +4,13 @@ from __future__ import annotations
 import os
 import sys
 import warnings
-from typing import Final, Any
+from typing import Final, Any, TypeAlias
 from typing import TYPE_CHECKING
 from types import ModuleType
 from functools import lru_cache
 from importlib.util import find_spec
 from array_api_compat import numpy as np, array_namespace
 from numpy.typing import NDArray
-from typing_extensions import TypeAlias
 
 
 if TYPE_CHECKING:
