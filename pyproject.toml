@@ -11,7 +11,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [{ name = "Andrew Lock" }]
-keywords = ["trajectory", "imaging", "triangulation", "state-estimation"]
+keywords = ["aerospace", "reconstruction", "imaging", "state-estimation"]
 # Keep this list small; put heavy/optional deps in extras.
 dependencies = [
 "numpy>=1.26",
@@ -44,6 +44,8 @@ jax = ["jax>=0.6.1", "jaxlib>=0.6.1"]
 
 [tool.setuptools-scm]
 
+[tool.ruff.format]
+docstring-code-format = true  # Formats code in docstrings
 
 # If you plan a src/ layout later, this keeps installs sane even without code yet
 [tool.setuptools]
