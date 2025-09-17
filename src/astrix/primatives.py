@@ -3,7 +3,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import datetime as dt
-from typing import override
 
 from ._backend_utils import (
     resolve_backend,
@@ -111,7 +110,6 @@ class Time:
         """Get the name of the array backend in use (e.g., 'numpy', 'jax')."""
         return self._xp.__name__
 
-    @override
     def __repr__(self) -> str:
         return (
             f"Time array of length {self._secs.shape[0]} with {self._xp.__name__} backend. \n \
@@ -177,7 +175,6 @@ class Point:
     def __getitem__(self, index: int) -> Point:
         return Point(self.ecef[index], backend=self._xp)
 
-    @override
     def __repr__(self) -> str:
         return f"Point array of length {self._ecef.shape[0]} with {self._xp.__name__} backend. \n \
             First point (Geodet): {self.geodet[0]}, Last point (ECEF): {self.geodet[-1]}"
