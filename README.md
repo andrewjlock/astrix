@@ -2,7 +2,7 @@
 
 A Python tool package for planning and analysing aerospace remote imaging and diagnostic experiments.
 
-[![Tests](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml)
+[![Tests](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml) [![Documentation](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml)
 
 Full documentation is available [here](https://andrewjlock.github.io/astrix/), and the source code is hosted on [GitHub](https://github.com/andrewjlock/astrix).
 
