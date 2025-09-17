@@ -2,7 +2,7 @@
 
 A Python tool package for planning and analysing aerospace remote imaging and diagnostic experiments.
 
-Full documentation is available [here](https://andrewjlock.github.io/astrix/).
+Full documentation is available [here](https://andrewjlock.github.io/astrix/), and the source code is hosted on [GitHub](https://github.com/andrewjlock/astrix).
 
 ## Install
 
