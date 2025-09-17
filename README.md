@@ -15,7 +15,7 @@ Jax is used for advanced automatic differentiation and state/parameter estimatio
 The plot extras install [basemap](https://matplotlib.org/basemap/) and [cartopy](https://scitools.org.uk/cartopy/docs/latest/) for geographic plotting.
 For a lean install you can ommit both the `[jax]` and `[plot]` extra,
 
-```bashbash
+```bash
 $ python3 -m pip install -e .
 ```
 
