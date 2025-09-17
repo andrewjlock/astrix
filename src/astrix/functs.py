@@ -15,9 +15,8 @@ def interp_nd(x: Array, xd: Array, fd: Array, backend: Backend = None) -> Array:
 
     Args:
         x (Array): 1D array of x-coordinates to interpolate at.
-        xp (Array): 1D array of x-coordinates of the data points.
-        fp (Array): N-D array of data points to interpolate.
-        axis (int, optional): Axis along which to interpolate. Defaults to 0.
+        xd (Array): 1D array of x-coordinates of the data points.
+        fd (Array): N-D array of data points to interpolate.
 
     Returns:
         Array: Interpolated values at x.
