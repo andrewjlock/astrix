@@ -32,7 +32,6 @@ dependencies = [
 "myst-parser>=0.15.1",
 "sphinx-autodoc-typehints>=3.0.0",
 "array-api-compat",
-"types-array-api"
 ]
 
 # Runtime/optional feature buckets (install with: pip install .[viz,estimation])
