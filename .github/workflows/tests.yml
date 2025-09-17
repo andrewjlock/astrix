@@ -24,7 +24,6 @@ jobs:
         
     - name: Install dependencies
       run: |
-        sudo apt -y install libgeos-dev
         python -m pip install --upgrade pip
         python -m pip install pytest pytest-cov
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi

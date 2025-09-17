@@ -9,10 +9,11 @@ Full documentation is available [here](https://andrewjlock.github.io/astrix/).
 While under development editable installation is recommend
 
 ```bash
-$ python3 -m pip install -e .[jax]
+$ python3 -m pip install -e .[jax,plot]
 ```
 Jax is used for advanced automatic differentiation and state/parameter estimation capabilities. 
-For a lean install you can ommit the `[jax]` extra,
+The plot extras install [basemap](https://matplotlib.org/basemap/) and [cartopy](https://scitools.org.uk/cartopy/docs/latest/) for geographic plotting.
+For a lean install you can ommit both the `[jax]` and `[plot]` extra,
 
 ```bashbash
 $ python3 -m pip install -e .
