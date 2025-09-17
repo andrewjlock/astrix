@@ -2,15 +2,24 @@
 
 import pyproj
 
-from ._backend_utils import Array, np, get_backend, warn_if_not_numpy
+from ._backend_utils import (
+    Array,
+    np,
+    get_backend,
+    warn_if_not_numpy,
+    backend_jit,
+    BackendArg,
+    Backend,
+    coerce_ns,
+)
 
 
-def ensure_1d(x: Array | float | list[float]) -> Array:
+def ensure_1d(x: Array | float | list[float], backend: Backend = None) -> Array:
     """Ensure the input array is 1-dimensional.
     Scalars are converted to shape (1,).
     """
 
-    xp = get_backend(x)
+    xp = coerce_ns(backend)
     x_arr = xp.asarray(x)
     if x_arr.ndim == 0:
         x_arr = xp.reshape(x_arr, (1,))
@@ -20,13 +29,13 @@ def ensure_1d(x: Array | float | list[float]) -> Array:
 
 
 def ensure_2d(
-    x: Array | float | list[float] | list[list[float]], n: int | None = None
+    x: Array | float | list[float] | list[list[float]], n: int | None = None, backend: Backend = None
 ) -> Array:
     """Ensure the input array is 2-dimensional.
     If n is given, ensure the second dimensionn has size n.
     """
 
-    xp = get_backend(x)
+    xp = coerce_ns(backend)
     x_arr = xp.asarray(x)
     if x_arr.ndim == 0:
         x_arr = xp.reshape(x_arr, (1, 1))
@@ -88,3 +97,5 @@ def geodet2ecef(geodet: Array) -> np.ndarray:
     ).T
 
     return ecef
+
+

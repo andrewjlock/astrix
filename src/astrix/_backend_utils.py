@@ -1,16 +1,17 @@
-# pyright: reportExplicitAny=false, reportAny=false
+# pyright: reportExplicitAny=false, reportAny=false, reportAttributeAccessIssue=false
 
 from __future__ import annotations
 import os
 import sys
 import warnings
-from typing import Final, Any, TypeAlias
+from typing import Final, Any, TypeAlias, Callable
 from typing import TYPE_CHECKING
 from types import ModuleType
 from functools import lru_cache
 from importlib.util import find_spec
 from array_api_compat import numpy as np, array_namespace
 from numpy.typing import NDArray
+import functools
 
 
 if TYPE_CHECKING:
@@ -26,21 +27,24 @@ else:
 HAS_JAX: Final = (find_spec("jax") is not None) and (find_spec("jaxlib") is not None)
 
 BackendArg = str | ArrayNS | None
+Backend: TypeAlias = ArrayNS | None
 
 
 def get_backend(*args: Any) -> ArrayNS:
-    """Get the backend (Array Namespace) of the input array(s). 
+    """Get the backend (Array Namespace) of the input array(s).
     If multiple arrays are given, ensure they all have the same backend.
     If not arrags are given (or non-array arguments), return NumPy as default."""
 
     if len(args) == 1:
         if hasattr(args[0], "__array_namespace__"):
-            return args[0].__array_namespace__() # pyright: ignore
+            return args[0].__array_namespace__()
         return np
     if len(args) == 0:
         return np
     try:
-        return array_namespace(*args,)
+        return array_namespace(
+            *args,
+        )
     except TypeError:
         return np
 
@@ -65,7 +69,7 @@ def require_jax():
 
 def warn_if_not_numpy(arg: ModuleType | Array, fun: str = ""):
     if isinstance(arg, ModuleType):
-        if arg is not np:
+        if arg is not np: # pyright: ignore[reportUnnecessaryComparison]
             warnings.warn(
                 "Force converting backend to NumPy array for compatibility. "
                 + "This is incompatible with JAX's JIT and autograd features. "
@@ -89,7 +93,7 @@ def resolve_backend(
     """Resolve the backend (array namespace) from a string or module."""
     if name_or_mod in (None, "np", "numpy"):
         return np
-    if name_or_mod in ("jax", "jnp"):
+    if name_or_mod in ("jax", "jax.numpy", "jnp"):
         require_jax()
         import jax.numpy as jnp
 
@@ -117,3 +121,34 @@ def enforce_cpu_x64():
                 + "Set JAX_ENABLE_X64=1 and JAX_PLATFORMS=cpu before importing JAX.",
                 stacklevel=2,
             )
+
+
+# pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false
+# pyright: reportUnknownVariableType=false
+def backend_jit(static_argnames: str | list[str] | None = None) -> Callable[..., Any]:
+    """JIT only when using JAX backend."""
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        if not HAS_JAX:
+            # If JAX is not available, return the original function
+            return func
+
+        @functools.wraps(func)
+        def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+            # Check if using JAX backend
+            if hasattr(self, "_xp") and "jax" in str(type(self._xp)):
+                # JIT compile on first JAX use
+                if not hasattr(wrapper, "_jax_compiled"):
+                    import jax
+
+                    wrapper._jax_compiled = jax.jit(
+                        func, static_argnames=static_argnames
+                    )
+                return wrapper._jax_compiled(self, *args, **kwargs)
+            else:
+                # Use original function for numpy
+                return func(self, *args, **kwargs)
+
+        return wrapper
+
+    return decorator

@@ -2,13 +2,9 @@
 
 from ._backend_utils import (
     Array,
-    np,
-    get_backend,
-    warn_if_not_numpy,
     backend_jit,
-    BackendArg,
     Backend,
-    coerce_ns,
+    coerce_ns
 )
 
 @backend_jit("backend")
@@ -41,6 +37,3 @@ def interp_nd(x: Array, xd: Array, fd: Array, backend: Backend = None) -> Array:
     slope = (f1 - f0) / (x1 - x0)[..., xp.newaxis]
     return f0 + slope * (x - x0)[..., xp.newaxis]
     
-
-
-
