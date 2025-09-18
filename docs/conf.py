@@ -21,7 +21,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "myst_parser",
     "sphinx_rtd_theme",
-    "sphinx-gallery"
+    "sphinx_gallery"
     # "sphinx_rtd_dark_mode"
 ]
 
