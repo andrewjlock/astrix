@@ -39,14 +39,13 @@ This project utilises the [Array API](https://data-apis.org/array-api/) standard
 Numpy is the default, and superior for most use cases. 
 Jax provides two extra capabilities: automatic differentiation and JIT compilation, which can be useful for optimisation and estimation problems.
 However, Jax is slower than Numpy for most use cases. 
+
 Note that Jax backend is implemented on CPU only, and 64-bit precision is encorced (Jax defaults to 32-bit). 
 The backend is specified per-instance, as there are use cases when both may be wanted simultaneously.
 Be careful not to mix NumPy- and Jax-backend objects unintentionally, as this can lead to hard-to-diagnose bugs.
 
 Classes and functions which support both backends have a `backend` argument, which can be set to either `'numpy'`/`'np'` or `'jax'`/`'jnp'`, or a reference to either namespace.
 Those that have no need for Jax capabilities are implemented in NumPy only.
-
-
 
 
 ## Data Conventions
