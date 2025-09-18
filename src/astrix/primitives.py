@@ -1,20 +1,13 @@
-# pyright: reportAny=false
+# pyright: reportAny=false, reportImplicitOverride=false
 
 from __future__ import annotations
 from dataclasses import dataclass
 import datetime as dt
 import warnings
 
-from ._backend_utils import (
-    resolve_backend,
-    Array,
-    ArrayNS,
-    BackendArg,
-    backend_jit
-
-)
+from ._backend_utils import resolve_backend, Array, ArrayNS, BackendArg, backend_jit
 from .utils import ensure_1d, ensure_2d, ecef2geodet, geodet2ecef
-from .functs import interp_nd
+from .functs import interp_nd, central_diff
 
 
 @dataclass
@@ -69,6 +62,7 @@ class Time:
         self._xp = resolve_backend(backend)
         self._secs = ensure_1d(secs, backend=self._xp)
 
+    @backend_jit()
     def is_in_bounds(self, sec: Time) -> bool:
         """Check if the given time(s) are within the bounds of this Time object."""
         return bool(
@@ -83,7 +77,7 @@ class Time:
 
         obj = cls.__new__(cls)
         obj._xp = resolve_backend(backend)
-        obj._secs = ensure_1d(secs, backend=obj._xp)
+        obj._secs = secs
         return obj
 
     @classmethod
@@ -112,12 +106,14 @@ class Time:
         ]
 
     def __getitem__(self, index: int) -> Time:
-        return Time(self.secs[index], backend=self._xp)
+        return Time._constructor(
+            self._xp.asarray(self.secs[index]).reshape(-1), backend=self._xp
+        )
 
     @property
     def secs(self) -> Array:
         """Get the time values in seconds since epoch."""
-        #TODO: Decide whether to return a copy
+        # TODO: Decide whether to return a copy
         return self._secs
 
     @property
@@ -125,11 +121,14 @@ class Time:
         """Get the name of the array backend in use (e.g., 'numpy', 'jax')."""
         return self._xp.__name__
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return (
             f"Time array of length {self._secs.shape[0]} with {self._xp.__name__} backend. \n \
             Earliest time: {self.datetime[0]}, Latest time: {self.datetime[-1]}"
         )
+
+    def __repr__(self) -> str:
+        return f"Time, n={len(self)}, backend='{self._xp.__name__}')"
 
     def __len__(self) -> int:
         return self._secs.shape[0]
@@ -162,9 +161,7 @@ class Point:
             self._time = time
 
     @classmethod
-    def _constructor(
-        cls, ecef: Array, time: Time | None, backend: ArrayNS
-    ) -> Point:
+    def _constructor(cls, ecef: Array, time: Time | None, backend: ArrayNS) -> Point:
         """Internal constructor to create a Point object from ECEF array
         Avoids type checking in __init__."""
 
@@ -175,7 +172,9 @@ class Point:
         return obj
 
     @classmethod
-    def from_geodet(cls, geodet: Array, time: Time | None = None, backend: BackendArg = None) -> Point:
+    def from_geodet(
+        cls, geodet: Array, time: Time | None = None, backend: BackendArg = None
+    ) -> Point:
         """Create a Point object from geodetic coordinates (lat, lon, alt).
         Lat and lon are in degrees, alt is in meters.
         """
@@ -197,7 +196,8 @@ class Point:
         ecef_joined = xp.concatenate([p.ecef for p in points]).reshape(-1, 3)
         if points[0].has_time:
             time_joined = Time(
-                xp.concatenate([p.time.secs for p in points]), backend=xp # pyright: ignore[reportOptionalMemberAccess]
+                xp.concatenate([p.time.secs for p in points]),# pyright: ignore[reportOptionalMemberAccess]
+                backend=xp,  
             )
         else:
             time_joined = None
@@ -206,7 +206,7 @@ class Point:
     @property
     def ecef(self) -> Array:
         """Get the ECEF coordinates (x, y, z) in meters."""
-        #TODO: Decide whether to return a copy
+        # TODO: Decide whether to return a copy
         return self._ecef.copy()
 
     @property
@@ -232,15 +232,17 @@ class Point:
     def __getitem__(self, index: int) -> Point:
         return Point(self.ecef[index], backend=self._xp)
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return f"""Point of length {self._ecef.shape[0]} 
             with {self._xp.__name__} backend. \n 
             First point (LLA): {self.geodet[0]}, 
             Last point (LLA): {self.geodet[-1]}"""
 
+    def __repr__(self) -> str:
+        return f"Point, n=<Select> {len(self)}, backend='{self._xp.__name__}'"
+
     def __len__(self) -> int:
         return self._ecef.shape[0]
-
 
     def __add__(self, added_point: Point) -> Point:
         if self.has_time != added_point.has_time:
@@ -250,16 +252,58 @@ class Point:
 
         ecef_joined = self._xp.concatenate([self.ecef, added_point.ecef])
         if self.has_time and added_point.has_time:
-            time_joined = Time(self._xp.concatenate([self.time.secs, # pyright: ignore[reportOptionalMemberAccess] 
-                                                     added_point.time.secs, # pyright: ignore[reportOptionalMemberAccess]
-                                                     ]))
+            time_joined = Time(
+                self._xp.concatenate(
+                    [
+                        self.time.secs,  # pyright: ignore[reportOptionalMemberAccess]
+                        added_point.time.secs,  # pyright: ignore[reportOptionalMemberAccess]
+                    ]
+                )
+            )
         else:
             time_joined = None
         return Point(ecef_joined, time=time_joined, backend=self._xp)
 
 
+@dataclass(frozen=True)
+class Velocity:
+    """
+    Velocity vector(s) in ECEF coordinates (vx, vy, vz) in m/s.
+    Associated with a Time object for the time instances of the velocities.
+    Internal use only, typically created from Path objects.
+    No data validation is performed.
+    """
+
+    vec: Array
+    time: Time
+    _xp: ArrayNS
+
+    def magnitude(self) -> Array:
+        """Get the velocity magnitude in m/s."""
+        return self._xp.linalg.norm(self.vec, axis=1)
+
+    def unit(self) -> Array:
+        """Get the unit velocity vector."""
+        mag = self.magnitude()
+        return self.vec / mag[:, self._xp.newaxis]
+
+    def __str__(self) -> str:
+        return f"Velocity array of length {self.vec.shape[0]} with {self._xp.__name__} backend."
+
+    def __repr__(self) -> str:
+        return f"Velocity, n={len(self)}, backend='{self._xp.__name__}')"
+
+    def __len__(self) -> int:
+        return self.vec.shape[0]
+
+    @property
+    def backend(self) -> str:
+        return self._xp.__name__
+
+
 class Path:
     _ecef: Array
+    _vel: Array
     _time: Time
     _xp: ArrayNS
 
@@ -268,9 +312,10 @@ class Path:
         if not point.has_time:
             raise ValueError("Point must have associated Time to create a Path.")
         self._xp = resolve_backend(backend)
-        sort_indices = self._xp.argsort(point.time.secs) # pyright: ignore[reportOptionalMemberAccess]
-        self._time = Time(point.time.secs[sort_indices], backend=self._xp) # pyright: ignore[reportOptionalMemberAccess]
+        sort_indices = self._xp.argsort(point.time.secs)  # pyright: ignore[reportOptionalMemberAccess]
+        self._time = Time(point.time.secs[sort_indices], backend=self._xp)  # pyright: ignore[reportOptionalMemberAccess]
         self._ecef = ensure_2d(point.ecef[sort_indices], n=3, backend=self._xp)
+        self._vel = central_diff(self._time.secs, self._ecef, backend=self._xp)
 
     @property
     def time(self) -> Time:
@@ -302,7 +347,12 @@ class Path:
         """Get the end time of the Path."""
         return self.time[-1]
 
-    def __repr__(self) -> str:
+    @property
+    def vel(self) -> Velocity:
+        """Get the Velocity object associated with the Path."""
+        return Velocity(self._vel, self._time, self._xp)
+
+    def __str__(self) -> str:
         return f"""Path of length {self._ecef.shape[0]} 
             with {self._xp.__name__} backend. \n 
             Start time: {self.time.datetime[0]}, 
@@ -310,19 +360,35 @@ class Path:
             Start point (LLA): {self.geodet[0]},
             End point (LLA): {self.geodet[-1]}"""
 
-    @backend_jit("method")
-    def interpolate(self, time: Time, method: str = "linear") -> Point:
+    def __repr__(self) -> str:
+        return f"Path, n={len(self)}, backend='{self._xp.__name__}')"
+
+    def __len__(self) -> int:
+        return self._ecef.shape[0]
+
+    def interp(
+        self, time: Time, method: str = "linear", check_bounds: bool = True
+    ) -> Point:
         """Interpolate the Path to the given times using the specified method.
         Currently only 'linear' interpolation is supported.
+
+        Args:
+            time (Time): Times to interpolate to.
+            method (str, optional): Interpolation method. Currently only 'linear' is supported. Defaults to 'linear'.
+            check_bounds (bool, optional): Whether to check if the interpolation times are within the path time bounds. Defaults to True.
+
+        Returns:
+            Point: Interpolated Point object at the given times.
         """
 
         if method != "linear":
             raise ValueError("Currently only 'linear' interpolation is supported.")
-        if not self.time.is_in_bounds(time):  
-            warnings.warn(f"""Path interpolation times are out of bounds.
-                Path time range: {self.time.datetime[0]} to {self.time.datetime[-1]}
-                Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
-                Extrapolation is not supported and will raise an error.""")
+        if check_bounds:
+            if not self.time.is_in_bounds(time):
+                warnings.warn(f"""Path interpolation times are out of bounds.
+                    Path time range: {self.time.datetime[0]} to {self.time.datetime[-1]}
+                    Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
+                    Extrapolation is not supported and will raise an error.""")
 
         if method == "linear":
             interp_ecef = interp_nd(
@@ -333,7 +399,31 @@ class Path:
             )
             return Point._constructor(interp_ecef, time=time, backend=self._xp)
 
+    @backend_jit(["method", "check_bounds"])
+    def interp_vel(
+        self, time: Time, method: str = "linear", check_bounds: bool = True
+    ) -> Velocity:
+        """Interpolate the Path velocity to the given times using the specified method.
+        Currently only 'linear' interpolation is supported.
+        """
 
+        if method != "linear":
+            raise ValueError("Currently only 'linear' interpolation is supported.")
+        if check_bounds:
+            if not self.time.is_in_bounds(time):
+                warnings.warn(f"""Path interpolation times are out of bounds.
+                    Path time range: {self.time.datetime[0]} to {self.time.datetime[-1]}
+                    Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
+                    Extrapolation is not supported and will raise an error.""")
+
+        if method == "linear":
+            interp_vel = interp_nd(
+                time.secs,
+                self.time.secs,
+                self._vel,
+                backend=self._xp,
+            )
+            return Velocity(interp_vel, time, self._xp)
 
 
 class Rotation:

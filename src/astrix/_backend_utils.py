@@ -69,7 +69,7 @@ def require_jax():
 
 def warn_if_not_numpy(arg: ModuleType | Array, fun: str = ""):
     if isinstance(arg, ModuleType):
-        if arg is not np: # pyright: ignore[reportUnnecessaryComparison]
+        if arg is not np:  # pyright: ignore[reportUnnecessaryComparison]
             warnings.warn(
                 "Force converting backend to NumPy array for compatibility. "
                 + "This is incompatible with JAX's JIT and autograd features. "
@@ -125,30 +125,43 @@ def enforce_cpu_x64():
 
 # pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false
 # pyright: reportUnknownVariableType=false
-def backend_jit(static_argnames: str | list[str] | None = None) -> Callable[..., Any]:
-    """JIT only when using JAX backend."""
-
-    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+def backend_jit(static_argnames: str | list[str] | None =None): #pyright: ignore
+    def decorator(func):
         if not HAS_JAX:
-            # If JAX is not available, return the original function
             return func
-
-        @functools.wraps(func)
-        def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
-            # Check if using JAX backend
-            if hasattr(self, "_xp") and "jax" in str(type(self._xp)):
-                # JIT compile on first JAX use
-                if not hasattr(wrapper, "_jax_compiled"):
-                    import jax
-
-                    wrapper._jax_compiled = jax.jit(
-                        func, static_argnames=static_argnames
-                    )
-                return wrapper._jax_compiled(self, *args, **kwargs)
-            else:
-                # Use original function for numpy
-                return func(self, *args, **kwargs)
-
+        import jax    
+        jitted_func = jax.jit(func, static_argnames=static_argnames)
+        
+        def wrapper(*args, **kwargs):
+            backend = kwargs.get('backend')
+            # Only use JIT if backend is JAX
+            if backend and hasattr(backend, '__name__') and 'jax' in str(backend):
+                return jitted_func(*args, **kwargs)
+            return func(*args, **kwargs)
         return wrapper
-
     return decorator
+
+
+def safe_set(
+    array: Array,
+    index: int | slice | tuple[int, ...] | tuple[slice, ...] | Array,
+    value: float | int | Array,
+    backend: Backend,
+) -> Array:
+    """Set value(s) in an array at the given index/indices, returning a new array.
+    This is safe for JAX arrays (which are immutable) and works with NumPy arrays too.
+
+    Args:
+        array (Array): Input array.
+        index (int | slice | tuple | Array): Index or indices to set.
+        value (float | int | Array): Value(s) to set.
+
+    Returns:
+        Array: New array with the value(s) set.
+    """
+    xp = coerce_ns(backend)
+    if xp.__name__ == "jax.numpy":
+        return xp.array(array).at[index].set(value)
+    else:
+        array[index] = value
+        return array

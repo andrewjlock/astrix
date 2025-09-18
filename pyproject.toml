@@ -29,12 +29,13 @@ dependencies = [
 "sphinx-rtd-theme>=0.5.2",
 "myst-parser>=0.15.1",
 "sphinx-autodoc-typehints>=3.0.0",
+"sphinx-gallery",
 "array-api-compat",
 ]
 
 # Runtime/optional feature buckets (install with: pip install .[viz,estimation])
 [project.optional-dependencies]
-jax = ["jax>=0.6.1", "jaxlib>=0.6.1"]
+jax = ["jax[cpu]>=0.6.1"]
 plot = ["basemap", "basemap-data-hires", "cartopy"]
 
 
