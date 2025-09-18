@@ -27,7 +27,7 @@ class Time:
 
     Parameters
     ----------
-    secs : Array
+    secs : Array | list of float | float
         Time values in seconds since Unix epoch (1970-01-01 UTC)
     backend : BackendArg, optional
         Array backend to use (numpy, jax, etc.). Defaults to numpy.
@@ -36,8 +36,8 @@ class Time:
     ----------
     secs : Array or list of floats
         Time values in seconds since epoch (Unix timestamp)
-    datetime : datetime or list of datetime
-        Python datetime objects (computed property)
+    datetime : list of datetime
+        Python datetime objects in UTC timezone (computed property)
 
     Examples
     --------
@@ -105,7 +105,7 @@ class Time:
         return cls(secs, backend=backend)
 
     @property
-    def datetime(self):
+    def datetime(self) -> list[dt.datetime]:
         """Convert to a list of datetime objects."""
         return [
             dt.datetime.fromtimestamp(float(s), tz=dt.timezone.utc) for s in self.secs
@@ -332,9 +332,6 @@ class Path:
                 backend=self._xp,
             )
             return Point._constructor(interp_ecef, time=time, backend=self._xp)
-
-
-        # return Point(interp_ecef, time=time, backend=self._xp)
 
 
 
