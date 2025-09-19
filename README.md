@@ -1,10 +1,17 @@
 # ASTrIX: AeroSpace Trajectory Imaging toolboX 
 
-A Python tool package for planning and analysing aerospace remote imaging and diagnostic experiments.
+_Under Construction..._
+
+A Python tool package for planning and analysing aerospace trajectories.
 
 [![Tests](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml) [![Documentation](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml)
 
 Full documentation is available [here](https://andrewjlock.github.io/astrix/), and the source code is hosted on [GitHub](https://github.com/andrewjlock/astrix).
+
+This project aids three main purposes:
+1. Aid flight path planning and ground station placement for aerospace observation campagins.
+2. Provide a flexible, fast, and differentiable enviroment to reconstruct viewing vectors and camera projections for trakcking and state estimation problems.
+3. Trace frames of vehicles and observers to compute view angles and ranges for interpreting scientific measurements (e.g. spectral data).
 
 ## Install
 
