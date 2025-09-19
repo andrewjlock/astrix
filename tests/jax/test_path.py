@@ -1,6 +1,5 @@
 # pyright: basic
 
-import pytest
 import jax
 from astrix.primitives import Path, Point, Time
 
