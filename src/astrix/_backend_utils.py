@@ -4,14 +4,15 @@ from __future__ import annotations
 import os
 import sys
 import warnings
-from typing import Final, Any, TypeAlias, Callable
+from typing import Final, Any, TypeAlias
 from typing import TYPE_CHECKING
 from types import ModuleType
 from functools import lru_cache
 from importlib.util import find_spec
 from array_api_compat import numpy as np, array_namespace
 from numpy.typing import NDArray
-import functools
+
+from scipy.spatial.transform import Rotation
 
 
 if TYPE_CHECKING:
@@ -165,3 +166,12 @@ def safe_set(
     else:
         array[index] = value
         return array
+
+def _convert_rot_backend(rot: Rotation, backend: Backend) -> Rotation:
+    """Convert a scipy Rotation object to the given backend.
+    This is a no-op for NumPy backend, and converts to JAX arrays for JAX backend.
+    """
+    xp = coerce_ns(backend)
+    if xp is rot._xp:
+        return rot
+    return Rotation.from_quat(xp.asarray(rot.as_quat()))

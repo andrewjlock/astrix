@@ -1,13 +1,22 @@
 # pyright: reportAny=false, reportImplicitOverride=false
 
 from __future__ import annotations
-from dataclasses import dataclass
-import datetime as dt
 import warnings
 
-from ._backend_utils import resolve_backend, Array, ArrayNS, BackendArg, backend_jit
-from .utils import ensure_1d, ensure_2d, ecef2geodet, geodet2ecef
-from .functs import interp_nd, central_diff
+from dataclasses import dataclass
+import datetime as dt
+from scipy.spatial.transform import Rotation, Slerp
+
+from ._backend_utils import (
+    resolve_backend,
+    Array,
+    ArrayNS,
+    BackendArg,
+    backend_jit,
+    _convert_rot_backend,
+)
+from .utils import ensure_1d, ensure_2d, ecef2geodet, geodet2ecef, is_increasing
+from .functs import interp_nd, central_diff, interp_haversine
 
 
 @dataclass
@@ -47,6 +56,8 @@ class Time:
     """
 
     _secs: Array
+    _min: float | Array
+    _max: float | Array
     _xp: ArrayNS
 
     def __init__(
@@ -54,13 +65,15 @@ class Time:
     ) -> None:
         self._xp = resolve_backend(backend)
         self._secs = ensure_1d(secs, backend=self._xp)
+        self._min = self._xp.min(self._secs)
+        self._max = self._xp.max(self._secs)
 
     @backend_jit()
     def is_in_bounds(self, sec: Time) -> bool:
         """Check if the given time(s) are within the bounds of this Time object."""
         return bool(
-            (self._xp.min(sec.secs) >= self._xp.min(self._secs))
-            & (self._xp.max(sec.secs) <= self._xp.max(self._secs))
+            (self._xp.min(sec.secs) >= self._min)
+            & (self._xp.max(sec.secs) <= self._max)
         )
 
     @classmethod
@@ -102,6 +115,18 @@ class Time:
             self._xp.asarray(self.secs[index]).reshape(-1), backend=self._xp
         )
 
+    def convert_to(self, backend: BackendArg) -> Time:
+        """Convert the Time object to a different backend."""
+        xp = resolve_backend(backend)
+        if xp == self._xp:
+            return self
+        return Time._constructor(xp.asarray(self.secs), backend=xp)
+
+    @property
+    def is_increasing(self) -> bool:
+        """Check if the time values are strictly increasing."""
+        return is_increasing(self._secs, backend=self._xp)
+
     @property
     def secs(self) -> Array:
         """Get the time values in seconds since epoch."""
@@ -125,11 +150,11 @@ class Time:
     def __len__(self) -> int:
         return self._secs.shape[0]
 
-    def __add__(self, other: float) -> Time:
-        return Time(self.secs + other, backend=self._xp)
+    def __add__(self, offset: float) -> Time:
+        return Time(self.secs + offset, backend=self._xp)
 
-    def __sub__(self, other: float) -> Time:
-        return Time(self.secs - other, backend=self._xp)
+    def __sub__(self, offset: float) -> Time:
+        return Time(self.secs - offset, backend=self._xp)
 
 
 @dataclass
@@ -188,8 +213,8 @@ class Point:
         ecef_joined = xp.concatenate([p.ecef for p in points]).reshape(-1, 3)
         if points[0].has_time:
             time_joined = Time(
-                xp.concatenate([p.time.secs for p in points]),# pyright: ignore[reportOptionalMemberAccess]
-                backend=xp,  
+                xp.concatenate([p.time.secs for p in points]),  # pyright: ignore[reportOptionalMemberAccess]
+                backend=xp,
             )
         else:
             time_joined = None
@@ -220,6 +245,17 @@ class Point:
     def backend(self) -> str:
         """Get the name of the array backend in use (e.g., 'numpy', 'jax')."""
         return self._xp.__name__
+
+    def convert_to(self, backend: BackendArg) -> Point:
+        """Convert the Point object to a different backend."""
+        xp = resolve_backend(backend)
+        if xp == self._xp:
+            return self
+        if self.has_time:
+            time_converted = self.time.convert_to(xp)  # pyright: ignore[reportOptionalMemberAccess]
+        else:
+            time_converted = None
+        return Point._constructor(xp.asarray(self.ecef), time_converted, xp)
 
     def __getitem__(self, index: int) -> Point:
         return Point(self.ecef[index], backend=self._xp)
@@ -292,6 +328,13 @@ class Velocity:
     def backend(self) -> str:
         return self._xp.__name__
 
+    def convert_to(self, backend: BackendArg) -> Velocity:
+        """Convert the Velocity object to a different backend."""
+        xp = resolve_backend(backend)
+        if xp == self._xp:
+            return self
+        return Velocity(xp.asarray(self.vec), self.time.convert_to(xp), xp)
+
 
 class Path:
     _ecef: Array
@@ -358,11 +401,19 @@ class Path:
     def __len__(self) -> int:
         return self._ecef.shape[0]
 
+    def convert_to(self, backend: BackendArg) -> Path:
+        """Convert the Path object to a different backend."""
+        xp = resolve_backend(backend)
+        if xp == self._xp:
+            return self
+        return Path(
+            Point(self.ecef, time=self.time.convert_to(xp), backend=xp), backend=xp
+        )
+
     def interp(
         self, time: Time, method: str = "linear", check_bounds: bool = True
     ) -> Point:
         """Interpolate the Path to the given times using the specified method.
-        Currently only 'linear' interpolation is supported.
 
         Args:
             time (Time): Times to interpolate to.
@@ -373,8 +424,6 @@ class Path:
             Point: Interpolated Point object at the given times.
         """
 
-        if method != "linear":
-            raise ValueError("Currently only 'linear' interpolation is supported.")
         if check_bounds:
             if not self.time.is_in_bounds(time):
                 warnings.warn(f"""Path interpolation times are out of bounds.
@@ -389,7 +438,16 @@ class Path:
                 self.ecef,
                 backend=self._xp,
             )
-            return Point._constructor(interp_ecef, time=time, backend=self._xp)
+        elif method == "haversine":
+            interp_ecef = interp_haversine(
+                time.secs,
+                self.time.secs,
+                self.ecef,
+                backend=self._xp,
+            )
+        else:
+            raise ValueError("Currently only 'linear' interpolation is supported.")
+        return Point._constructor(interp_ecef, time=time, backend=self._xp)
 
     @backend_jit(["method", "check_bounds"])
     def interp_vel(
@@ -418,12 +476,128 @@ class Path:
             return Velocity(interp_vel, time, self._xp)
 
 
-class Rotation:
-    pass
-
-
 class Frame:
-    pass
+    _rot: Rotation
+    _xp: ArrayNS
+    _ref_frame: Frame | None = None
+    _time: Time | None = None
+    _slerp: Slerp | None = None
+    _static: bool = True
+
+    def __init__(
+        self,
+        rot: Rotation,
+        ref_frame: Frame | None = None,
+        time: Time | None = None,
+        backend: BackendArg = None,
+    ) -> None:
+        self._xp = resolve_backend(backend)
+        self._rot = _convert_rot_backend(rot, self._xp)
+
+        # Data validation
+        if time is not None:
+            if self._rot.single:
+                raise ValueError("Time must be None for static Rotation frame")
+            if len(time) != len(self._rot):
+                raise ValueError("Time and rotations must have same length for Frame")
+            if not time.is_increasing:
+                raise ValueError(
+                    "Time values must be strictly increasing to construct Frame"
+                )
+            time = time.convert_to(self._xp)
+            self._time = time
+            self._slerp = Slerp(time.secs, self._rot)
+            self._static = False
+
+        if ref_frame is not None:
+            if ref_frame.backend != self.backend:
+                ref_frame = ref_frame.convert_to(self.backend)
+            self._ref_frame = ref_frame
+            if not ref_frame.is_static:
+                self._static = False
+
+    @property
+    def backend(self) -> str:
+        return self._xp.__name__
+
+    @property
+    def time(self) -> Time | None:
+        return self._time
+
+    @property
+    def rel_rot(self) -> Rotation:
+        """Get the last rotation of the frame relative to the reference frame."""
+        return self._rot
+
+    @property
+    def static_rot(self) -> Rotation:
+        """Get the last absolute rotation of the frame (including reference frame)."""
+        if self.is_static:
+            # TODO: Check these are in the correct order
+            if self._ref_frame is not None:
+                return self._ref_frame.static_rot * self._rot
+            else:
+                return self._rot
+        else:
+            raise ValueError(
+                "Cannot get absolute rotation of dynamic frame without time input"
+            )
+
+    @property
+    def is_static(self) -> bool:
+        """Check if the frame is static (single rotation) or dynamic (time-varying)."""
+        return self._static
+
+    @property
+    def has_ref(self) -> bool:
+        """Check if the frame has a reference frame."""
+        return self._ref_frame is not None
+
+    def interp(self, time: Time, check_bounds: bool = True) -> Rotation:
+        """Interpolate the frame at the given times to find the absolute rotation(s).
+
+        Args:
+            time (Time): Times to interpolate the frame at.
+            check_bounds (bool, optional): Whether to check if the interpolation times are within
+                the frame time bounds. Defaults to True.
+
+        Returns:
+            Rotation: Interpolated Rotation object at the given times.
+        """
+
+        if self.is_static:
+            return Rotation._from_raw_quat(
+                self._xp.repeat(self.static_rot.as_quat(), len(time), axis=0), xp=self._xp
+            )
+
+        if self.time is not None:
+            if check_bounds:
+                if not self.time.is_in_bounds(time):
+                    warnings.warn(f"""Frame interpolation times are out of bounds.
+                        Frame time range: {self.time.datetime[0]} to {self.time.datetime[-1]}
+                        Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
+                        Extrapolation is not supported and will raise an error.""")
+            rel_rot = self._slerp(time.secs)  # pyright: ignore[reportOptionalCall]
+        else:
+            rel_rot = self._rot
+        if self._ref_frame is None:
+            return rel_rot
+        return self._ref_frame.interp(time, check_bounds) * rel_rot
+
+    def convert_to(self, backend: BackendArg) -> Frame:
+        xp = resolve_backend(backend)
+        rot_converted = _convert_rot_backend(self._rot, xp)
+        if self._ref_frame is not None:
+            ref_converted = self._ref_frame.convert_to(backend)
+        else:
+            ref_converted = None
+        if self._time is not None:
+            time_converted = Time(self._time.secs, backend=xp)
+        else:
+            time_converted = None
+        return Frame(
+            rot_converted, ref_frame=ref_converted, time=time_converted, backend=xp
+        )
 
 
 @dataclass

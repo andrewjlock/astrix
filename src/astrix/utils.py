@@ -47,6 +47,15 @@ def ensure_2d(
         raise ValueError(f"Input array must have shape (m, {n}), found {x_arr.shape}.")
     return x_arr
 
+def is_increasing(x: Array, backend: Backend = None) -> bool:
+    """Check if the input array is strictly increasing along the first axis."""
+
+    xp = coerce_ns(backend)
+    x_arr = xp.asarray(x)
+    if x_arr.ndim != 1:
+        raise ValueError("Input array must be 1-dimensional.")
+    return xp.all(x_arr[1:] > x_arr[:-1])
+
 
 t_ecef2geodet = pyproj.Transformer.from_crs("epsg:4978", "epsg:4979")
 t_geodet2ecef = pyproj.Transformer.from_crs("epsg:4979", "epsg:4978")
