@@ -27,7 +27,7 @@ jobs:
         
     # Install project + dev deps declared in dependency groups
     - name: Sync dependencies
-      run: uv sync --extras docs --extras dev
+      run: uv sync --extra docs --extras dev
 
     - name: Build documentation
       run: |

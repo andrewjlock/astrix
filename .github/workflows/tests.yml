@@ -14,26 +14,26 @@ jobs:
         python-version: ['3.12']
 
     steps:
-    - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.python-version }}
-
-      # Install uv and enable cache keyed by pyproject/uv.lock
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
         with:
-          enable-cache: true
-          cache-dependency-glob: |
-            **/pyproject.toml
-            **/uv.lock
+          python-version: ${{ matrix.python-version }}
 
-      # Install project + dev deps declared in dependency groups
-      - name: Sync dependencies
-        run: uv sync --locked
+        # Install uv and enable cache keyed by pyproject/uv.lock
+        - name: Install uv
+          uses: astral-sh/setup-uv@v6
+          with:
+            enable-cache: true
+            cache-dependency-glob: |
+              **/pyproject.toml
+              **/uv.lock
 
-      # Run tests via uv (isolated env)
-      - name: Pytest
-        run: uv run -m pytest -q
+        # Install project + dev deps declared in dependency groups
+        - name: Sync dependencies
+          run: uv sync --locked
+
+        # Run tests via uv (isolated env)
+        - name: Pytest
+          run: uv run -m pytest -q
