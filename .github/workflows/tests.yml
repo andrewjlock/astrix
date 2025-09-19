@@ -1,4 +1,4 @@
-name: Tests
+name: tests
 
 on:
   push:
@@ -16,24 +16,21 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: set up python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
-        # Install uv and enable cache keyed by pyproject/uv.lock
-        - name: Install uv
-          uses: astral-sh/setup-uv@v6
-          with:
-            enable-cache: true
-            cache-dependency-glob: |
-              **/pyproject.toml
-              **/uv.lock
+      - name: install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
 
-        # Install project + dev deps declared in dependency groups
-        - name: Sync dependencies
-          run: uv sync --locked
+      - name: sync dependencies
+        run: uv sync --locked
 
-        # Run tests via uv (isolated env)
-        - name: Pytest
-          run: uv run -m pytest -q
+      - name: pytest
+        run: uv run pytest -q
