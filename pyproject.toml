@@ -8,36 +8,41 @@ name = "astrix"
 version = "0.1"
 description = "AsTrIX — Aerospace Trajectory Imaging & Diagnostics toolbox"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = "MIT"
 authors = [{ name = "Andrew Lock" }]
 keywords = ["aerospace", "reconstruction", "imaging", "state-estimation"]
 # Keep this list small; put heavy/optional deps in extras.
 dependencies = [
-"numpy>=1.26",
-"scipy>=1.11",
-"matplotlib",
-"numpy",
-"pandas",
-"scipy>=1.15.3",
-"pyproj",
-"lxml",
-"sgp4",
-"astropy>=6.1",
-"pykml",
-"sphinx>=4.0.0",
-"sphinx-rtd-theme>=0.5.2",
-"myst-parser>=0.15.1",
-"sphinx-autodoc-typehints>=3.0.0",
-"sphinx-gallery",
-"array-api-compat",
+    "numpy>=1.26",
+    "numpy",
+    "pandas",
+    "pyproj",
+    "lxml",
+    "sgp4",
+    "astropy>=6.1",
+    "pykml",
+    "sphinx>=4.0.0",
+    "sphinx-rtd-theme>=0.5.2",
+    "myst-parser>=0.15.1",
+    "sphinx-autodoc-typehints>=3.0.0",
+    "sphinx-gallery",
+    "array-api-compat",
+    "scipy>=1.17.0.dev0",
 ]
 
 # Runtime/optional feature buckets (install with: pip install .[viz,estimation])
 [project.optional-dependencies]
 jax = ["jax[cpu]>=0.6.1"]
-plot = ["basemap", "basemap-data-hires", "cartopy"]
+plot = ["basemap", "basemap-data-hires", "cartopy", "matplotlib"]
 
+[tool.uv.sources]
+scipy = { index = "scipy-nightly" }    # <-- only SciPy comes from the nightly index
+
+[[tool.uv.index]]
+name = "scipy-nightly"
+url = "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"
+explicit = true
 
 # CLI entry points (safe even without package code yet)
 [project.scripts]

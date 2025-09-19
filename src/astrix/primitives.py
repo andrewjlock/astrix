@@ -25,13 +25,6 @@ class Time:
     backend : BackendArg, optional
         Array backend to use (numpy, jax, etc.). Defaults to numpy.
 
-    Attributes
-    ----------
-    secs : Array or list of floats
-        Time values in seconds since epoch (Unix timestamp)
-    datetime : list of datetime
-        Python datetime objects in UTC timezone (computed property)
-
     Examples
     --------
     Single time instance:
@@ -100,7 +93,6 @@ class Time:
 
     @property
     def datetime(self) -> list[dt.datetime]:
-        """Convert to a list of datetime objects."""
         return [
             dt.datetime.fromtimestamp(float(s), tz=dt.timezone.utc) for s in self.secs
         ]
