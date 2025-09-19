@@ -30,7 +30,7 @@ jobs:
             **/uv.lock
 
       - name: sync dependencies
-        run: uv lock && uv sync --locked
+        run: uv lock && uv sync --locked --extra dev
 
       - name: pytest
         run: uv run pytest -q
