@@ -22,11 +22,6 @@ dependencies = [
     "sgp4",
     "astropy>=6.1",
     "pykml",
-    "sphinx>=4.0.0",
-    "sphinx-rtd-theme>=0.5.2",
-    "myst-parser>=0.15.1",
-    "sphinx-autodoc-typehints>=3.0.0",
-    "sphinx-gallery",
     "array-api-compat",
     "scipy>=1.17.0.dev0",
 ]
@@ -35,6 +30,14 @@ dependencies = [
 [project.optional-dependencies]
 jax = ["jax[cpu]>=0.6.1"]
 plot = ["basemap", "basemap-data-hires", "cartopy", "matplotlib"]
+dev = [
+    "pytest",
+    "sphinx>=4.0.0",
+    "sphinx-rtd-theme>=0.5.2",
+    "myst-parser>=0.15.1",
+    "sphinx-autodoc-typehints>=3.0.0",
+    "sphinx-gallery"
+]
 
 [tool.uv.sources]
 scipy = { index = "scipy-nightly" }    # <-- only SciPy comes from the nightly index
