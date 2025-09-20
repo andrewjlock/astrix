@@ -412,6 +412,7 @@ class Path:
             Point(self.ecef, time=self.time.convert_to(xp), backend=xp), backend=xp
         )
 
+    @backend_jit(["check_bounds"])
     def interp(
         self, time: Time, method: str = "linear", check_bounds: bool = True
     ) -> Point:
@@ -602,6 +603,7 @@ class Frame:
         """Check if the frame has a reference frame."""
         return self._ref_frame is not None
 
+    @backend_jit(["check_bounds"])
     def interp(self, time: Time, check_bounds: bool = True) -> Rotation:
         """Interpolate the frame at the given times to return the absolute rotation(s).
 
@@ -767,6 +769,29 @@ class Ray:
     def __len__(self) -> int:
         return self._origin.shape[0]
 
+    def __str__(self) -> str:
+        return f"""Ray of length {self._origin.shape[0]} 
+            with {self._xp.__name__} backend. \n 
+            First origin (LLA): {ecef2geodet(self._origin[0])}, 
+            First direction (unit vector): {self._unit[0]}"""
+
+    def __repr__(self) -> str:
+        return f"Ray, n={len(self)}, backend='{self._xp.__name__}')"
+
+    def convert_to(self, backend: BackendArg) -> Ray:
+        """Convert the Ray object to a different backend."""
+        xp = resolve_backend(backend)
+        if xp == self._xp:
+            return self
+        if self.has_time:
+            time_converted = self.time.convert_to(xp)  # pyright: ignore[reportOptionalMemberAccess]
+        else:
+            time_converted = None
+        return Ray._constructor(
+            xp.asarray(self.origin), xp.asarray(self.unit), time_converted, xp
+        )
+
+    @backend_jit(["check_bounds"])
     def interp(self, time: Time, check_bounds: bool = True) -> Ray:
         """Interpolate the Ray origin and direction to the given times.
             
