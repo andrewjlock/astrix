@@ -52,7 +52,7 @@ Alternatively, this project has been developed with, and is compliant with the `
 The `dev` group is installed by default.
 
 ```bash
-$ uv sync
+$ uv pip install -e .[jax,plot]
 ```
 
 
