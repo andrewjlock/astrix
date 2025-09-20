@@ -512,6 +512,7 @@ class Frame:
             >>> interp_rots = frame.interp(interp_times)  # Interpolated rotations
 
     Notes:
+        - Frame interpolation is recursive through all reference frames.
         - If the frame is static (single rotation), time must be None.
         - If the frame is dynamic (multiple rotations), time must be provided and match the length
           of the rotations.
@@ -648,7 +649,156 @@ class Frame:
             rot_converted, ref_frame=ref_converted, time=time_converted, backend=xp
         )
 
+# This needs more thought:
+# - Should it support multiple rays?
+# - Should it support length/non-length?
+# - Should it support time/non-time?
+# - Should it support interpolation itself (rather than separate function)?
 
-@dataclass
-class Pixels:
-    pass
+
+class Ray:
+    _origin: Array
+    _unit: Array
+    _xp: ArrayNS
+    _time: Time | None = None
+
+    def __init__(
+        self,
+        origin: Array,
+        dir: Array,
+        time: Time | None = None,
+        backend: BackendArg = None,
+    ) -> None:
+        """Initialize a Ray object with origin, unit direction, optional length, and optional time.
+
+        Args:
+            origin (Array): Nx3 array of ray origin points in ECEF coordinates (meters).
+            dir (Array): Nx3 array of unit direction vectors. Need not be normalised.
+            time (Time, optional): Time object associated with the rays. 
+                Must be same length as origin if provided. Defaults to None.
+            backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
+
+        Raises:
+            ValueError: If input arrays have incompatible shapes or if time length does not match origin length.
+        """
+
+        self._xp = resolve_backend(backend)
+        self._origin = ensure_2d(origin, n=3, backend=self._xp)
+        _unit = ensure_2d(unit, n=3, backend=self._xp)
+        self._unit = _unit / self._xp.linalg.norm(_unit, axis=1)[:, self._xp.newaxis]
+        if self._origin.shape[0] != self._unit.shape[0]:
+            raise ValueError("Origin and unit direction arrays must have the same length.")
+        if time is not None:
+            if len(time) != self._origin.shape[0]:
+                raise ValueError("Time length must match origin length if provided.")
+            self._time = time.convert_to(self._xp)
+        else:
+            self._time = None
+
+    @classmethod
+    def _constructor(
+        cls, origin: Array, unit: Array, time: Time | None, backend: ArrayNS
+    ) -> Ray:
+        """Internal constructor to create a Ray object from arrays
+        Avoids type checking in __init__."""
+
+        obj = cls.__new__(cls)
+        obj._xp = backend
+        obj._origin = origin
+        obj._unit = unit
+        obj._time = time
+        return obj
+
+    @classmethod
+    def from_endpoint(
+        cls,
+        origin: Array,
+        endpoint: Array,
+        time: Time | None = None,
+        backend: BackendArg = None,
+    ) -> Ray:
+        """Create a Ray object from origin and endpoint arrays.
+
+        Args:
+            origin (Array): Nx3 array of ray origin points in ECEF coordinates (meters).
+            endpoint (Array): Nx3 array of ray endpoint points in ECEF coordinates (meters).
+            time (Time, optional): Time object associated with the rays. 
+                Must be same length as origin if provided. Defaults to None.
+            backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
+        Returns:
+            Ray: Ray object defined by the origin and direction from origin to endpoint.
+        """
+
+        xp = resolve_backend(backend)
+        origin = ensure_2d(origin, n=3, backend=xp)
+        endpoint = ensure_2d(endpoint, n=3, backend=xp)
+        if origin.shape != endpoint.shape:
+            raise ValueError("Origin and endpoint arrays must have the same shape.")
+        dir = endpoint - origin
+        return cls(origin, dir, time=time, backend=xp)
+
+    @property
+    def origin(self) -> Array:
+        """Get the ray origin point(s)."""
+        return self._origin
+
+    @property
+    def unit(self) -> Array:
+        """Get the unit direction vector(s) of the ray."""
+        return self._unit
+
+    @property
+    def has_time(self) -> bool:
+        """Check if the Ray has associated Time."""
+        return isinstance(self._time, Time)
+
+    @property
+    def time(self) -> Time:
+        """Get the associated Time object, if any."""
+        if self._time is None:
+            raise ValueError("Ray does not have associated Time.")
+        return self._time
+
+    @property
+    def backend(self) -> str:
+        """Get the name of the array backend in use (e.g., 'numpy', 'jax')."""
+        return self._xp.__name__
+
+    def __len__(self) -> int:
+        return self._origin.shape[0]
+
+    def interp(self, time: Time, check_bounds: bool = True) -> Ray:
+        """Interpolate the Ray origin and direction to the given times.
+            
+        Args:
+            time (Time): Times to interpolate to.
+            check_bounds (bool, optional): Whether to check if the interpolation 
+                times are within the ray time bounds. Defaults to True.
+        Returns:
+            Ray: Interpolated Ray object at the given times.
+        """
+
+        if not self.has_time:
+            raise ValueError("Cannot interpolate Ray without associated Time.")
+        if check_bounds:
+            if not self.time.is_in_bounds(time):
+                warnings.warn(f"""Ray interpolation times are out of bounds.
+                    Ray time range: {self.time.datetime[0]} to {self.time.datetime[-1]}
+                    Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
+                    Extrapolation is not supported and will raise an error.""")
+
+        interp_origin = interp_nd(
+            time.secs,
+            self.time.secs,  # pyright: ignore[reportOptionalMemberAccess]
+            self.origin,
+            backend=self._xp,
+        )
+        interp_unit = interp_nd(
+            time.secs,
+            self.time.secs,  # pyright: ignore[reportOptionalMemberAccess]
+            self.unit,
+            backend=self._xp,
+        )
+        interp_unit = interp_unit / self._xp.linalg.norm(interp_unit, axis=1)[:, self._xp.newaxis]
+        return Ray._constructor(interp_origin, interp_unit, time=time.convert_to(self._xp), backend=self._xp)
+
