@@ -1,0 +1,25 @@
+astrix package
+==============
+
+.. automodule:: astrix
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   astrix.post
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   astrix.functs
+   astrix.primitives
+   astrix.utils

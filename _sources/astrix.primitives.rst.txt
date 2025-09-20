@@ -1,0 +1,7 @@
+astrix.primitives module
+========================
+
+.. automodule:: astrix.primitives
+   :members:
+   :show-inheritance:
+   :undoc-members:
