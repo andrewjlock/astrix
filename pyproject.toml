@@ -28,17 +28,24 @@ dependencies = [
 ]
 
 # Runtime/optional feature buckets (install with: pip install .[viz,estimation])
+
 [project.optional-dependencies]
 jax = ["jax[cpu]>=0.6.1"]
 plot = ["basemap", "basemap-data-hires", "cartopy", "matplotlib"]
-dev = ["pytest"]
+
+[dependency-groups]
+dev = ["pytest", "jax[cpu]"]
 docs = [
     "sphinx>=4.0.0",
-    "sphinx-rtd-theme>=0.5.2",
     "myst-parser>=0.15.1",
     "sphinx-autodoc-typehints>=3.0.0",
-    "sphinx-gallery"
+    "sphinx-gallery",
+    "sphinx-autobuild",
+    "furo>=2025.7.19",
 ]
+
+[tool.uv]
+default-groups = ["dev", "docs"]
 
 [tool.uv.sources]
 scipy = { index = "scipy-nightly" }    # <-- only SciPy comes from the nightly index

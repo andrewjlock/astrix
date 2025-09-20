@@ -17,26 +17,30 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.githubpages",
     "sphinx_autodoc_typehints",
     "sphinx.ext.autosummary",
     "myst_parser",
-    "sphinx_rtd_theme",
-    "sphinx_gallery"
-    # "sphinx_rtd_dark_mode"
 ]
 
+html_theme = "furo"
 
-html_theme = "sphinx_rtd_theme"
 default_dark_mode = True
 html_theme_options = {
-    # "style_nav_header_background": "#2980B9",
-    # "dark_mode_theme": "dark",  # Enable dark mode
-    # ""
-    # "preference_switch_enabled": True  # Show toggle switch
+    "sidebar_hide_name": False,
 }
 
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": True,
+    "show-inheritance": False,
+    "member-order": "groupwise",  # Group by type (methods, properties, etc.)
+}
 
-autosummary_generate = True              # generate stub pages automatically
+autodoc_typehints = "description"
+autodoc_member_order = "groupwise"
+autosummary_generate = True  # generate stub pages automatically
 
 
 # Configure MyST-Parser
@@ -51,17 +55,12 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # add_module_names = False
-# html_domain_indices = False
-# html_compact_lists = True
+html_domain_indices = False
+html_compact_lists = False
 #
 # napoleon_use_ivar = True
 # napoleon_use_rtype = False
 
-# add_module_names = False
+add_module_names = False
 
-autodoc_default_options = {
-    "members": True,
-    "undoc-members": False,
-    # "show-inheritance": True,
-}
 autodoc_typehints = "description"

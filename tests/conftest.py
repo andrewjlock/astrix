@@ -8,7 +8,8 @@ _backends = [np]
 if _HAS_JAX:
     from astrix._backend_utils import enforce_cpu_x64
     enforce_cpu_x64()
-    import jax.numpy as jnp
+    # import jax.numpy as jnp
+    from jax import numpy as jnp
     _backends.append(jnp)
 
 

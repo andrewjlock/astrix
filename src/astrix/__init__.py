@@ -11,8 +11,8 @@ if _backend_utils.HAS_JAX:
 from . import primitives
 from . import utils
 from . import functs
-from .primitives import Time, Point, Path
+from .primitives import Time, Point, Path, Frame
 from ._backend_utils import resolve_backend
 
 
-__all__ = ['primitives', 'utils', 'functs', 'Time', 'Point', 'Path', 'resolve_backend']
+__all__ = ['primitives', 'utils', 'functs', 'Time', 'Point', 'Path', 'resolve_backend', 'Frame']

@@ -12,6 +12,7 @@ from importlib.util import find_spec
 from array_api_compat import numpy as np, array_namespace
 from numpy.typing import NDArray
 
+os.environ["SCIPY_ARRAY_API"] = "True"
 from scipy.spatial.transform import Rotation
 
 
@@ -174,4 +175,5 @@ def _convert_rot_backend(rot: Rotation, backend: Backend) -> Rotation:
     xp = coerce_ns(backend)
     if xp is rot._xp:
         return rot
-    return Rotation.from_quat(xp.asarray(rot.as_quat()))
+    quat = xp.asarray(rot.as_quat(), copy=True)
+    return Rotation.from_quat(quat)

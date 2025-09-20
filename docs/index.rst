@@ -1,9 +1,10 @@
-AsTrIX Documentation
+ASTrIX
 ===================
+
+AeroSpace Trajectory Imaging toolboX
 
 .. toctree::
    :maxdepth: 2
-   :caption: User Guide
 
    README.md
 

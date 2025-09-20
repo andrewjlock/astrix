@@ -306,13 +306,15 @@ class Velocity:
     time: Time
     _xp: ArrayNS
 
+    @property
     def magnitude(self) -> Array:
         """Get the velocity magnitude in m/s."""
         return self._xp.linalg.norm(self.vec, axis=1)
 
+    @property
     def unit(self) -> Array:
         """Get the unit velocity vector."""
-        mag = self.magnitude()
+        mag = self.magnitude
         return self.vec / mag[:, self._xp.newaxis]
 
     def __str__(self) -> str:
@@ -477,6 +479,47 @@ class Path:
 
 
 class Frame:
+    """ A static or moving reference frame defined by a rotation (and optionally a reference frame).
+
+    Args:
+        rot (scipy.spatial.transform.Rotation): Rotation object defining the frame orientation(s).
+        ref_frame (Frame, optional): Reference frame that this frame is defined relative to. 
+            If not provided, assumed to be ECEF frame. Defaults to None.
+        time (Time, optional): Time object defining the time instances for the rotations. Must be provided
+            if rot has multiple rotations, and be same length as rotations. Defaults to None.
+        backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
+
+    Examples:
+        Static frame with single rotation:
+            >>> from scipy.spatial.transform import Rotation as R
+            >>> from astrix import Frame
+            >>> rot = R.from_euler('z', 45, degrees=True)
+            >>> frame = Frame(rot)  # Static frame rotated 45 deg about Z from ECEF
+
+        Static frame relative to another static frame:
+            >>> rot1 = R.from_euler('z', 30, degrees=True)
+            >>> rot2 = R.from_euler('z', 40, degrees=True)
+            >>> frame1 = Frame(rot1)  # Reference frame
+            >>> frame2 = Frame(rot2, ref_frame=frame1)  # 70 deg about Z from ECEF
+
+        Dynamic frame with time-varying rotations:
+            >>> from astrix import Time
+            >>> times = Time([0, 10, 20])  # Times in seconds
+            >>> rots = R.from_euler('z', [0, 90, 180], degrees=True)
+            >>> frame = Frame(rots, time=times)  # Dynamic frame rotating 0-180 deg over 20s
+        Interpolating a dynamic frame at specific times:
+            >>> interp_times = Time([5, 15])  # Times to interpolate at
+            >>> interp_rots = frame.interp(interp_times)  # Interpolated rotations
+
+    Notes:
+        - If the frame is static (single rotation), time must be None.
+        - If the frame is dynamic (multiple rotations), time must be provided and match the length
+          of the rotations.
+        - If a reference frame is provided, the absolute rotation is computed relative to it (intrinsic rotations).
+        - Interpolation uses spherical linear interpolation (slerp) for smooth rotation transitions.
+        - All inputs are converted to the specified backend when instantiated.
+
+    """
     _rot: Rotation
     _xp: ArrayNS
     _ref_frame: Frame | None = None
@@ -508,6 +551,9 @@ class Frame:
             self._time = time
             self._slerp = Slerp(time.secs, self._rot)
             self._static = False
+        else:
+            if not self._rot.single:
+                raise ValueError("Time must be provided for dynamic Rotation frame")
 
         if ref_frame is not None:
             if ref_frame.backend != self.backend:
@@ -518,10 +564,12 @@ class Frame:
 
     @property
     def backend(self) -> str:
+        """Get the name of the array backend in use (e.g., 'numpy', 'jax')."""
         return self._xp.__name__
 
     @property
     def time(self) -> Time | None:
+        """Get the Time object associated with the frame, if any."""
         return self._time
 
     @property
@@ -554,7 +602,7 @@ class Frame:
         return self._ref_frame is not None
 
     def interp(self, time: Time, check_bounds: bool = True) -> Rotation:
-        """Interpolate the frame at the given times to find the absolute rotation(s).
+        """Interpolate the frame at the given times to return the absolute rotation(s).
 
         Args:
             time (Time): Times to interpolate the frame at.
@@ -585,6 +633,7 @@ class Frame:
         return self._ref_frame.interp(time, check_bounds) * rel_rot
 
     def convert_to(self, backend: BackendArg) -> Frame:
+        """Convert the Frame object (and all references) to a different backend."""
         xp = resolve_backend(backend)
         rot_converted = _convert_rot_backend(self._rot, xp)
         if self._ref_frame is not None:
