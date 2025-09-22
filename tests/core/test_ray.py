@@ -70,15 +70,14 @@ def test_multiple_ray_init(xp):
     assert xp.allclose(ray1[0].origin, origins[0]) 
 
 
+@pytest.mark.filterwarnings("ignore:.*deprecated.*:DeprecationWarning")
+@pytest.mark.filterwarnings("ignore:.*Force converting.*:UserWarning")
 def test_head_el(xp):
     origin = Point.from_geodet([0, 90, 0], backend=xp).ecef
     direction = xp.asarray([1., 1., 1.])
     ray = Ray(origin, direction, backend=xp)
     head_el = ray.head_el
-    breakpoint()
 
-if __name__ == "__main__":
-    test_head_el(np)
 
 
     
