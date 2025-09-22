@@ -1,5 +1,7 @@
 # pyright: reportAny=false
 
+from scipy.spatial.transform import Rotation as R
+
 from .utils import ecef2geodet, geodet2ecef
 from ._backend_utils import (
     Array,
@@ -204,3 +206,29 @@ def interp_haversine(
     geodet = xp.array([xp.rad2deg(lat_i), xp.rad2deg(lon_i), z_i]).T
     ecef = geodet2ecef(geodet)
     return ecef
+
+
+def ned_rotation(geodet: Array, xp: Backend = None) -> R:
+    """Get the rotation from ECEF base to the North-East-Down frame at given 
+    geodetic locations.
+
+    Args:
+        pos_geodet (Array): Nx3 array of lat, long, alt [deg, deg, m]
+
+    Returns:
+        Rotation: scipy Rotation object representing the NED frame rotation
+    """
+
+    xp = coerce_ns(xp)
+    rot_ned0 = R.from_matrix(
+        xp.asarray(
+            [
+                [0, 0, -1],
+                [0, 1, 0],
+                [1, 0, 0],
+            ]
+        )
+    )
+    rot_ned_ned0 = R.from_euler("XY", xp.asarray([geodet[:, 1], -geodet[:, 0]]).T, degrees=True)
+    rot_ned = rot_ned0 * rot_ned_ned0
+    return rot_ned
