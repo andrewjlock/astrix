@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 from .helpers import to_text
-from astrix import Ray, Time
+from astrix import Ray, Time, Point
 
 def test_single_ray_init(xp):
     origin = xp.array([1.0, 2.0, 3.0])
@@ -64,7 +64,21 @@ def test_multiple_ray_init(xp):
     with pytest.raises(ValueError):
         ray4.interp(time_interp)
 
+    assert ray1[0].origin.shape == (1,3)
+    assert ray1[0].unit.shape == (1,3)
+    assert ray1[0].has_time is True
+    assert xp.allclose(ray1[0].origin, origins[0]) 
 
+
+def test_head_el(xp):
+    origin = Point.from_geodet([0, 90, 0], backend=xp).ecef
+    direction = xp.asarray([1., 1., 1.])
+    ray = Ray(origin, direction, backend=xp)
+    head_el = ray.head_el
+    breakpoint()
+
+if __name__ == "__main__":
+    test_head_el(np)
 
 
     

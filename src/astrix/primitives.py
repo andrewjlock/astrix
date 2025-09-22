@@ -16,7 +16,7 @@ from ._backend_utils import (
     _convert_rot_backend,
 )
 from .utils import ensure_1d, ensure_2d, ecef2geodet, geodet2ecef, is_increasing
-from .functs import interp_nd, central_diff, interp_haversine
+from .functs import interp_nd, central_diff, interp_haversine, ned_rotation
 
 
 @dataclass
@@ -482,11 +482,11 @@ class Path:
 
 
 class Frame:
-    """ A static or moving reference frame defined by a rotation (and optionally a reference frame).
+    """A static or moving reference frame defined by a rotation (and optionally a reference frame).
 
     Args:
         rot (scipy.spatial.transform.Rotation): Rotation object defining the frame orientation(s).
-        ref_frame (Frame, optional): Reference frame that this frame is defined relative to. 
+        ref_frame (Frame, optional): Reference frame that this frame is defined relative to.
             If not provided, assumed to be ECEF frame. Defaults to None.
         time (Time, optional): Time object defining the time instances for the rotations. Must be provided
             if rot has multiple rotations, and be same length as rotations. Defaults to None.
@@ -496,20 +496,22 @@ class Frame:
         Static frame with single rotation:
             >>> from scipy.spatial.transform import Rotation as R
             >>> from astrix import Frame
-            >>> rot = R.from_euler('z', 45, degrees=True)
+            >>> rot = R.from_euler("z", 45, degrees=True)
             >>> frame = Frame(rot)  # Static frame rotated 45 deg about Z from ECEF
 
         Static frame relative to another static frame:
-            >>> rot1 = R.from_euler('z', 30, degrees=True)
-            >>> rot2 = R.from_euler('z', 40, degrees=True)
+            >>> rot1 = R.from_euler("z", 30, degrees=True)
+            >>> rot2 = R.from_euler("z", 40, degrees=True)
             >>> frame1 = Frame(rot1)  # Reference frame
             >>> frame2 = Frame(rot2, ref_frame=frame1)  # 70 deg about Z from ECEF
 
         Dynamic frame with time-varying rotations:
             >>> from astrix import Time
             >>> times = Time([0, 10, 20])  # Times in seconds
-            >>> rots = R.from_euler('z', [0, 90, 180], degrees=True)
-            >>> frame = Frame(rots, time=times)  # Dynamic frame rotating 0-180 deg over 20s
+            >>> rots = R.from_euler("z", [0, 90, 180], degrees=True)
+            >>> frame = Frame(
+            ...     rots, time=times
+            ... )  # Dynamic frame rotating 0-180 deg over 20s
         Interpolating a dynamic frame at specific times:
             >>> interp_times = Time([5, 15])  # Times to interpolate at
             >>> interp_rots = frame.interp(interp_times)  # Interpolated rotations
@@ -524,6 +526,7 @@ class Frame:
         - All inputs are converted to the specified backend when instantiated.
 
     """
+
     _rot: Rotation
     _xp: ArrayNS
     _ref_frame: Frame | None = None
@@ -620,7 +623,8 @@ class Frame:
 
         if self.is_static:
             return Rotation._from_raw_quat(
-                self._xp.repeat(self.static_rot.as_quat(), len(time), axis=0), xp=self._xp
+                self._xp.repeat(self.static_rot.as_quat(), len(time), axis=0),
+                xp=self._xp,
             )
 
         if self.time is not None:
@@ -653,6 +657,7 @@ class Frame:
             rot_converted, ref_frame=ref_converted, time=time_converted, backend=xp
         )
 
+
 # This needs more thought:
 # - Should it support multiple rays?
 # - Should it support length/non-length?
@@ -678,7 +683,7 @@ class Ray:
         Args:
             origin (Array): Nx3 array of ray origin points in ECEF coordinates (meters).
             dir (Array): Nx3 array of unit direction vectors. Need not be normalised.
-            time (Time, optional): Time object associated with the rays. 
+            time (Time, optional): Time object associated with the rays.
                 Must be same length as origin if provided. Defaults to None.
             backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
 
@@ -693,7 +698,9 @@ class Ray:
             raise ValueError("Direction vectors cannot be zero.")
         self._unit = _dir / self._xp.linalg.norm(_dir, axis=1)[:, self._xp.newaxis]
         if self._origin.shape[0] != self._unit.shape[0]:
-            raise ValueError("Origin and unit direction arrays must have the same length.")
+            raise ValueError(
+                "Origin and unit direction arrays must have the same length."
+            )
         if time is not None:
             if len(time) != self._origin.shape[0]:
                 raise ValueError("Time length must match origin length if provided.")
@@ -728,7 +735,7 @@ class Ray:
         Args:
             origin (Array): Nx3 array of ray origin points in ECEF coordinates (meters).
             endpoint (Array): Nx3 array of ray endpoint points in ECEF coordinates (meters).
-            time (Time, optional): Time object associated with the rays. 
+            time (Time, optional): Time object associated with the rays.
                 Must be same length as origin if provided. Defaults to None.
             backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
         Returns:
@@ -747,6 +754,11 @@ class Ray:
     def origin(self) -> Array:
         """Get the ray origin point(s)."""
         return self._origin
+
+    @property
+    def point(self) -> Point:
+        """Get the ray origin point(s) as a Point object."""
+        return Point._constructor(self._origin, self._time, self._xp)
 
     @property
     def unit(self) -> Array:
@@ -776,11 +788,27 @@ class Ray:
     def __str__(self) -> str:
         return f"""Ray of length {self._origin.shape[0]} 
             with {self._xp.__name__} backend. \n 
-            First origin (LLA): {ecef2geodet(self._origin[0].reshape(1,3))[0]}, 
-            First direction (unit vector): {self._unit[0].reshape(1,3)[0]} \n"""
+            First origin (LLA): {ecef2geodet(self._origin[0].reshape(1, 3))[0]}, 
+            First direction (unit vector): {self._unit[0].reshape(1, 3)[0]} \n"""
 
     def __repr__(self) -> str:
         return f"Ray, n={len(self)}, backend='{self._xp.__name__}')"
+
+    def __getitem__(self, index: int) -> Ray:
+        if self.has_time:
+            return Ray._constructor(
+                self._xp.asarray(self.origin[index]).reshape(1, 3),
+                self._xp.asarray(self.unit[index]).reshape(1, 3),
+                self.time[index],
+                self._xp,
+            )
+        else:
+            return Ray._constructor(
+                self._xp.asarray(self.origin[index]).reshape(1, 3),
+                self._xp.asarray(self.unit[index]).reshape(1, 3),
+                None,
+                self._xp,
+            )
 
     def convert_to(self, backend: BackendArg) -> Ray:
         """Convert the Ray object to a different backend."""
@@ -798,10 +826,10 @@ class Ray:
     @backend_jit(["check_bounds"])
     def interp(self, time: Time, check_bounds: bool = True) -> Ray:
         """Interpolate the Ray origin and direction to the given times.
-            
+
         Args:
             time (Time): Times to interpolate to.
-            check_bounds (bool, optional): Whether to check if the interpolation 
+            check_bounds (bool, optional): Whether to check if the interpolation
                 times are within the ray time bounds. Defaults to True.
         Returns:
             Ray: Interpolated Ray object at the given times.
@@ -828,7 +856,23 @@ class Ray:
             self.unit,
             backend=self._xp,
         )
-        interp_unit = interp_unit / self._xp.linalg.norm(interp_unit, axis=1)[:, self._xp.newaxis]
-        return Ray._constructor(interp_origin, interp_unit, time=time.convert_to(self._xp), xp=self._xp)
+        interp_unit = (
+            interp_unit / self._xp.linalg.norm(interp_unit, axis=1)[:, self._xp.newaxis]
+        )
+        return Ray._constructor(
+            interp_origin, interp_unit, time=time.convert_to(self._xp), xp=self._xp
+        )
 
-    
+    @property
+    def head_el(self):
+        """Return the heading (from north) and elevation (from horizontal) angles in degrees."""
+
+        origin_geodet = self.point.geodet
+        ned_rots = ned_rotation(origin_geodet).inv()
+        ned_vecs = self._xp.einsum("ijk,ik->ij", ned_rots.as_matrix(), self.unit)
+        head = self._xp.degrees(self._xp.arctan2(ned_vecs[:, 1], ned_vecs[:, 0])) % 360
+        el = self._xp.degrees(
+            self._xp.arctan2(-ned_vecs[:, 2]
+            , self._xp.linalg.norm(ned_vecs[:, 0:2], axis=1))
+        )
+        return ensure_2d(self._xp.stack([head, el], axis=1), n=2, backend=self._xp)

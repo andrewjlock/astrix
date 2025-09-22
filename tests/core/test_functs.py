@@ -81,7 +81,3 @@ def test_ned_rotation(xp):
     assert xp.allclose(r0, expected0, atol=1e-5)
 
 
-
-if __name__ == "__main__":
-    test_ned_rotation(xp=__import__("numpy"))
-
