@@ -36,6 +36,8 @@ def test_point_no_time(xp):
     p_multi = Point(multi_ecef, backend=xp)
     assert p_multi.ecef.shape == (2, 3)
     assert len(p_multi) == 2
+    assert p_multi[0].ecef.shape == (1, 3) 
+    assert (p_multi[0].ecef == p_multi.ecef[0:1]).all()
 
 
 @pytest.mark.filterwarnings("ignore:.*deprecated.*:DeprecationWarning")
