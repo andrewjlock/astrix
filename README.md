@@ -5,6 +5,7 @@ _Under Construction..._
 A Python tool package for planning and analysing aerospace trajectories.
 
 [![Tests](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml) [![Documentation](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml)
+[![codecov](https://codecov.io/github/andrewjlock/astrix/graph/badge.svg?token=N781FLJEI5)](https://codecov.io/github/andrewjlock/astrix)
 
 [View the full documentation here](https://andrewjlock.github.io/astrix/).
 Source code is hosted on [GitHub](https://github.com/andrewjlock/astrix).
@@ -34,8 +35,8 @@ While under development editable installation is recommend
 ```bash
 $ python3 -m pip install -e .[jax,plot]
 ```
-Jax is used for advanced automatic differentiation and state/parameter estimation capabilities. 
-The plot extras install [basemap](https://matplotlib.org/basemap/) and [cartopy](https://scitools.org.uk/cartopy/docs/latest/) for geographic plotting.
+The `jax` extra instals [Jax](https://github.com/jax-ml/jax) which is used for optional advanced automatic differentiation and state/parameter estimation capabilities. 
+The `plot` extra install [basemap](https://matplotlib.org/basemap/) and [cartopy](https://scitools.org.uk/cartopy/docs/latest/) for geographic plotting.
 For a lean install you can omit both the `[jax]` and `[plot]` extra,
 
 ```bash
@@ -48,7 +49,7 @@ For development, use the `dev` group, which includes linting and testing tools.
 $ python3 -m pip install -e .[plot] --group dev
 ```
 
-Alternatively, this project has been developed with, and is compliant with the `uv` package manager.
+Alternatively, this project has been developed with, and is compliant with, the `uv` package manager.
 The `dev` group is installed by default.
 
 ```bash
