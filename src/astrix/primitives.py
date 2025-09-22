@@ -77,13 +77,15 @@ class Time:
         )
 
     @classmethod
-    def _constructor(cls, secs: Array, backend: BackendArg = None) -> Time:
+    def _constructor(cls, secs: Array, xp: ArrayNS) -> Time:
         """Internal constructor to create a Time object from seconds array
         Avoids type checking in __init__."""
 
         obj = cls.__new__(cls)
-        obj._xp = resolve_backend(backend)
+        obj._xp = xp
         obj._secs = secs
+        obj._min = obj._xp.min(secs)
+        obj._max = obj._xp.max(secs)
         return obj
 
     @classmethod
@@ -112,7 +114,7 @@ class Time:
 
     def __getitem__(self, index: int) -> Time:
         return Time._constructor(
-            self._xp.asarray(self.secs[index]).reshape(-1), backend=self._xp
+            self._xp.asarray(self.secs[index]).reshape(-1), xp=self._xp
         )
 
     def convert_to(self, backend: BackendArg) -> Time:
@@ -120,7 +122,7 @@ class Time:
         xp = resolve_backend(backend)
         if xp == self._xp:
             return self
-        return Time._constructor(xp.asarray(self.secs), backend=xp)
+        return Time._constructor(xp.asarray(self.secs), xp=xp)
 
     @property
     def is_increasing(self) -> bool:
@@ -178,12 +180,12 @@ class Point:
             self._time = time
 
     @classmethod
-    def _constructor(cls, ecef: Array, time: Time | None, backend: ArrayNS) -> Point:
+    def _constructor(cls, ecef: Array, time: Time | None, xp: ArrayNS) -> Point:
         """Internal constructor to create a Point object from ECEF array
         Avoids type checking in __init__."""
 
         obj = cls.__new__(cls)
-        obj._xp = backend
+        obj._xp = xp
         obj._ecef = ecef
         obj._time = time
         return obj
@@ -450,7 +452,7 @@ class Path:
             )
         else:
             raise ValueError("Currently only 'linear' interpolation is supported.")
-        return Point._constructor(interp_ecef, time=time, backend=self._xp)
+        return Point._constructor(interp_ecef, time=time, xp=self._xp)
 
     @backend_jit(["method", "check_bounds"])
     def interp_vel(
@@ -686,8 +688,8 @@ class Ray:
 
         self._xp = resolve_backend(backend)
         self._origin = ensure_2d(origin, n=3, backend=self._xp)
-        _unit = ensure_2d(unit, n=3, backend=self._xp)
-        self._unit = _unit / self._xp.linalg.norm(_unit, axis=1)[:, self._xp.newaxis]
+        _dir = ensure_2d(dir, n=3, backend=self._xp)
+        self._unit = _dir / self._xp.linalg.norm(_dir, axis=1)[:, self._xp.newaxis]
         if self._origin.shape[0] != self._unit.shape[0]:
             raise ValueError("Origin and unit direction arrays must have the same length.")
         if time is not None:
@@ -699,13 +701,13 @@ class Ray:
 
     @classmethod
     def _constructor(
-        cls, origin: Array, unit: Array, time: Time | None, backend: ArrayNS
+        cls, origin: Array, unit: Array, time: Time | None, xp: ArrayNS
     ) -> Ray:
         """Internal constructor to create a Ray object from arrays
         Avoids type checking in __init__."""
 
         obj = cls.__new__(cls)
-        obj._xp = backend
+        obj._xp = xp
         obj._origin = origin
         obj._unit = unit
         obj._time = time
@@ -825,5 +827,5 @@ class Ray:
             backend=self._xp,
         )
         interp_unit = interp_unit / self._xp.linalg.norm(interp_unit, axis=1)[:, self._xp.newaxis]
-        return Ray._constructor(interp_origin, interp_unit, time=time.convert_to(self._xp), backend=self._xp)
+        return Ray._constructor(interp_origin, interp_unit, time=time.convert_to(self._xp), xp=self._xp)
 

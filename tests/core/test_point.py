@@ -3,6 +3,8 @@
 import pytest
 import datetime as dt
 from astrix.primitives import Point, Time
+from .helpers import to_text
+import numpy as np
 
 
 @pytest.mark.filterwarnings("ignore:.*deprecated.*:DeprecationWarning")
@@ -12,6 +14,8 @@ def test_point_no_time(xp):
     brisbane_ecef = xp.array([[-5046981.62, 2568681.41, -2924582.78]])
 
     p_geo = Point.from_geodet(brisbane_geodet, backend=xp)
+    to_text(p_geo)
+
     assert p_geo.ecef.shape == (1, 3)
     assert xp.allclose(p_geo.ecef, brisbane_ecef, atol=1e-2)
 
@@ -31,6 +35,7 @@ def test_point_no_time(xp):
     )
     p_multi = Point(multi_ecef, backend=xp)
     assert p_multi.ecef.shape == (2, 3)
+    assert len(p_multi) == 2
 
 
 @pytest.mark.filterwarnings("ignore:.*deprecated.*:DeprecationWarning")
@@ -69,6 +74,40 @@ def test_point_with_time(xp):
     p_multi = Point(multi_ecef, time=time3, backend=xp)
     assert p_multi.ecef.shape == (2, 3)
     assert p_multi.time == time3
+
+def test_bad_time_length(xp):
+    with pytest.raises(ValueError):
+        Point(
+            xp.array([[-5046981.62, 2568681.41, -2924582.78]]),
+            time=Time(xp.array([1, 2]), backend=xp),
+            backend=xp,
+        )
+
+def test_nonmatching_backends(xp):
+    if xp is not np:
+        p1 = Point(
+            np.array([[-5046981.62, 2568681.41, -2924582.78]]),
+            backend=np,
+        )
+        p2 = Point(
+            xp.array([[-5046981.62, 2568681.41, -2924582.78]]),
+            backend=xp,
+        )
+        with pytest.raises(ValueError):
+            p1 + p2
+        with pytest.raises(ValueError):
+            Point.from_list([p1, p2])
+
+
+def test_conversion(xp):
+    p1 = Point(
+        xp.array([[-5046981.62, 2568681.41, -2924582.78]]),
+        time=Time.from_datetime(
+            dt.datetime(2023, 1, 1, 12, 0, 0, tzinfo=dt.timezone.utc), backend=xp
+        ),
+        backend=xp,
+    )
+    p1.convert_to(np)
 
 def test_adding_points(xp):
     p1 = Point(

@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 from astrix import Frame, Time
+from .helpers import to_text
 
 def test_frame(xp):
 
@@ -11,6 +12,8 @@ def test_frame(xp):
     rot1 = R.from_euler("z", 45, degrees=True)
     rot2 = R.from_euler("z", 90, degrees=True)
     frame1 = Frame(rot1, backend=xp)
+    to_text(frame1)
+
     assert frame1.is_static
     assert not frame1.has_ref
     frame1.convert_to(np)
@@ -47,4 +50,6 @@ def test_frame(xp):
         Frame(R.concatenate([rot0, rot2, rot1]), time=time, backend=xp)
     with pytest.raises(ValueError):
         frame5.static_rot
+
+    to_text(frame1)
 

@@ -2,6 +2,8 @@
 import pytest
 import datetime as dt
 from astrix.primitives import Time
+from .helpers import to_text
+import numpy as np
 
 def test_time(xp):
     times = [
@@ -10,6 +12,14 @@ def test_time(xp):
         dt.datetime(2020, 1, 3, tzinfo=dt.timezone.utc),
     ]
     t = Time.from_datetime(times, backend=xp)
+    to_text(t)
+    assert len(times) == 3
+
+    t2 = t + 1
+    t3 = t2 - 1
+    assert all(xp.isclose(t.secs, t3.secs))
+    t = t.convert_to(np)
+
     assert t.secs.shape == (3,)
     assert all(isinstance(dt_i, dt.datetime) for dt_i in t.datetime)
     assert t.is_in_bounds(t)
@@ -25,3 +35,4 @@ def test_time(xp):
     times_naive = [dt.datetime(2020, 1, 1)]
     with pytest.raises(ValueError):
         Time.from_datetime(times_naive, backend=xp)
+

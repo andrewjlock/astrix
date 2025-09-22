@@ -25,7 +25,6 @@ dependencies = [
     "array-api-compat",
     "scipy>=1.17.0.dev0",
     "scipy-stubs>=1.16.2.0",
-    "pytest-cov>=7.0.0",
 ]
 
 # Runtime/optional feature buckets (install with: pip install .[viz,estimation])
@@ -35,7 +34,7 @@ jax = ["jax[cpu]>=0.6.1"]
 plot = ["basemap", "basemap-data-hires", "cartopy", "matplotlib"]
 
 [dependency-groups]
-dev = ["pytest", "jax[cpu]"]
+dev = ["pytest", "pytest-cov>=7.0.0", "jax[cpu]"]
 docs = [
     "sphinx>=4.0.0",
     "myst-parser>=0.15.1",
