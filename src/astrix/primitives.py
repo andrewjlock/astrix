@@ -666,51 +666,70 @@ class Frame:
 
 
 class Ray:
-    _origin: Array
+    """A ray defined by an origin point and a direction vector.
+    Can represent multiple rays with associated times.
+    
+    Args:
+        origin (Array): Nx3 array of ray origin points in ECEF coordinates (meters).
+        dir (Array): Nx3 array of ray direction vectors in ECEF coordinates (meters).
+            Direction vectors will be normalized to unit vectors.
+        time (Time, optional): Time object associated with the rays.
+            Must be same length as origin if provided. Defaults to None.
+        backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
+
+    Examples:
+        TBC
+
+    """
+
+    _origin: Point
     _unit: Array
     _xp: ArrayNS
     _time: Time | None = None
 
     def __init__(
         self,
-        origin: Array,
+        origin: Point,
         dir: Array,
         time: Time | None = None,
         backend: BackendArg = None,
     ) -> None:
-        """Initialize a Ray object with origin, unit direction, optional length, and optional time.
-
-        Args:
-            origin (Array): Nx3 array of ray origin points in ECEF coordinates (meters).
-            dir (Array): Nx3 array of unit direction vectors. Need not be normalised.
-            time (Time, optional): Time object associated with the rays.
-                Must be same length as origin if provided. Defaults to None.
-            backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
-
-        Raises:
-            ValueError: If input arrays have incompatible shapes or if time length does not match origin length.
-        """
 
         self._xp = resolve_backend(backend)
-        self._origin = ensure_2d(origin, n=3, backend=self._xp)
+
+        # Data validate direction
         _dir = ensure_2d(dir, n=3, backend=self._xp)
-        if self._xp.isclose(self._xp.linalg.norm(_dir, axis=1), 0).any():
+        dir_norm = self._xp.linalg.norm(_dir, axis=1)
+        if self._xp.isclose(dir_norm, 0).any():
             raise ValueError("Direction vectors cannot be zero.")
-        self._unit = _dir / self._xp.linalg.norm(_dir, axis=1)[:, self._xp.newaxis]
-        if self._origin.shape[0] != self._unit.shape[0]:
+        self._unit = _dir / dir_norm[:, self._xp.newaxis]
+
+
+        # Data validate origin
+        if not isinstance(origin, Point):
+            raise ValueError("Origin must be a Point object.")
+        if len(origin) != self._unit.shape[0]:
             raise ValueError(
                 "Origin and unit direction arrays must have the same length."
             )
-        if time is not None:
-            if len(time) != self._origin.shape[0]:
+        self._origin = origin.convert_to(self._xp)
+
+        # Data validate time
+        if time is not None and self._origin.has_time:
+            raise ValueError("Ray instantiated Ray with time arg if origin already has time.")
+        elif self._origin.has_time:
+            self._time = origin.time
+        elif isinstance(time, Time):
+            if len(time) != len(origin):
                 raise ValueError("Time length must match origin length if provided.")
-            self._time = time.convert_to(self._xp)
+            self._time = time
         else:
             self._time = None
 
+
     @classmethod
     def _constructor(
-        cls, origin: Array, unit: Array, time: Time | None, xp: ArrayNS
+        cls, origin: Point, unit: Array, time: Time | None, xp: ArrayNS
     ) -> Ray:
         """Internal constructor to create a Ray object from arrays
         Avoids type checking in __init__."""
@@ -725,16 +744,16 @@ class Ray:
     @classmethod
     def from_endpoint(
         cls,
-        origin: Array,
-        endpoint: Array,
+        origin: Point,
+        endpoint: Point,
         time: Time | None = None,
         backend: BackendArg = None,
     ) -> Ray:
         """Create a Ray object from origin and endpoint arrays.
 
         Args:
-            origin (Array): Nx3 array of ray origin points in ECEF coordinates (meters).
-            endpoint (Array): Nx3 array of ray endpoint points in ECEF coordinates (meters).
+            origin (Point): Nx3 array of ray origin points in ECEF coordinates (meters).
+            endpoint (Point): Nx3 array of ray endpoint points in ECEF coordinates (meters).
             time (Time, optional): Time object associated with the rays.
                 Must be same length as origin if provided. Defaults to None.
             backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
@@ -743,22 +762,15 @@ class Ray:
         """
 
         xp = resolve_backend(backend)
-        origin = ensure_2d(origin, n=3, backend=xp)
-        endpoint = ensure_2d(endpoint, n=3, backend=xp)
-        if origin.shape != endpoint.shape:
+        if len(origin) != len(endpoint):
             raise ValueError("Origin and endpoint arrays must have the same shape.")
-        dir = endpoint - origin
+        dir = endpoint.ecef - origin.ecef
         return cls(origin, dir, time=time, backend=xp)
 
     @property
-    def origin(self) -> Array:
+    def origin(self) -> Point:
         """Get the ray origin point(s)."""
         return self._origin
-
-    @property
-    def point(self) -> Point:
-        """Get the ray origin point(s) as a Point object."""
-        return Point._constructor(self._origin, self._time, self._xp)
 
     @property
     def unit(self) -> Array:
@@ -783,12 +795,12 @@ class Ray:
         return self._xp.__name__
 
     def __len__(self) -> int:
-        return self._origin.shape[0]
+        return len(self._origin)
 
     def __str__(self) -> str:
-        return f"""Ray of length {self._origin.shape[0]} 
+        return f"""Ray of length {len(self._origin)} 
             with {self._xp.__name__} backend. \n 
-            First origin (LLA): {ecef2geodet(self._origin[0].reshape(1, 3))[0]}, 
+            First origin (LLA): {self._origin[0].geodet}, 
             First direction (unit vector): {self._unit[0].reshape(1, 3)[0]} \n"""
 
     def __repr__(self) -> str:
@@ -797,14 +809,14 @@ class Ray:
     def __getitem__(self, index: int) -> Ray:
         if self.has_time:
             return Ray._constructor(
-                self._xp.asarray(self.origin[index]).reshape(1, 3),
+                self.origin[index],
                 self._xp.asarray(self.unit[index]).reshape(1, 3),
                 self.time[index],
                 self._xp,
             )
         else:
             return Ray._constructor(
-                self._xp.asarray(self.origin[index]).reshape(1, 3),
+                self.origin[index],
                 self._xp.asarray(self.unit[index]).reshape(1, 3),
                 None,
                 self._xp,
@@ -820,7 +832,7 @@ class Ray:
         else:
             time_converted = None
         return Ray._constructor(
-            xp.asarray(self.origin), xp.asarray(self.unit), time_converted, xp
+            self._origin.convert_to(xp), xp.asarray(self.unit), time_converted, xp
         )
 
     @backend_jit(["check_bounds"])
@@ -844,12 +856,16 @@ class Ray:
                     Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
                     Extrapolation is not supported and will raise an error.""")
 
-        interp_origin = interp_nd(
+        interp_origin_ecef = interp_nd(
             time.secs,
             self.time.secs,  # pyright: ignore[reportOptionalMemberAccess]
-            self.origin,
+            self.origin.ecef,
             backend=self._xp,
         )
+        interp_origin = Point._constructor(
+            interp_origin_ecef, time=time.convert_to(self._xp), xp=self._xp
+        )
+
         interp_unit = interp_nd(
             time.secs,
             self.time.secs,  # pyright: ignore[reportOptionalMemberAccess]
@@ -860,15 +876,14 @@ class Ray:
             interp_unit / self._xp.linalg.norm(interp_unit, axis=1)[:, self._xp.newaxis]
         )
         return Ray._constructor(
-            interp_origin, interp_unit, time=time.convert_to(self._xp), xp=self._xp
+            interp_origin, interp_unit, time.convert_to(self._xp), xp=self._xp
         )
 
     @property
     def head_el(self):
         """Return the heading (from north) and elevation (from horizontal) angles in degrees."""
 
-        origin_geodet = self.point.geodet
-        ned_rots = ned_rotation(origin_geodet).inv()
+        ned_rots = ned_rotation(self.origin.geodet).inv()
         ned_vecs = self._xp.einsum("ijk,ik->ij", ned_rots.as_matrix(), self.unit)
         head = self._xp.degrees(self._xp.arctan2(ned_vecs[:, 1], ned_vecs[:, 0])) % 360
         el = self._xp.degrees(
@@ -876,3 +891,27 @@ class Ray:
             , self._xp.linalg.norm(ned_vecs[:, 0:2], axis=1))
         )
         return ensure_2d(self._xp.stack([head, el], axis=1), n=2, backend=self._xp)
+
+    @classmethod
+    def from_head_el(
+        cls,
+        origin: Array,
+        head_el: Array,
+        time: Time | None = None,
+        backend: BackendArg = None,
+    ) -> Ray:
+        """Create a Ray object from origin points and heading/elevation angles.
+
+        Args:
+            origin (Array): Nx3 array of ray origin points in ECEF coordinates (meters).
+            head_el (Array): Nx2 array of heading (from north) and elevation (from horizontal) angles in degrees.
+            time (Time, optional): Time object associated with the rays.
+                Must be same length as origin if provided. Defaults to None.
+            backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
+        Returns:
+            Ray: Ray object defined by the origin and direction from heading/elevation angles.
+        """
+
+        raise NotImplementedError("from_head_el not yet implemented")
+
+
