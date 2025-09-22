@@ -2,7 +2,7 @@
 
 _Under Construction..._
 
-A Python tool package for planning and analysing aerospace trajectories.
+A Python tool package for planning and analysing aerospace imaging campaigns.
 
 [![Tests](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml) [![Documentation](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml)
 [![codecov](https://codecov.io/github/andrewjlock/astrix/graph/badge.svg?token=N781FLJEI5)](https://codecov.io/github/andrewjlock/astrix)
