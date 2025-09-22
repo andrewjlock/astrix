@@ -689,6 +689,8 @@ class Ray:
         self._xp = resolve_backend(backend)
         self._origin = ensure_2d(origin, n=3, backend=self._xp)
         _dir = ensure_2d(dir, n=3, backend=self._xp)
+        if self._xp.isclose(self._xp.linalg.norm(_dir, axis=1), 0).any():
+            raise ValueError("Direction vectors cannot be zero.")
         self._unit = _dir / self._xp.linalg.norm(_dir, axis=1)[:, self._xp.newaxis]
         if self._origin.shape[0] != self._unit.shape[0]:
             raise ValueError("Origin and unit direction arrays must have the same length.")
@@ -774,8 +776,8 @@ class Ray:
     def __str__(self) -> str:
         return f"""Ray of length {self._origin.shape[0]} 
             with {self._xp.__name__} backend. \n 
-            First origin (LLA): {ecef2geodet(self._origin[0])}, 
-            First direction (unit vector): {self._unit[0]}"""
+            First origin (LLA): {ecef2geodet(self._origin[0].reshape(1,3))[0]}, 
+            First direction (unit vector): {self._unit[0].reshape(1,3)[0]} \n"""
 
     def __repr__(self) -> str:
         return f"Ray, n={len(self)}, backend='{self._xp.__name__}')"
@@ -829,3 +831,4 @@ class Ray:
         interp_unit = interp_unit / self._xp.linalg.norm(interp_unit, axis=1)[:, self._xp.newaxis]
         return Ray._constructor(interp_origin, interp_unit, time=time.convert_to(self._xp), xp=self._xp)
 
+    
