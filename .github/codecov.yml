@@ -1,2 +1,4 @@
 ignore:
-  - "tests/*"  # ignore folders and all its contents
+  - "tests/**"  # ignore folders and all its contents
+  - "**/test_*.py"
+  - "**/coverage.xml"
