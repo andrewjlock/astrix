@@ -33,4 +33,11 @@ jobs:
         run: uv lock && uv sync --locked --group dev
 
       - name: pytest
-        run: uv run pytest
+        run: uv run pytest --cov --cov-branch --cov-report=xml
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+

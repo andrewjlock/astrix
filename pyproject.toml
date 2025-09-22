@@ -25,6 +25,7 @@ dependencies = [
     "array-api-compat",
     "scipy>=1.17.0.dev0",
     "scipy-stubs>=1.16.2.0",
+    "pytest-cov>=7.0.0",
 ]
 
 # Runtime/optional feature buckets (install with: pip install .[viz,estimation])
