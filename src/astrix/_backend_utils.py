@@ -9,7 +9,8 @@ from typing import TYPE_CHECKING
 from types import ModuleType
 from functools import lru_cache
 from importlib.util import find_spec
-from array_api_compat import numpy as np, array_namespace
+from array_api_compat import numpy as array_namespace
+import numpy as np
 from numpy.typing import NDArray
 
 os.environ["SCIPY_ARRAY_API"] = "True"
