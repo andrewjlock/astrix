@@ -48,7 +48,7 @@ class TimeLike(ABC):
 
 @dataclass(frozen=True)
 class TimeInvariant(TimeLike):
-    """Abstract base class for static time-like objects (static Time).
+    """Class for static time-like objects (static Time).
     'in_bounds' function is required for integration with other modules.
     """
 
@@ -101,6 +101,11 @@ class Time(TimeLike):
     >>> from datetime import datetime, timezone
     >>> dt = datetime(2021, 1, 1, tzinfo=timezone.utc)
     >>> t = Time.from_datetime(dt)
+    >>> dt_list = [
+    ...     datetime(2021, 1, 1, tzinfo=timezone.utc),
+    ...     datetime(2021, 1, 2, tzinfo=timezone.utc),
+    ... ]
+    >>> times = Time.from_datetime(dt_list)
 
     Notes
     -----
@@ -141,9 +146,10 @@ class Time(TimeLike):
     def from_datetime(
         cls, time: dt.datetime | list[dt.datetime], backend: BackendArg = None
     ) -> Time:
-        """Create a Time object from a list of datetime objects. \
+        """Create a Time object from a single or list of datetime objects. \
         Will not accept timezone-unaware datetime obejects due to ambiguity.
         """
+
         if isinstance(time, dt.datetime):
             time = [time]
 
@@ -181,12 +187,11 @@ class Time(TimeLike):
     @property
     def secs(self) -> Array:
         """Get the time values in seconds since epoch."""
-        # TODO: Decide whether to return a copy
         return self._secs
 
     @property
     def backend(self) -> str:
-        """Get the name of the array backend in use (e.g., 'numpy', 'jax')."""
+        """Get the name of the array backend in use (e.g., 'numpy', 'jax.numpy')."""
         return self._xp.__name__
 
     def __repr__(self) -> str:
@@ -214,6 +219,46 @@ class Time(TimeLike):
 
 
 class TimeGroup(TimeLike):
+    """A group of TimeLike objects (Time, TimeInvariant, TimeGroup).
+    Used to manage multiple time instances and determine overlapping time bounds.
+
+    Parameters
+    ----------
+    times : list of TimeLike
+        List of TimeLike objects (Time, TimeInvariant, TimeGroup)
+    backend : BackendArg, optional
+        Array backend to use (numpy, jax, etc.). Defaults to numpy.
+
+    Examples
+    --------
+    >>> t1 = Time.from_datetime(
+    ...     [
+    ...         datetime(2021, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+    ...         datetime(2021, 1, 1, 13, 0, 0, tzinfo=timezone.utc),
+    ...     ]
+    ... )
+    >>> t2 = Time.from_datetime(
+    ...     [
+    ...         datetime(2021, 1, 1, 12, 30, 0, tzinfo=timezone.utc),
+    ...         datetime(2021, 1, 1, 14, 0, 0, tzinfo=timezone.utc),
+    ...     ]
+    ... )
+    >>> tg = TimeGroup([t1, t2])
+    >>> overlap = tg.overlap_bounds  # Overlapping time range
+    >>> assert overlap[0].datetime[0] == datetime(
+    ...     2021, 1, 1, 12, 30, 0, tzinfo=timezone.utc
+    ... )
+    >>> assert overlap[1].datetime[0] == datetime(
+    ...     2021, 1, 1, 13, 0, 0, tzinfo=timezone.utc
+    ... )
+    >>> tg.duration  # Duration of overlap in seconds
+    1800.0
+    >>> tg.in_bounds(
+    ...     Time.from_datetime(datetime(2021, 1, 1, 12, 45, 0, tzinfo=timezone.utc))
+    ... )
+    True
+    """
+
     _times: list[TimeLike]
     _invariant: bool
     _xp: ArrayNS
@@ -380,7 +425,7 @@ class Location(Generic[T], ABC):
         return self._time
 
     @abstractmethod
-    def interp(self, time: Time) -> Point:
+    def _interp(self, time: Time) -> Point:
         pass
 
     @abstractmethod
@@ -396,6 +441,78 @@ class Location(Generic[T], ABC):
 
 @dataclass
 class Point(Location[TimeLike]):
+    """
+    Point(s) in ECEF coordinates, stored as (x, y, z) in metres.
+    Can represent a single point or multiple points, and can be associated with
+    a Time object for time instances of the points.
+
+    Parameters
+    ----------
+    ecef : Array
+        ECEF coordinates as (x, y, z) in metres. Shape (3,) or (1,3) for single points, (n, 3) for multiple points.
+    time : TimeLike, optional
+        Time object associated with the points. If provided, the length of time must match the number of points.
+        Defaults to TIME_INVARIANT for static points.
+    backend : BackendArg, optional
+        Array backend to use (numpy, jax, etc.). Defaults to numpy.
+
+    Examples
+    --------
+    Single static point:
+    >>> p1 = Point(
+    ...     [-5047162.4, 2568329.79, -2924521.17]
+    ... )  # ECEF coordinates of Brisbane in metres
+    >>> p.geodet  # Convert to geodetic coordinates (lat, lon, alt)
+    array([[153.03, 27.47, 0.0]])
+    >>> p2 = Point.from_geodet([27.47, 153.03, 0])  # lat, lon in degrees, alt in metres
+    >>> p2.ecef  # Convert back to ECEF coordinates
+    array([[-5047162.4, 2568329.79, -2924521.17]])
+    Multiple static points:
+    >>> pts = Point(
+    ...     [
+    ...         [-5047162.4, 2568329.79, -2924521.17],  # Brisbane
+    ...         [-2694045.0, -4293642.0, 3857878.0],  # San Francisco
+    ...         [3877000.0, 350000.0, 5027000.0],  # Somewhere else
+    ...     ]
+    ... )
+    >>> pt_bris = pts[0]  # First point (Brisbane)
+    >>> assert len(pts) == 3
+    Dynamic point with time:
+    >>> from datetime import datetime, timezone
+    >>> from astrix.primitives import Time
+    >>> times = Time.from_datetime(
+    ...     [
+    ...         datetime(2021, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+    ...         datetime(2021, 1, 1, 13, 0, 0, tzinfo=timezone.utc),
+    ...         datetime(2021, 1, 1, 14, 0, 0, tzinfo=timezone.utc),
+    ...     ]
+    ... )
+    >>> pts_time = Point(
+    ...     [
+    ...         [-5047162.4, 2568329.79, -2924521.17],  # Brisbane
+    ...         [-2694045.0, -4293642.0, 3857878.0],  # San Francisco
+    ...         [3877000.0, 350000.0, 5027000.0],  # Somewhere else
+    ...     ],
+    ...     time=times,
+    ... )
+    >>> pts.has_time
+    True
+    >>> pts.is_singular
+    False
+    >>> pts_new = pts + Point(
+    ...     [[-1000, -1000, -1000]],
+    ...     time=Time.from_datetime(
+    ...         datetime(2021, 1, 1, 15, 0, 0, tzinfo=timezone.utc)
+    ...     ),
+    ... )
+    >>> assert len(pts_new) == 4
+
+    Notes
+    -----
+    - When associating a Time object, the length of the Time must match the number of points.
+    - Use Path objects for interpolating between multiple points over time.
+    """
+
     def __init__(
         self, ecef: Array, time: TimeLike = TIME_INVARIANT, backend: BackendArg = None
     ) -> None:
@@ -512,21 +629,18 @@ class Point(Location[TimeLike]):
             time_joined = TIME_INVARIANT
         return Point(ecef_joined, time=time_joined, backend=self._xp)
 
-    def interp(self, time: Time) -> Point:
+    def _interp(self, time: Time, check_bounds: bool = True) -> Point:
+        """Private method to 'interpolate' (broadcast) a singular Point to multiple times.
+        Enables compatibility between static Points and dynamic Paths in other modules."""
+
         if not self.is_singular:
             raise ValueError(
-                "Can only interpolate singular Point objects. \
-                Use Path objects for multiple points."
+                "Attempting to 'interpolate' (broadcast) a non-singular Point object. \n"
+                "This is not supported. Use Path objects for interpolation between multiple points."
             )
         return Point._constructor(
-            self._xp.repeat(self.ecef, len(time), axis=0), time, self._xp
-        )
-
-    @backend_jit()
-    def _interp_secs(self, secs: Array) -> Point:
-        return Point._constructor(
-            self._xp.repeat(self.ecef, len(secs), axis=0),
-            Time._constructor(self._xp.asarray(secs).reshape(-1), xp=self._xp),
+            self._xp.repeat(self.ecef, len(time), axis=0),
+            Time._constructor(self._xp.asarray(time.secs).reshape(-1), xp=self._xp),
             self._xp,
         )
 
@@ -538,6 +652,42 @@ class Velocity:
     Associated with a Time object for the time instances of the velocities.
     Internal use only, typically created from Path objects.
     No data validation is performed.
+
+    Parameters
+    ----------
+    vec : Array
+        Velocity vectors in ECEF coordinates (vx, vy, vz) in m/s. Shape (n, 3).
+    time : Time
+        Time object associated with the velocities. Length must match number of velocity vectors.
+    backend : BackendArg, optional
+        Array backend to use (numpy, jax, etc.). Defaults to numpy.
+
+    Examples
+    --------
+    Velocity objects are typically created from Path objects.
+    >>> from astrix.primitives import Point, Time, Path
+    >>> from datetime import datetime, timezone
+    >>> times = Time.from_datetime(
+    ...     [
+    ...         datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+    ...         datetime(2025, 1, 1, 12, 0, 1, tzinfo=timezone.utc),
+    ...         datetime(2025, 1, 1, 12, 0, 2, tzinfo=timezone.utc),
+    ...     ]
+    ... )
+    >>> path = Path(
+    ...     [
+    ...         Point([1, 2, 0], time=times[0]),
+    ...         Point([2, 3.8, 0.4], time=times[1]),
+    ...         Point([3, 6.0, 1], time=times[2]),
+    ...     ]
+    ... )  # Somewhere very hot in the middle of the Earth
+    >>> vel = path.vel
+    >>> vel.magnitude  # Velocity magnitudes in m/s
+    array([1.91049732, 2.29128785, 2.6925824])
+    >>> vel.unit  # Unit velocity vectors
+    array([[0.52342392, 0.83747828, 0.15702718],
+           [0.43643578, 0.87287156, 0.21821789],
+           [0.37139068, 0.89133762, 0.25997347]])
     """
 
     vec: Array
@@ -577,6 +727,51 @@ class Velocity:
 
 
 class Path(Location[Time]):
+    """
+    Path of multiple Point objects with associated Time.
+    Enables interpolation between points over time and calculation of velocity.
+    Must have at least 2 points with associated Time.
+
+    Parameters
+    ----------
+    point : Point | list of Point
+        Point object or list of Point objects with associated Time.
+        If a list is provided, all Points must have the same backend and associated Time.
+    backend : BackendArg, optional
+        Array backend to use (numpy, jax, etc.). Defaults to numpy.
+
+    Examples
+    --------
+    >>> from astrix.primitives import Point, Time, Path
+    >>> from datetime import datetime, timezone
+    >>> times = Time.from_datetime(
+    ...     [
+    ...         datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+    ...         datetime(2025, 1, 1, 12, 0, 1, tzinfo=timezone.utc),
+    ...         datetime(2025, 1, 1, 12, 0, 2, tzinfo=timezone.utc),
+    ...     ]
+    ... )
+    >>> path = Path(
+    ...     [
+    ...         Point([1, 2, 0], time=times[0]),
+    ...         Point([2, 3.8, 0.4], time=times[1]),
+    ...         Point([3, 6.0, 1], time=times[2]),
+    ...     ]
+    ... )  # Somewhere very hot in the middle of the Earth
+    >>> path.interp(
+            Time.from_datetime(datetime(2025, 1, 1, 12, 0, 1, 500000, tzinfo=timezone.utc)),
+            method="linear"
+        ).ecef # Interpolate to halfway between second and third point, return ECEF array
+    array([[2.5, 4.9, 0.7]])
+    >>> vel = path.interp_vel(
+            Time.from_datetime(datetime(2025, 1, 1, 12, 0, 1, 500000, tzinfo=timezone.utc)),
+        )
+    >>> vel.magnitude  # Interpolated velocity magnitude in m/s
+    array([2.48997992])
+    >>> vel.unit  # Interpolated unit velocity vector
+    array([[0.40160966, 0.88354126, 0.2409658 ]])
+    """
+
     _vel: Array
 
     def __init__(self, point: Point | list[Point], backend: BackendArg = None) -> None:
@@ -632,7 +827,6 @@ class Path(Location[Time]):
             Point(self.ecef, time=self.time.convert_to(xp), backend=xp), backend=xp
         )
 
-    # @backend_jit(["check_bounds"])
     def interp(
         self, time: Time, method: str = "linear", check_bounds: bool = True
     ) -> Point:
@@ -653,6 +847,13 @@ class Path(Location[Time]):
                     Path time range: {self.time[0]} to {self.time[-1]}
                     Interpolation time range: {time[0]} to {time[-1]}
                     Extrapolation is not supported and will raise an error.""")
+        time = time.convert_to(self._xp)
+        return self._interp(time, method=method)
+
+    # @backend_jit(["check_bounds"])
+    def _interp(self, time: Time, method: str = "linear") -> Point:
+        """Private method to interpolate the Path to the given times using the specified method.
+        Avoids type and bounds checking in public interp()."""
 
         if method == "linear":
             interp_ecef = interp_nd(
@@ -779,6 +980,51 @@ class _RotationStatic(RotationLike):
 
 
 class RotationSequence(RotationLike):
+    """A sequence of time-tagged rotations, enabling interpolation between them.
+    Uses scipy.spatial.transform.Slerp for interpolation.
+
+    Parameters
+    ----------
+    rot : Rotation | list of Rotation
+        A scipy Rotation object containing multiple rotations, or a list of such objects.
+        If a list is provided, all elements must be scipy Rotation objects.
+    time : Time
+        A Time object with time instances corresponding to each rotation.
+        Must be the same length as the number of rotations and strictly increasing.
+    backend : BackendArg, optional
+        Array backend to use (numpy, jax, etc.). Defaults to numpy.
+
+    Examples
+    --------
+    >>> from astrix.primitives import Time, RotationSequence
+    >>> from scipy.spatial.transform import Rotation
+    >>> from datetime import datetime, timezone
+    >>> times = Time.from_datetime(
+    ...     [
+    ...         datetime(2021, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+    ...         datetime(2021, 1, 1, 13, 0, 0, tzinfo=timezone.utc),
+    ...         datetime(2021, 1, 1, 14, 0, 0, tzinfo=timezone.utc),
+    ...     ]
+    ... )
+    >>> rots = Rotation.from_euler(
+    ...     "xyz",
+    ...     [
+    ...         [0, 0, 0],
+    ...         [90, 0, 0],
+    ...         [180, 0, 0],
+    ...     ],
+    ...     degrees=True,
+    ... )
+    >>> rot_seq = RotationSequence(rots, times)
+    >>> interp_rot = rot_seq.interp(
+    ...     Time.from_datetime(datetime(2021, 1, 1, 12, 30, 0, tzinfo=timezone.utc))
+    ... )  # Interpolate to halfway between first and second rotation
+    >>> interp_rot.as_euler(
+    ...     "xyz", degrees=True
+    ... )  # Get interpolated rotation as Euler angles
+    array([[45.,  0.,  0.]])
+    """
+
     _rot: Rotation
     _slerp: Slerp
     _time: Time
@@ -828,8 +1074,15 @@ class RotationSequence(RotationLike):
     def __len__(self) -> int:
         return len(self._rot)
 
-    def interp(self, time: Time) -> Rotation:
+    def interp(self, time: Time, check_bounds: bool = True) -> Rotation:
         """Interpolate the rotation sequence at the given times to return Rotation(s)."""
+        time = time.convert_to(self._xp)
+        if check_bounds:
+            if not self._time.in_bounds(time):
+                warnings.warn(f"""RotationSequence interpolation times are out of bounds.
+                    RotationSequence time range: {self._time[0]} to {self._time[-1]}
+                    Interpolation time range: {time[0]} to {time[-1]}
+                    Extrapolation is not supported and will raise an error.""")
         return self._slerp(time.secs)
 
     def _interp_secs(self, secs: Array) -> Rotation:
@@ -837,6 +1090,90 @@ class RotationSequence(RotationLike):
 
 
 class Frame:
+    """ A reference frame defined by a rotation and location.
+    Can be static or time-varying, and can have rotation defined relative to another Frame.
+    Combines RotationLike and Location objects, and manages time associations.
+
+    Parameters
+    ----------
+    rot : Rotation | RotationSequence
+        A scipy Rotation object (single rotation) or RotationSequence (time-tagged rotations).
+        If a single Rotation is provided, the frame rotation is static.
+    loc : Location, optional
+        A Location object (Point or Path) defining the frame origin in ECEF coordinates.
+        If not provided, the frame origin is assumed to be at the origin of the reference frame.
+        If loc is provided, it must be a singular Point (1x3) for static frames.
+        Use Path objects for time-varying locations.
+    ref_frame : Frame, optional
+        A reference Frame object to define the rotation relative to.
+        If not provided, the rotation is assumed to be absolute (e.g., from ECEF frame).
+    backend : BackendArg, optional
+        Array backend to use (numpy, jax, etc.). Defaults to numpy.
+
+    Examples
+    --------
+    Static frame with static rotation and location:
+    >>> from astrix.primitives import Frame, Point
+    >>> from scipy.spatial.transform import Rotation
+    >>> rot = Rotation.from_euler('xyz', [90, 0, 0], degrees=True)  # 90 degree rotation about x-axis
+    >>> loc = Point.from_geodet([27.47, 153.03, 0])  # Brisbane location
+    >>> frame_static = Frame(rot, loc) # Frame with static rotation and location
+    >>> frame_static.interp_rot().as_euler('xyz', degrees=True)  # Get absolute rotation
+    array([[90.,  0.,  0.]])
+    >>> frame_static.loc.geodet  # Get frame location in geodetic coordinates
+    array([[153.03, 27.47, 0.0]])
+    Time-varying frame with rotation sequence and static location:
+    >>> from astrix.primitives import Frame, Point, Time
+    >>> from scipy.spatial.transform import Rotation
+    >>> from datetime import datetime, timezone
+    >>> times = Time.from_datetime(
+    ...     [
+    ...         datetime(2021, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+    ...         datetime(2021, 1, 1, 13, 0, 0, tzinfo=timezone.utc),
+    ...         datetime(2021, 1, 1, 14, 0, 0, tzinfo=timezone.utc),
+    ...     ]
+    ... )
+    >>> rots = Rotation.from_euler(
+    ...     "xyz",
+    ...     [
+    ...         [0, 0, 0],
+    ...         [90, 0, 0],
+    ...         [180, 0, 0],
+    ...     ],
+    ...     degrees=True,
+    ... )
+    >>> rot_seq = RotationSequence(rots, times)
+    >>> loc = Point.from_geodet([27.47, 153.03, 0])  # Brisbane location
+    >>> frame_dynamic_rot = Frame(rot_seq, loc) # Frame with time-varying rotation and static location
+    >>> interp_rot = frame_dynamic_rot.interp_rot(
+    ...     Time.from_datetime(datetime(2021, 1, 1, 12, 30, 0, tzinfo=timezone.utc))
+    ... )  # Interpolate to halfway between first and second rotation
+    >>> interp_rot.as_euler(
+    ...     "xyz", degrees=True
+    ... )  # Get interpolated absolute rotation as Euler angles
+    array([[45.,  0.,  0.]])
+    >>> frame_dynamic_rot.loc.geodet  # Get frame location in geodetic coordinates
+    array([[153.03, 27.47, 0.0]])
+    Frame defined relative to another frame:
+    >>> from astrix.primitives import Frame, Point
+    >>> from scipy.spatial.transform import Rotation
+    >>> rot_ref = Rotation.from_euler('xyz', [0, 30, 0], degrees=True)  # Reference frame with no rotation
+    >>> frame_ref = Frame(rot_ref, loc)  # Reference frame
+    >>> rot_rel = Rotation.from_euler('xyz', [0, 40, 0], degrees=True)  # 90 degree rotation about y-axis
+    >>> frame_rel = Frame(rot_rel, ref_frame=frame_ref)  # Frame defined relative to reference frame
+    >>> frame_rel.interp_rot().as_euler('xyz', degrees=True)  # Get absolute rotation
+    array([[ 0., 70.,  0.]])
+    >>> frame_rel.loc.geodet  # Get frame location in geodetic coordinates (same as reference frame)
+    array([[153.03, 27.47, 0.0]])
+
+    Notes
+    -----
+    - If both loc and ref_frame are provided, the new frame location is used and the reference frame location is disregarded.
+    - A TimeGroup object is created internally to manage time associations between rotation, location, and reference frame. 
+    - If the frame is static (single rotation and singular Point), the time properties return TIME_INVARIANT.
+    - Use Path objects for time-varying locations.  
+    """
+
     _rot: RotationLike
     _rot_chain: list[RotationLike]
     _interp_rot_fn: Callable[[Array], Rotation]
@@ -845,7 +1182,7 @@ class Frame:
     _xp: ArrayNS
     _has_ref: bool
     _static_rot: bool
-    _static_loc: bool
+    _static_loc: bool = False
 
     def __init__(
         self,
@@ -996,7 +1333,7 @@ class Frame:
                     Extrapolation is not supported and will raise an error.""")
         return self._interp_rot_fn(time.secs)
 
-    def interp_loc(self, time: Time | None = None) -> Point:
+    def interp_loc(self, time: Time | None = None, check_bounds: bool = True) -> Point:
         """Get the interpolated location of the frame at the given times.
         If the location is static, time can be None.
         """
@@ -1006,7 +1343,13 @@ class Frame:
                     "Time must be provided to interpolate time-varying frame location."
                 )
             return self._loc  # pyright: ignore[reportReturnType]
-        return self._loc.interp(time)
+        if check_bounds:
+            if not self.time_group.in_bounds(time):
+                warnings.warn(f"""Frame interpolation times are out of bounds.
+                    Frame time range: {self.time_bounds[0]} to {self.time_bounds[1]}
+                    Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
+                    Extrapolation is not supported and will raise an error.""")
+        return self._loc._interp(time)
 
     @property
     def has_ref(self) -> bool:
