@@ -13,6 +13,8 @@ from ._backend_utils import (
     coerce_ns,
 )
 
+from scipy.spatial.transform import Rotation
+
 
 def ensure_1d(x: Array | float | list[float], backend: Backend = None) -> Array:
     """Ensure the input array is 1-dimensional.
@@ -20,7 +22,7 @@ def ensure_1d(x: Array | float | list[float], backend: Backend = None) -> Array:
     """
 
     xp = coerce_ns(backend)
-    x_arr = xp.asarray(x)
+    x_arr = xp.asarray(x, dtype=xp.float64)
     if x_arr.ndim == 0:
         x_arr = xp.reshape(x_arr, (1,))
     elif x_arr.ndim > 1:
@@ -36,7 +38,7 @@ def ensure_2d(
     """
 
     xp = coerce_ns(backend)
-    x_arr = xp.asarray(x)
+    x_arr = xp.asarray(x, dtype=xp.float64)
     if x_arr.ndim == 0:
         x_arr = xp.reshape(x_arr, (1, 1))
     elif x_arr.ndim == 1:
@@ -106,5 +108,3 @@ def geodet2ecef(geodet: Array) -> np.ndarray:
     ).T
 
     return ecef
-
-
