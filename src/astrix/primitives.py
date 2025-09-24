@@ -231,6 +231,7 @@ class TimeGroup(TimeLike):
 
     Examples
     --------
+
     >>> t1 = Time.from_datetime(
     ...     [
     ...         datetime(2021, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
@@ -244,6 +245,9 @@ class TimeGroup(TimeLike):
     ...     ]
     ... )
     >>> tg = TimeGroup([t1, t2])
+    >>> tg.duration  # Duration of overlap in seconds
+    1800.0
+
     >>> overlap = tg.overlap_bounds  # Overlapping time range
     >>> assert overlap[0].datetime[0] == datetime(
     ...     2021, 1, 1, 12, 30, 0, tzinfo=timezone.utc
@@ -251,8 +255,7 @@ class TimeGroup(TimeLike):
     >>> assert overlap[1].datetime[0] == datetime(
     ...     2021, 1, 1, 13, 0, 0, tzinfo=timezone.utc
     ... )
-    >>> tg.duration  # Duration of overlap in seconds
-    1800.0
+
     >>> tg.in_bounds(
     ...     Time.from_datetime(datetime(2021, 1, 1, 12, 45, 0, tzinfo=timezone.utc))
     ... )
@@ -458,7 +461,10 @@ class Point(Location[TimeLike]):
 
     Examples
     --------
+
     Single static point:
+
+    >>> from astrix.primitives import Point
     >>> p1 = Point(
     ...     [-5047162.4, 2568329.79, -2924521.17]
     ... )  # ECEF coordinates of Brisbane in metres
@@ -467,7 +473,9 @@ class Point(Location[TimeLike]):
     >>> p2 = Point.from_geodet([27.47, 153.03, 0])  # lat, lon in degrees, alt in metres
     >>> p2.ecef  # Convert back to ECEF coordinates
     array([[-5047162.4, 2568329.79, -2924521.17]])
+
     Multiple static points:
+
     >>> pts = Point(
     ...     [
     ...         [-5047162.4, 2568329.79, -2924521.17],  # Brisbane
@@ -477,7 +485,9 @@ class Point(Location[TimeLike]):
     ... )
     >>> pt_bris = pts[0]  # First point (Brisbane)
     >>> assert len(pts) == 3
+
     Dynamic point with time:
+
     >>> from datetime import datetime, timezone
     >>> from astrix.primitives import Time
     >>> times = Time.from_datetime(
@@ -664,7 +674,9 @@ class Velocity:
 
     Examples
     --------
+
     Velocity objects are typically created from Path objects.
+
     >>> from astrix.primitives import Point, Time, Path
     >>> from datetime import datetime, timezone
     >>> times = Time.from_datetime(
@@ -688,6 +700,7 @@ class Velocity:
     array([[0.52342392, 0.83747828, 0.15702718],
            [0.43643578, 0.87287156, 0.21821789],
            [0.37139068, 0.89133762, 0.25997347]])
+
     """
 
     vec: Array
@@ -742,6 +755,9 @@ class Path(Location[Time]):
 
     Examples
     --------
+
+    Instantiating a Path from a list of Points:
+
     >>> from astrix.primitives import Point, Time, Path
     >>> from datetime import datetime, timezone
     >>> times = Time.from_datetime(
@@ -758,6 +774,9 @@ class Path(Location[Time]):
     ...         Point([3, 6.0, 1], time=times[2]),
     ...     ]
     ... )  # Somewhere very hot in the middle of the Earth
+
+    Interpolate the Path to a new time and get velocity:
+
     >>> path.interp(
             Time.from_datetime(datetime(2025, 1, 1, 12, 0, 1, 500000, tzinfo=timezone.utc)),
             method="linear"
@@ -996,6 +1015,7 @@ class RotationSequence(RotationLike):
 
     Examples
     --------
+
     >>> from astrix.primitives import Time, RotationSequence
     >>> from scipy.spatial.transform import Rotation
     >>> from datetime import datetime, timezone
@@ -1016,6 +1036,7 @@ class RotationSequence(RotationLike):
     ...     degrees=True,
     ... )
     >>> rot_seq = RotationSequence(rots, times)
+
     >>> interp_rot = rot_seq.interp(
     ...     Time.from_datetime(datetime(2021, 1, 1, 12, 30, 0, tzinfo=timezone.utc))
     ... )  # Interpolate to halfway between first and second rotation
@@ -1112,20 +1133,26 @@ class Frame:
 
     Examples
     --------
+
     Static frame with static rotation and location:
+
     >>> from astrix.primitives import Frame, Point
     >>> from scipy.spatial.transform import Rotation
+    >>>
     >>> rot = Rotation.from_euler('xyz', [90, 0, 0], degrees=True)  # 90 degree rotation about x-axis
     >>> loc = Point.from_geodet([27.47, 153.03, 0])  # Brisbane location
     >>> frame_static = Frame(rot, loc) # Frame with static rotation and location
+
     >>> frame_static.interp_rot().as_euler('xyz', degrees=True)  # Get absolute rotation
     array([[90.,  0.,  0.]])
     >>> frame_static.loc.geodet  # Get frame location in geodetic coordinates
     array([[153.03, 27.47, 0.0]])
+
     Time-varying frame with rotation sequence and static location:
-    >>> from astrix.primitives import Frame, Point, Time
-    >>> from scipy.spatial.transform import Rotation
+
+    >>> from astrix.primitives import Time
     >>> from datetime import datetime, timezone
+    >>>
     >>> times = Time.from_datetime(
     ...     [
     ...         datetime(2021, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
@@ -1145,6 +1172,7 @@ class Frame:
     >>> rot_seq = RotationSequence(rots, times)
     >>> loc = Point.from_geodet([27.47, 153.03, 0])  # Brisbane location
     >>> frame_dynamic_rot = Frame(rot_seq, loc) # Frame with time-varying rotation and static location
+
     >>> interp_rot = frame_dynamic_rot.interp_rot(
     ...     Time.from_datetime(datetime(2021, 1, 1, 12, 30, 0, tzinfo=timezone.utc))
     ... )  # Interpolate to halfway between first and second rotation
@@ -1154,16 +1182,17 @@ class Frame:
     array([[45.,  0.,  0.]])
     >>> frame_dynamic_rot.loc.geodet  # Get frame location in geodetic coordinates
     array([[153.03, 27.47, 0.0]])
+
     Frame defined relative to another frame:
-    >>> from astrix.primitives import Frame, Point
-    >>> from scipy.spatial.transform import Rotation
-    >>> rot_ref = Rotation.from_euler('xyz', [0, 30, 0], degrees=True)  # Reference frame with no rotation
+
+    >>> rot_ref = Rotation.from_euler('xyz', [0, 30, 0], degrees=True)  # Reference frame
     >>> frame_ref = Frame(rot_ref, loc)  # Reference frame
-    >>> rot_rel = Rotation.from_euler('xyz', [0, 40, 0], degrees=True)  # 90 degree rotation about y-axis
-    >>> frame_rel = Frame(rot_rel, ref_frame=frame_ref)  # Frame defined relative to reference frame
-    >>> frame_rel.interp_rot().as_euler('xyz', degrees=True)  # Get absolute rotation
+    >>> rot_rel = Rotation.from_euler('xyz', [0, 40, 0], degrees=True)
+    >>> frame = Frame(rot_rel, ref_frame=frame_ref) 
+    >>>
+    >>> frame.interp_rot().as_euler('xyz', degrees=True)  # Absolute rotation (rot_ref * rot_rel)
     array([[ 0., 70.,  0.]])
-    >>> frame_rel.loc.geodet  # Get frame location in geodetic coordinates (same as reference frame)
+    >>> frame.loc.geodet  # (Same as reference frame)
     array([[153.03, 27.47, 0.0]])
 
     Notes
