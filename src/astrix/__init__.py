@@ -12,7 +12,7 @@ if _backend_utils.HAS_JAX:
 from . import primitives
 from . import utils
 from . import functs
-from .primitives import Time, Point, Path, Frame, Ray
+from .primitives import Time, Point, Path, Frame, Ray, RotationSequence
 from ._backend_utils import resolve_backend
 
 
@@ -26,4 +26,5 @@ __all__ = [
     "resolve_backend",
     "Frame",
     "Ray",
+    "RotationSequence",
 ]

@@ -106,6 +106,41 @@ def central_diff(xd: Array, fd: Array, backend: Backend = None) -> Array:
 
     return dfdx
 
+def finite_diff_2pt(xd: Array, fd: Array, backend: Backend = None) -> Array:
+    """ Simple 2-point finite difference derivative of fd w.r.t. xd at the sample nodes.
+    Uses forward difference at the first point, backward difference at the last point,
+    and central difference in the interior.
+
+    Args
+    ----
+    xd : (N,) strictly increasing array of x-locations, must have N>=2
+    fd : (N, ...) array of function values; derivative is taken along axis 0
+    backend : optional, backend to use (numpy, jax, etc.)
+
+    Returns
+    -------
+    dfdx : (N, ...) array of derivatives at each xd[i]
+
+    Notes
+    -----
+    Must have xd.shape[0] >= 2. No bounds checking is performed
+    """
+
+    xp = coerce_ns(backend)
+    xd = xp.asarray(xd)
+    fd = xp.asarray(fd)
+
+    dfdx = xp.empty_like(fd)
+    dfdx = safe_set(dfdx, 0, (fd[1] - fd[0]) / (xd[1] - xd[0]), backend)
+    dfdx = safe_set(dfdx, -1, (fd[-1] - fd[-2]) / (xd[-1] - xd[-2]), backend)
+    if xd.shape[0] > 2:
+        dfdx = safe_set(dfdx, slice(1, -1), (fd[2:] - fd[:-2]) / (xd[2:] - xd[:-2])[:, None], backend)
+    return dfdx
+
+
+
+
+
 
 def great_circle_distance(
     geodet1: Array, geodet2: Array, backend: Backend = None, ignore_elev: bool = False

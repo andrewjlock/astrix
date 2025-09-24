@@ -33,6 +33,11 @@ def test_path_create(xp):
 
     path.convert_to(np)
 
+    point1 = Point(ecef[0], time=time[0], backend=xp)
+    point2 = Point(ecef[1], time=time[1], backend=xp)
+    path2 = Path([point1, point2], backend=xp)
+
+
 
 def test_bad_init(xp):
     ecef = xp.array(
@@ -90,6 +95,27 @@ def test_path_interp(xp):
     with pytest.warns():
         t_bad = Time(xp.array([1577836790.0]), backend=xp)  # before start time
         path.interp(t_bad)
+
+    ecef2 = xp.array(
+        [
+            [3878000.0, 351000.0, 5026000.0],
+            [3879000.0, 352000.0, 5025000.0],
+        ]
+    )
+    posix2 = xp.array(
+        [1577836980.0, 1577837040.0]
+    )  # 2020-01-01 00:03:00, 2020-01-01 00:04:00
+    time2 = Time(posix2, backend=xp)
+    point2 = Point(ecef2, time=time2, backend=xp)
+    path2 = Path(point2, backend=xp)
+    t_interp2 = Time(xp.array([1577837000.0]), backend=xp)  # 2020-01-01 00:03:20
+    point_interp2 = path2.interp(t_interp2)
+    assert point_interp2.ecef.shape == (1, 3)
+    correct2 = ecef2[0] + (ecef2[1] - ecef2[0]) * (20.0 / 60.0)
+    assert xp.allclose(point_interp2.ecef[0], correct2, atol=1e-1)
+    assert path2.vel.vec.shape == (2, 3)
+    assert xp.allclose(path2.vel.vec[0], (ecef2[1] - ecef2[0]) / 60.0, atol=1e-6)
+    assert xp.allclose(path2.vel.vec[1], (ecef2[1] - ecef2[0]) / 60.0, atol=1e-6)
 
 
 def test_path_vel_interp(xp):
