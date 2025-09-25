@@ -92,7 +92,7 @@ def test_ray_moving_frame(xp):
     )
     path = Path(pt, backend=xp)
     rots = RotationSequence(
-        R.from_euler("Z", [0.0, 90.0, 180.0], degrees=True), time_path, backend=xp
+        R.from_euler("Z", [[0.0], [90.0], [180.0]], degrees=True), time_path, backend=xp
     )
     frame = Frame(rots, path, backend=xp)
 

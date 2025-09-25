@@ -8,7 +8,7 @@ from .helpers import to_text
 def test_static_frame(xp):
     # Static frame without time or reference
 
-    rot1 = R.from_euler("z", 45, degrees=True)
+    rot1 = R.from_euler("z", [[45]], degrees=True)
     loc1 = Point(xp.asarray([1, 0, 0]), backend=xp)
     frame1 = Frame(rot1, loc1, backend=xp)
     to_text(frame1)
@@ -37,9 +37,9 @@ def test_static_frame(xp):
 def test_dynamic_frame(xp):
     # Dynamic frame without reference
 
-    rot0 = R.from_euler("z", 0, degrees=True)
-    rot1 = R.from_euler("z", 45, degrees=True)
-    rot2 = R.from_euler("z", 90, degrees=True)
+    rot0 = R.from_euler("z", [[0]], degrees=True)
+    rot1 = R.from_euler("z", [[45]], degrees=True)
+    rot2 = R.from_euler("z", [[90]], degrees=True)
 
     rot_time = Time([0.0, 1.0], backend=xp)
     rots = RotationSequence([rot0, rot2], rot_time, backend=xp)
@@ -78,9 +78,9 @@ def test_dynamic_frame(xp):
 
 
 def test_frame_with_ref(xp):
-    rot0 = R.from_euler("z", 30, degrees=True)
-    rot1 = R.from_euler("z", 45, degrees=True)
-    rot2 = R.from_euler("z", 75, degrees=True)
+    rot0 = R.from_euler("z", [[30]], degrees=True)
+    rot1 = R.from_euler("z", [[45]], degrees=True)
+    rot2 = R.from_euler("z", [[75]], degrees=True)
     loc0 = Point(xp.asarray([1, 0, 0]), backend=xp)
     loc1 = Point(xp.asarray([0, 1, 0]), backend=xp)
     loc2 = Point(xp.asarray([-1, 0, 0]), backend=xp)
@@ -103,7 +103,7 @@ def test_frame_with_ref(xp):
     frame2 = Frame(rots, path, ref_frame=frame_ref, backend=xp)
 
     assert frame2.has_ref
-    rot_expected = R.from_euler("z", [30 + 60], degrees=True)
+    rot_expected = R.from_euler("z", [[30 + 60]], degrees=True)
     assert xp.allclose(
         frame2.interp_rot(Time(0.5, backend=xp)).as_quat(), rot_expected.as_quat()
     )
@@ -115,10 +115,10 @@ def test_frame_with_ref(xp):
 
     # Dynamic frame with dynamic reference
 
-    rot1_ref = R.from_euler("z", 0, degrees=True)
-    rot2_ref = R.from_euler("z", 60, degrees=True)
-    rot1 = R.from_euler("y", 30, degrees=True)
-    rot2 = R.from_euler("y", 70, degrees=True)
+    rot1_ref = R.from_euler("z", [[0]], degrees=True)
+    rot2_ref = R.from_euler("z", [[60]], degrees=True)
+    rot1 = R.from_euler("y", [[30]], degrees=True)
+    rot2 = R.from_euler("y", [[70]], degrees=True)
     time_rot = Time([1.0, 2.0], backend=xp)
 
     ecef = xp.asarray([[0, 1, 0], [-1, 0, 0]])
@@ -134,7 +134,7 @@ def test_frame_with_ref(xp):
     assert frame3.rel_rot == rots
 
     assert frame3.has_ref
-    rot_expected = R.from_euler("z", 30, degrees=True) * R.from_euler(
+    rot_expected = R.from_euler("z", [[30]], degrees=True) * R.from_euler(
         "y", 50, degrees=True
     )
     assert xp.allclose(
