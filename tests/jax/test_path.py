@@ -1,7 +1,7 @@
 # pyright: basic
 
 import jax
-from astrix.primitives import Path, Point, Time
+from astrix import Path, Point, Time
 
 def test_path_interpolate(xp):
     

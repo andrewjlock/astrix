@@ -2,7 +2,7 @@
 
 import pytest
 import datetime as dt
-from astrix.primitives import Point, Time
+from astrix import Point, Time
 from .helpers import to_text
 import numpy as np
 

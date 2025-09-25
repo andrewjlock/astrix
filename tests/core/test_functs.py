@@ -1,7 +1,6 @@
 
 import pytest
 from astrix.functs import great_circle_distance, interp_haversine, ned_rotation
-from astrix import Time, Point, Path
 from astrix.utils import geodet2ecef, ecef2geodet
 
 @pytest.mark.filterwarnings("ignore:.*Force converting.*:UserWarning")

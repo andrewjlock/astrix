@@ -176,5 +176,5 @@ def _convert_rot_backend(rot: Rotation, backend: Backend) -> Rotation:
     xp = coerce_ns(backend)
     if xp is rot._xp:
         return rot
-    quat = xp.asarray(rot.as_quat(), copy=True)
+    quat = xp.asarray(rot._quat, copy=True)
     return Rotation.from_quat(quat)

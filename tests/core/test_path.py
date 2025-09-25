@@ -1,7 +1,7 @@
 # pyright: basic
 
 import pytest
-from astrix.primitives import Path, Point, Time
+from astrix import Path, Point, Time
 from .helpers import to_text
 import numpy as np
 

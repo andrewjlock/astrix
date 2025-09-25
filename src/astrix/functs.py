@@ -267,3 +267,56 @@ def ned_rotation(geodet: Array, xp: Backend = None) -> R:
     rot_ned_ned0 = R.from_euler("XY", xp.asarray([geodet[:, 1], -geodet[:, 0]]).T, degrees=True)
     rot_ned = rot_ned0 * rot_ned_ned0
     return rot_ned
+
+
+@backend_jit(["backend"])
+def az_el_from_vec(v: Array, backend: Backend = None) -> Array:
+    """Compute azimuth and elevation from a set of 3D vectors.
+    
+    Args:
+        v (Array): Array of shape (m, 3) of m 3D vectors.
+
+    Returns:
+        Array: Array of shape (m, 2) of azimuth and elevation angles in degrees.
+            Azimuth is in [0, 360), elevation is in [-90, 90].
+
+    Notes:
+        Assumes vectors are:
+            - Right-handed coordinate system
+            - x points forward
+            - y points right
+            - z points down
+    """
+    xp = coerce_ns(backend)
+    az = xp.rad2deg(xp.arctan2(v[:, 1], v[:, 0])) % 360
+    el = xp.rad2deg(xp.arctan2(-v[:, 2], xp.linalg.norm(v[:, 0:2], axis=1)))
+
+    return xp.stack((az, el), axis=1)
+
+def vec_from_az_el(az_el: Array, backend: Backend = None) -> Array:
+    """Compute 3D unit vectors from azimuth and elevation angles.
+
+    Args:
+        az_el (Array): Array of shape (m, 2) of azimuth and elevation angles in degrees.
+            Azimuth is in [0, 360), elevation is in [-90, 90].
+        backend (Backend, optional): Backend to use. Defaults to None.
+
+    Returns:
+        Array: Array of shape (m, 3) of m 3D unit vectors.
+
+    Notes:
+        Assumes vectors are:
+            - Right-handed coordinate system
+            - x points forward
+            - y points right
+            - z points down
+    """
+    xp = coerce_ns(backend)
+    az = xp.deg2rad(az_el[:, 0])
+    el = xp.deg2rad(az_el[:, 1])
+
+    x = xp.cos(el) * xp.cos(az)
+    y = xp.cos(el) * xp.sin(az)
+    z = -xp.sin(el)
+
+    return xp.stack((x, y, z), axis=1)

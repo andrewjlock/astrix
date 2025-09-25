@@ -1,7 +1,7 @@
 
 import pytest
 import datetime as dt
-from astrix.primitives import Time
+from astrix import Time
 from .helpers import to_text
 import numpy as np
 

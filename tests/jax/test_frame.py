@@ -1,7 +1,7 @@
 
 
 import jax
-from astrix.primitives import Path, Point, Time, Frame, RotationSequence
+from astrix import Path, Point, Time, Frame, RotationSequence
 from scipy.spatial.transform import Rotation as R
 
 def test_frame_interpolate(xp):
