@@ -11,6 +11,7 @@ from ._backend_utils import (
     safe_set,
     warn_if_not_numpy,
 )
+from .constants import cam_to_frd_mat
 
 
 @backend_jit("backend")
@@ -320,3 +321,39 @@ def vec_from_az_el(az_el: Array, backend: Backend = None) -> Array:
     z = -xp.sin(el)
 
     return xp.stack((x, y, z), axis=1)
+
+def pixel_to_vec(pixels: Array, mat: Array, backend: Backend = None) -> Array:
+    """Convert pixel coordinates to 3D unit vectors in camera frame.
+
+    Args:
+        pixels (Array): Nx2 array of pixel coordinates (u, v).
+        mat (Array): 3x3 camera intrinsic matrix.
+        backend (Backend, optional): Backend to use. Defaults to None.
+
+    Returns:
+        Array: Nx3 array of 3D unit vectors in camera frame.
+    """
+    xp = coerce_ns(backend)
+    pixels_h = xp.concatenate((pixels, xp.ones((pixels.shape[0], 1), dtype=pixels.dtype)), axis=1)
+    mat_inv = xp.linalg.inv(mat)
+    vecs_cam = mat_inv @ (pixels_h.T) # shape (3, N)
+    vecs_cam_unit = vecs_cam / xp.linalg.norm(vecs_cam, axis=0, keepdims=True) # shape (3, N)
+    vecs_frd_unit = cam_to_frd_mat(xp) @ vecs_cam_unit # shape (3, N)
+    return vecs_frd_unit.T # shape (N, 3)
+
+def vec_to_pixel(vecs: Array, mat: Array, backend: Backend = None) -> Array:
+    """Convert 3D unit vectors in camera frame to pixel coordinates.
+
+    Args:
+        vecs (Array): Nx3 array of 3D unit vectors in camera frame.
+        mat (Array): 3x3 camera intrinsic matrix.
+        backend (Backend, optional): Backend to use. Defaults to None.
+
+    Returns:
+        Array: Nx2 array of pixel coordinates (u, v).
+    """
+    xp = coerce_ns(backend)
+    vecs_cam = cam_to_frd_mat(xp).T @ vecs.T # shape (3, N)
+    pixels_h = mat @ vecs_cam # shape (3, N)
+    pixels = pixels_h[:2, :] / pixels_h[2, :] # shape (2, N)
+    return pixels.T # shape (N, 2)

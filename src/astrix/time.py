@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import datetime as dt
 from abc import ABC, abstractmethod
+from typing import ClassVar
 
 from ._backend_utils import (
     resolve_backend,
@@ -67,6 +68,9 @@ class TimeInvariant(TimeLike):
 
     def convert_to(self, backend: BackendArg) -> TimeInvariant:
         return self
+
+    def datetime(self) -> list[str]:
+        return ["<Time Invariant Object>"]
 
 
 TIME_INVARIANT = TimeInvariant()
@@ -312,10 +316,11 @@ class TimeGroup:
                 maxs.append(self._xp.max(t.secs))
                 self._times.append(t.convert_to(self._xp))
             if isinstance(t, TimeGroup):
-                mins.append(t._overlap_bounds[0])
-                maxs.append(t._overlap_bounds[1])
-                mins.append(t._extreme_bounds[0])
-                maxs.append(t._extreme_bounds[1])
+                if not t.is_invariant:
+                    mins.append(t._overlap_bounds[0])
+                    maxs.append(t._overlap_bounds[1])
+                    mins.append(t._extreme_bounds[0])
+                    maxs.append(t._extreme_bounds[1])
                 self._times += [tt.convert_to(self._xp) for tt in t.times]
 
         if len(mins) == 0 or len(maxs) == 0:

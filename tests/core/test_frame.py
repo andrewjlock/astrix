@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-from astrix import Frame, Time, Point, Path, RotationSequence
+from astrix import Frame, Time, Point, Path, RotationSequence, TIME_INVARIANT
 from .helpers import to_text
 
 
@@ -92,8 +92,8 @@ def test_frame_with_ref(xp):
     assert frame1.has_ref
     assert xp.allclose(frame1.interp_rot().as_quat(), rot2.as_quat())
     assert xp.allclose(frame1.interp_loc().ecef, xp.asarray([-1, 0, 0]))
-    assert xp.isclose(frame1.time_bounds[0].secs, -xp.inf)
-    assert xp.isclose(frame1.time_bounds[1].secs, xp.inf)
+    assert frame1.time_bounds[0] is TIME_INVARIANT
+    assert frame1.time_bounds[1] is TIME_INVARIANT
 
     # Dynamic frame with static reference
     time = Time([0.0, 1.0], backend=xp)

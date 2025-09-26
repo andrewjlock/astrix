@@ -12,6 +12,7 @@ from astrix._backend_utils import (
     warn_if_not_numpy,
 )
 from astrix.utils import (
+    ensure_1d,
     ensure_2d,
     apply_rot,
 )
@@ -20,34 +21,34 @@ from astrix.functs import (
     interp_nd,
     az_el_from_vec,
     vec_from_az_el,
+    pixel_to_vec,
+    vec_to_pixel,
 )
 
 from astrix.time import Time, TimeLike, TimeInvariant, TIME_INVARIANT
 from astrix.spatial.location import Point, POINT_ORIGIN
 from astrix.spatial.frame import Frame, FRAME_ECEF, ned_frame
+from astrix.project import Pixel, CameraLike
 
 
 class Ray:
     """A ray defined by an origin point, direction vector, reference frame, and optional time.
-    The ray extends infinitely in one direction from the origin.
-    The origin and direction are stored in local frame coordinates, where the default frame is ECEF (global).
 
     Args:
-        origin (Point): Point object with length N defining the ray origin(s) in ECEF coordinates (meters).
-        dir (Array): Nx3 array of ray direction vectors in ECEF coordinates (meters).
-            Direction vectors will be normalized to unit vectors.
+        dir (Array): Nx3 array of ray direction vectors in local frame.
+            Need not be normalised. E.g., (1, 0, 0) is a ray pointing along axis 1 of reference frame.
+        origin (Array): 1x3 or Nx3 array defining the ray origin(s) in local frame (meters).
+            Typically (0,0,0) for camera reference frames, or ECEF coordinates for ECEF frame rays.
         frame (Frame, optional): Reference frame for the ray origin and direction.
         time (Time, optional): Time object associated with the rays.
-            Must be same length as origin if provided. Defaults to None.
+            Must be same length as origin if provided. Defaults to TIME_INVARIANT.
         backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
 
     Notes:
-        - Origin Point must be same length as dimension 0 of dir array.
-        - Time cannot be provided by both origin Point and time argument.
-            - If origin Point has associated Time, time argument must be None.
-            - If origin Point does not have associated Time, time argument can be provided.
-            - If neither origin Point nor time argument have Time, Ray will not have Time.
-        - No check is made that times are monotonically increasing for interpolation. This is left to the user.
+        - For calculating metrics (e.g. az/el), the axis are assumed (1) forward, (2) right, (3) down (FRD frame).
+        - Although stored in local coordiantes, rays are globally defined by their reference frame.
+        - Monotonically increasing time is required for interpolation. But to prevent data-dependent control flow,
+            this is not checked on initialization. Use Time.is_increasing to check if needed.
 
     Examples:
         TBC
@@ -113,16 +114,19 @@ class Ray:
         time: TimeLike = TIME_INVARIANT,
         backend: BackendArg = None,
     ) -> Ray:
-        """Create a Ray object from origin and endpoint arrays.
+        """Create a Ray object from origin and endpoint arrays in ECEF frame.
 
         Args:
-            origin (Point): Nx3 array of ray origin points in ECEF coordinates (meters).
-            endpoint (Point): Nx3 array of ray endpoint points in ECEF coordinates (meters).
+            origin (Point):  Origin points (ECEF coordinates). Must be length N or 1.
+            endpoint (Point): End points (ECEF coordinates). Must be length N.
             time (Time, optional): Time object associated with the rays.
-                Must be same length as origin if provided. Defaults to None.
+                Must be length N or 1. Defaults to TIME_INVARIANT (no time dependency).
             backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
         Returns:
             Ray: Ray object defined by the origin and direction from origin to endpoint.
+
+        Notes:
+            - Origin and endpoint Point o
         """
 
         xp = resolve_backend(backend)
@@ -156,6 +160,37 @@ class Ray:
         az_el = ensure_2d(az_el, n=2, backend=xp)
         dir_rel = vec_from_az_el(az_el, backend=xp)
         return cls(dir_rel, origin_rel, frame, time, xp)
+
+    @classmethod
+    def from_camera(
+        cls,
+        pixel: Pixel,
+        camera: CameraLike,
+        frame: Frame,
+        backend: BackendArg = None,
+    ) -> Ray:
+        """Create a Ray object from pixel coordinates and a camera model.
+
+        Args:
+            pixel (Pixel): Pixel object defining the pixel coordinates and optional time.
+            camera (CameraLike): Camera model defining the camera parameters and orientation.
+            frame (Frame): Reference frame for the ray origin and direction.
+            backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
+
+        Returns:
+            Ray: Ray object defined by the pixel coordinates and camera model.
+        """
+
+        xp = resolve_backend(backend)
+        mat = camera.mat(pixel.zoom)
+        dir = pixel_to_vec(pixel.uv, mat, xp)
+        return cls(
+            dir,
+            origin_rel=xp.zeros((1, 3)),
+            frame=frame,
+            time=pixel.time,
+            backend=xp,
+        )
 
     @classmethod
     def _constructor(
@@ -197,18 +232,26 @@ class Ray:
 
     @property
     def origin_points(self) -> Point:
-        """Get the ray origin point(s) as ECEF."""
+        """Get the ray origin point(s) as ECEF.
+        Note: this involves a frame transformation. For repeated access,
+        recommend converting the Ray to ECEF frame first using to_ecef().
+        """
         ray_ecef = self.to_ecef()
         return Point._constructor(ray_ecef.origin_rel, time=self.time, xp=self._xp)
 
     @property
     def origin_rel(self) -> Array:
-        """Get the ray origin point(s) in the local frame coordinates."""
+        """Get the ray origin point(s) in the local frame coordinates.
+        Typically zero for camera reference frames, or ECEF coordinates for ECEF frame rays.
+        """
         return self._origin_rel
 
     @property
     def unit_ecef(self) -> Array:
-        """Get the unit direction vector(s) of the ray."""
+        """Get the unit direction vector(s) of the ray in ECEF frame.
+        Note: this involves a frame transformation. For repeated access,
+        recommend converting the Ray to ECEF frame first using to_ecef().
+        """
         ray_ecef = self.to_ecef()
         return ray_ecef._unit_rel
 
@@ -228,14 +271,14 @@ class Ray:
         return self._time
 
     @property
-    def backend(self) -> str:
-        """Get the name of the array backend in use (e.g., 'numpy', 'jax')."""
-        return self._xp.__name__
-
-    @property
     def az_el(self):
         """Return the heading (from north) and elevation (from horizontal) angles in degrees."""
         return az_el_from_vec(self._unit_rel, backend=self._xp)
+
+    @property
+    def backend(self) -> str:
+        """Get the name of the array backend in use (e.g., 'numpy', 'jax')."""
+        return self._xp.__name__
 
     # --- Methods ---
 
@@ -315,6 +358,29 @@ class Ray:
             )
         else:
             raise ValueError("Cannot interpolate Ray without associated Time.")
+
+    def project_to_cam(self, camera: CameraLike) -> Pixel:
+        """Project the Ray object to pixel coordinates using a camera model.
+
+        Args:
+            camera (CameraLike): Camera model defining the camera parameters and orientation.
+
+        Returns:
+            Pixel: Pixel object defining the pixel coordinates and associated time.
+
+        Notes:
+            - The Ray must be defined in the same reference frame as the camera.
+            - Rays that do not intersect the image plane will result in NaN pixel coordinates.
+        """
+
+        if camera.has_zoom:
+            zoom = camera.interp_zoom(self.time)
+        else:
+            zoom = None
+        camera = camera.convert_to(self.backend)
+        uv = vec_to_pixel(self._unit_rel, camera.mat(zoom), self._xp)
+        return Pixel(uv, time=self.time, backend=self._xp)
+
 
     def convert_to(self, backend: BackendArg) -> Ray:
         """Convert the Ray object to a different backend."""
