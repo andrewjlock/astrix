@@ -11,13 +11,11 @@ from astrix._backend_utils import (
     BackendArg,
     warn_if_not_numpy,
 )
-from astrix.utils import (
+
+from astrix.functs import (
     ensure_1d,
     ensure_2d,
     apply_rot,
-)
-
-from astrix.functs import (
     interp_nd,
     az_el_from_vec,
     vec_from_az_el,

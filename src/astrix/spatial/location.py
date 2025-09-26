@@ -14,13 +14,11 @@ from astrix._backend_utils import (
     ArrayNS,
     BackendArg,
 )
-from astrix.utils import (
+
+from astrix.functs import (
     ensure_2d,
     ecef2geodet,
     geodet2ecef,
-)
-
-from astrix.functs import (
     interp_nd,
     central_diff,
     finite_diff_2pt,

@@ -1,17 +1,177 @@
 # pyright: reportAny=false
 
-from scipy.spatial.transform import Rotation as R
+"""
+Array and logic functions for Astrix.
 
-from .utils import ecef2geodet, geodet2ecef
+Should not have any dependencies on core Astrix types to avoid circular dependencies.
+Backend utility imports are allowed.
+
+Guiding principles:
+- Functions should be backend-agnstic where possible.
+- Functions should be JIT-compatible, where possible.
+- Data validation is not performed here, assume inputs are valid.
+"""
+
+from scipy.spatial.transform import Rotation
+import pyproj
+
 from ._backend_utils import (
     Array,
+    ArrayNS,
+    np,
+    warn_if_not_numpy,
     backend_jit,
     Backend,
     coerce_ns,
     safe_set,
-    warn_if_not_numpy,
 )
-from .constants import cam_to_frd_mat
+from astrix.constants import cam_to_frd_mat
+
+def ensure_1d(x: Array | float | list[float], backend: Backend = None) -> Array:
+    """Ensure the input array is 1-dimensional.
+    Scalars are converted to shape (1,).
+    """
+
+    xp = coerce_ns(backend)
+    x_arr = xp.asarray(x, dtype=xp.float64)
+    if x_arr.ndim == 0:
+        x_arr = xp.reshape(x_arr, (1,))
+    elif x_arr.ndim > 1:
+        raise ValueError("Input array must be 1-dimensional or scalar.")
+    return x_arr
+
+def ensure_2d(
+    x: Array | float | list[float] | list[list[float]],
+    n: int | None = None,
+    backend: Backend = None,
+) -> Array:
+    """Ensure the input array is 2-dimensional.
+    If n is given, ensure the second dimensionn has size n.
+    """
+
+    xp = coerce_ns(backend)
+    x_arr = xp.asarray(x, dtype=xp.float64)
+    if x_arr.ndim == 0:
+        x_arr = xp.reshape(x_arr, (1, 1))
+    elif x_arr.ndim == 1:
+        x_arr = xp.reshape(x_arr, (1, -1))
+    elif x_arr.ndim > 2:
+        raise ValueError("Input array must be 2-dimensional or less.")
+    if n is not None and x_arr.shape[1] != n:
+        raise ValueError(f"Input array must have shape (m, {n}), found {x_arr.shape}.")
+    return x_arr
+
+
+def is_increasing(x: Array, backend: Backend = None) -> bool:
+    """Check if the input array is strictly increasing along the first axis."""
+
+    xp = coerce_ns(backend)
+    x_arr = xp.asarray(x)
+    if x_arr.ndim != 1:
+        raise ValueError("Input array must be 1-dimensional.")
+    return xp.all(x_arr[1:] > x_arr[:-1])
+
+
+t_ecef2geodet = pyproj.Transformer.from_crs("epsg:4978", "epsg:4979")
+t_geodet2ecef = pyproj.Transformer.from_crs("epsg:4979", "epsg:4978")
+
+def ecef2geodet(ecef: Array) -> np.ndarray:
+    """
+    Use pyproj to convert from WGS84 coordinates to geodetic
+    (Cartesian Earth Centered Earth Fixed (ECEF) to lat, long, alt)
+
+    Args:
+        ecef (np.ndarray): 3xn array of ECEF x,y,z points in [m]
+
+    Returns:
+        np.ndarray: 3xn array of long, lat, alt [m] points
+
+    """
+
+    warn_if_not_numpy(ecef)
+    ecef_np = np.array(ecef)
+    geodet = np.array(
+        t_ecef2geodet.transform(
+            ecef_np[:, 0], ecef_np[:, 1], ecef_np[:, 2], radians=False
+        )
+    ).T
+    return geodet
+
+
+def geodet2ecef(geodet: Array) -> np.ndarray:
+    """
+    Use pyproj to convert from WGS84 coordinates to x,y,z points
+    (long, lat, alt to Cartesian Earth Centered Earth Fixed(ECEF))
+
+    Args:
+        geodet (np.ndarray): 3xn array of long, lat, alt [m] points
+
+    Returns:
+        np.ndarray: 3xn array of ECEF x,y,z points in [m]
+
+    """
+
+    warn_if_not_numpy(geodet)
+    geodet_np = np.array(geodet)
+    ecef = np.array(
+        t_geodet2ecef.transform(
+            geodet_np[:, 0], geodet_np[:, 1], geodet_np[:, 2], radians=False
+        )
+    ).T
+
+    return ecef
+
+
+@backend_jit(["inverse", "xp"])
+def apply_rot(r: Rotation, v: Array, inverse: bool = False, xp: ArrayNS = np) -> Array:
+    """Apply a scipy Rotation to a set of vectors.
+
+    Args:
+        v (Array): Array of shape (m, 3) of m 3D vectors.
+        r (Rotation): A scipy Rotation object.
+        xp (ArrayNS, optional): Backend to use. Defaults to None.
+
+    Returns:
+        Array: Array of shape (m, 3) of rotated vectors.
+
+    Notes:
+        - If inverse is True, apply the inverse rotation.
+        - No checks performed on input shapes or backends
+    """
+
+
+    if inverse:
+        v_rot = xp.einsum("ijk,ik->ij", r.as_matrix().reshape(-1, 3, 3).mT, v)
+    else:
+        v_rot = xp.einsum("ijk,ik->ij", r.as_matrix().reshape(-1, 3, 3), v)
+    return v_rot
+
+
+def sort_by_time(
+    times: Array,
+    data: Array,
+    backend: Backend = None,
+) -> tuple[Array, Array]:
+    """Sort data by increasing time.
+
+    Args:
+        times (Array): 1D array of times, len N.
+        data (Array): NxM array of data to sort by time.
+        backend (Backend, optional): Backend to use. Defaults to None.
+
+    Returns:
+        tuple[Array, Array]: Sorted times and data.
+    """
+
+    xp = coerce_ns(backend)
+    times_1d = ensure_1d(times, backend=xp)
+    if data.shape[0] != times_1d.shape[0]:
+        raise ValueError(
+            f"Data first dimension must match times length, found {data.shape} and {times_1d.shape}."
+        )
+    sort_idx = xp.argsort(times_1d)
+    return times_1d[sort_idx], data[sort_idx]
+
 
 
 @backend_jit("backend")
@@ -139,10 +299,6 @@ def finite_diff_2pt(xd: Array, fd: Array, backend: Backend = None) -> Array:
     return dfdx
 
 
-
-
-
-
 def great_circle_distance(
     geodet1: Array, geodet2: Array, backend: Backend = None, ignore_elev: bool = False
 ) -> Array:
@@ -244,7 +400,7 @@ def interp_haversine(
     return ecef
 
 
-def ned_rotation(geodet: Array, xp: Backend = None) -> R:
+def ned_rotation(geodet: Array, xp: Backend = None) -> Rotation:
     """Get the rotation from ECEF base to the North-East-Down frame at given 
     geodetic locations.
 
@@ -256,7 +412,7 @@ def ned_rotation(geodet: Array, xp: Backend = None) -> R:
     """
 
     xp = coerce_ns(xp)
-    rot_ned0 = R.from_matrix(
+    rot_ned0 = Rotation.from_matrix(
         xp.asarray(
             [
                 [0, 0, -1],
@@ -265,7 +421,7 @@ def ned_rotation(geodet: Array, xp: Backend = None) -> R:
             ]
         )
     )
-    rot_ned_ned0 = R.from_euler("XY", xp.asarray([geodet[:, 1], -geodet[:, 0]]).T, degrees=True)
+    rot_ned_ned0 = Rotation.from_euler("XY", xp.asarray([geodet[:, 1], -geodet[:, 0]]).T, degrees=True)
     rot_ned = rot_ned0 * rot_ned_ned0
     return rot_ned
 
@@ -294,6 +450,7 @@ def az_el_from_vec(v: Array, backend: Backend = None) -> Array:
 
     return xp.stack((az, el), axis=1)
 
+@backend_jit("backend")
 def vec_from_az_el(az_el: Array, backend: Backend = None) -> Array:
     """Compute 3D unit vectors from azimuth and elevation angles.
 
@@ -322,6 +479,7 @@ def vec_from_az_el(az_el: Array, backend: Backend = None) -> Array:
 
     return xp.stack((x, y, z), axis=1)
 
+@backend_jit("backend")
 def pixel_to_vec(pixels: Array, mat: Array, backend: Backend = None) -> Array:
     """Convert pixel coordinates to 3D unit vectors in camera frame.
 
@@ -341,6 +499,7 @@ def pixel_to_vec(pixels: Array, mat: Array, backend: Backend = None) -> Array:
     vecs_frd_unit = cam_to_frd_mat(xp) @ vecs_cam_unit # shape (3, N)
     return vecs_frd_unit.T # shape (N, 3)
 
+@backend_jit("backend")
 def vec_to_pixel(vecs: Array, mat: Array, backend: Backend = None) -> Array:
     """Convert 3D unit vectors in camera frame to pixel coordinates.
 

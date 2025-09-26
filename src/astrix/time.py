@@ -14,7 +14,7 @@ from ._backend_utils import (
     ArrayNS,
     BackendArg,
 )
-from .utils import (
+from .functs import (
     ensure_1d,
     is_increasing,
 )

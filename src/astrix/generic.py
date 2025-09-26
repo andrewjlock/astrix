@@ -4,8 +4,7 @@ from typing import ClassVar, final, TypeVar, Generic, override
 
 from ._backend_utils import Array, BackendArg, ArrayNS, get_backend
 from .time import Time, TimeLike, TimeInvariant, TIME_INVARIANT
-from .utils import ensure_1d, ensure_2d
-from .functs import interp_nd
+from .functs import interp_nd, ensure_1d, ensure_2d
 
 T = TypeVar("T", bound="TimeLike", covariant=True)
 

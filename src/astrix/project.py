@@ -13,7 +13,7 @@ from ._backend_utils import (
     BackendArg,
 )
 
-from astrix.utils import ensure_1d, ensure_2d
+from astrix.functs import ensure_1d, ensure_2d
 from astrix.time import Time, TimeLike, TIME_INVARIANT
 from astrix.generic import AbstractValue
 
