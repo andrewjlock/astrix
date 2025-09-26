@@ -1,0 +1,7 @@
+astrix
+======
+
+.. toctree::
+   :maxdepth: 4
+
+   astrix

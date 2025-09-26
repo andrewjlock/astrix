@@ -1,0 +1,7 @@
+astrix.spatial.frame module
+===========================
+
+.. automodule:: astrix.spatial.frame
+   :members:
+   :show-inheritance:
+   :undoc-members:

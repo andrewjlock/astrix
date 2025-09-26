@@ -1,0 +1,7 @@
+astrix.spatial.ray module
+=========================
+
+.. automodule:: astrix.spatial.ray
+   :members:
+   :show-inheritance:
+   :undoc-members:
