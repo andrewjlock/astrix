@@ -72,13 +72,6 @@ class Location(Generic[T], ABC):
     @abstractmethod
     def is_singular(self) -> bool:
         pass
-    
-
-    # @property
-    # def is_singular(self) -> bool:
-    #     """Check if the Location object represents a single point.
-    #     Overridden if True in Point class."""
-    #     return False
 
 
 @dataclass
@@ -180,16 +173,7 @@ class Point(Location[TimeLike]):
                 )
         self._time = time
 
-    @classmethod
-    def _constructor(cls, ecef: Array, time: TimeLike, xp: ArrayNS) -> Point:
-        """Internal constructor to create a Point object from ECEF array
-        Avoids type checking in __init__."""
-
-        obj = cls.__new__(cls)
-        obj._xp = xp
-        obj._ecef = ecef
-        obj._time = time
-        return obj
+    # --- Constructors ---
 
     @classmethod
     def from_geodet(
@@ -226,29 +210,18 @@ class Point(Location[TimeLike]):
         ecef_joined = xp.concatenate([p.ecef for p in points]).reshape(-1, 3)
         return cls(ecef_joined, time=time_joined, backend=xp)
 
-    @property
-    def is_singular(self) -> bool:
-        """Check if the Point object represents a single point."""
-        return self._ecef.shape[0] == 1
+    @classmethod
+    def _constructor(cls, ecef: Array, time: TimeLike, xp: ArrayNS) -> Point:
+        """Internal constructor to create a Point object from ECEF array
+        Avoids type checking in __init__."""
 
-    @property
-    def has_time(self) -> bool:
-        """Check if the Point has associated Time."""
-        return isinstance(self.time, Time)
+        obj = cls.__new__(cls)
+        obj._xp = xp
+        obj._ecef = ecef
+        obj._time = time
+        return obj
 
-    def convert_to(self, backend: BackendArg) -> Point:
-        """Convert the Point object to a different backend."""
-        xp = resolve_backend(backend)
-        if xp == self._xp:
-            return self
-        if isinstance(self._time, Time):
-            time_converted = self._time.convert_to(xp)
-        else:
-            time_converted = TIME_INVARIANT
-        return Point._constructor(xp.asarray(self.ecef), time_converted, xp)
-
-    def __getitem__(self, index: int) -> Point:
-        return Point(self.ecef[index], backend=self._xp)
+    # --- Dunder methods and properties ---
 
     def __repr__(self) -> str:
         return f"""Point of length {self._ecef.shape[0]} 
@@ -258,6 +231,9 @@ class Point(Location[TimeLike]):
 
     def __str__(self) -> str:
         return f"Point, n=<Select> {len(self)}, backend='{self._xp.__name__}'"
+
+    def __getitem__(self, index: int) -> Point:
+        return Point(self.ecef[index], backend=self._xp)
 
     def __add__(self, added_point: Point) -> Point:
         if self.has_time != added_point.has_time:
@@ -280,6 +256,18 @@ class Point(Location[TimeLike]):
                 raise ValueError("Cannot combine points with and without time.")
             time_joined = TIME_INVARIANT
         return Point(ecef_joined, time=time_joined, backend=self._xp)
+
+    # --- Properties and methods ---
+
+    @property
+    def is_singular(self) -> bool:
+        """Check if the Point object represents a single point."""
+        return self._ecef.shape[0] == 1
+
+    @property
+    def has_time(self) -> bool:
+        """Check if the Point has associated Time."""
+        return isinstance(self.time, Time)
 
     def _interp(self, time: Time | TimeInvariant, check_bounds: bool = True) -> Point:
         """Private method to 'interpolate' (broadcast) a singular Point to multiple times.
@@ -310,6 +298,18 @@ class Point(Location[TimeLike]):
             time,
             self._xp,
         )
+
+    def convert_to(self, backend: BackendArg) -> Point:
+        """Convert the Point object to a different backend."""
+        xp = resolve_backend(backend)
+        if xp == self._xp:
+            return self
+        if isinstance(self._time, Time):
+            time_converted = self._time.convert_to(xp)
+        else:
+            time_converted = TIME_INVARIANT
+        return Point._constructor(xp.asarray(self.ecef), time_converted, xp)
+
 
 
 @dataclass(frozen=True)
@@ -364,16 +364,7 @@ class Velocity:
     time: TimeLike
     _xp: ArrayNS
 
-    @property
-    def magnitude(self) -> Array:
-        """Get the velocity magnitude in m/s."""
-        return self._xp.linalg.norm(self.vec, axis=1)
-
-    @property
-    def unit(self) -> Array:
-        """Get the unit velocity vector."""
-        mag = self.magnitude
-        return self.vec / mag[:, self._xp.newaxis]
+    # --- Dunder methods and properties ---
 
     def __str__(self) -> str:
         return f"Velocity array of length {self.vec.shape[0]} with {self._xp.__name__} backend."
@@ -385,8 +376,21 @@ class Velocity:
         return self.vec.shape[0]
 
     @property
+    def magnitude(self) -> Array:
+        """Get the velocity magnitude in m/s."""
+        return self._xp.linalg.norm(self.vec, axis=1)
+
+    @property
+    def unit(self) -> Array:
+        """Get the unit velocity vector."""
+        mag = self.magnitude
+        return self.vec / mag[:, self._xp.newaxis]
+
+    @property
     def backend(self) -> str:
         return self._xp.__name__
+
+    # --- Methods ---
 
     def convert_to(self, backend: BackendArg) -> Velocity:
         """Convert the Velocity object to a different backend."""
@@ -471,6 +475,9 @@ class Path(Location[Time]):
         else:
             raise ValueError("Path must have at least 2 points with associated Time.")
 
+    # --- Constructors ---
+
+
     @classmethod
     def _constructor(cls, ecef: Array, time: Time, xp: ArrayNS) -> Path:
         """Internal constructor to create a Path object from ECEF array and Time object.
@@ -485,6 +492,19 @@ class Path(Location[Time]):
         elif len(obj.time) == 2:
             obj._vel = finite_diff_2pt(obj._time.secs, obj._ecef, backend=obj._xp)
         return obj
+
+    # --- Dunder methods and properties ---
+
+    def __repr__(self) -> str:
+        return f"""Path of length {self._ecef.shape[0]} 
+            with {self._xp.__name__} backend. \n 
+            Start time: {self.time[0]}, 
+            End time: {self.time[1]} \n
+            Start point (LLA): {self.geodet[0]},
+            End point (LLA): {self.geodet[-1]}"""
+
+    def __str__(self) -> str:
+        return f"Path, n={len(self)}, backend='{self._xp.__name__}')"
 
     @property
     def start_time(self) -> TimeLike:
@@ -507,25 +527,8 @@ class Path(Location[Time]):
         """Get the Velocity object associated with the Path."""
         return Velocity(self._vel, self._time, self._xp)
 
-    def __repr__(self) -> str:
-        return f"""Path of length {self._ecef.shape[0]} 
-            with {self._xp.__name__} backend. \n 
-            Start time: {self.time[0]}, 
-            End time: {self.time[1]} \n
-            Start point (LLA): {self.geodet[0]},
-            End point (LLA): {self.geodet[-1]}"""
+    # --- Methods ---
 
-    def __str__(self) -> str:
-        return f"Path, n={len(self)}, backend='{self._xp.__name__}')"
-
-    def convert_to(self, backend: BackendArg) -> Path:
-        """Convert the Path object to a different backend."""
-        xp = resolve_backend(backend)
-        if xp == self._xp:
-            return self
-        return Path(
-            Point(self.ecef, time=self.time.convert_to(xp), backend=xp), backend=xp
-        )
 
     def interp(
         self, time: Time, method: str = "linear", check_bounds: bool = True
@@ -596,4 +599,13 @@ class Path(Location[Time]):
                 backend=self._xp,
             )
             return Velocity(interp_vel, time, self._xp)
+
+    def convert_to(self, backend: BackendArg) -> Path:
+        """Convert the Path object to a different backend."""
+        xp = resolve_backend(backend)
+        if xp == self._xp:
+            return self
+        return Path(
+            Point(self.ecef, time=self.time.convert_to(xp), backend=xp), backend=xp
+        )
 

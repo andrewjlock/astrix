@@ -25,15 +25,7 @@ class TimeLike(ABC):
     """
 
     @abstractmethod
-    def in_bounds(self, time: Time) -> bool:
-        pass
-
-    @abstractmethod
     def __getitem__(self, index: int) -> TimeLike:
-        pass
-
-    @abstractmethod
-    def convert_to(self, backend: BackendArg) -> TimeLike:
         pass
 
     @abstractmethod
@@ -42,8 +34,17 @@ class TimeLike(ABC):
 
     @property
     def is_singular(self) -> bool:
-        """Check if the TimeLike object represents a single time instance."""
+        """Check if the TimeLike object represents a single time instance.
+        Override if not singular"""
         return len(self) == 1
+
+    @abstractmethod
+    def convert_to(self, backend: BackendArg) -> TimeLike:
+        pass
+
+    @abstractmethod
+    def in_bounds(self, time: Time) -> bool:
+        pass
 
 
 @dataclass(frozen=True)
@@ -51,9 +52,6 @@ class TimeInvariant(TimeLike):
     """Class for static time-like objects (static Time).
     'in_bounds' function is required for integration with other modules.
     """
-
-    def in_bounds(self, time: Time) -> bool:
-        return True
 
     def __len__(self) -> int:
         return 1
@@ -63,6 +61,9 @@ class TimeInvariant(TimeLike):
 
     def __getitem__(self, index: int) -> TimeInvariant:
         return self
+
+    def in_bounds(self, time: Time) -> bool:
+        return True
 
     def convert_to(self, backend: BackendArg) -> TimeInvariant:
         return self
@@ -125,21 +126,7 @@ class Time(TimeLike):
         self._min = self._xp.min(self._secs)
         self._max = self._xp.max(self._secs)
 
-    def in_bounds(self, time: Time) -> bool:
-        """Check if the given time(s) are within the bounds of this Time object."""
-        return bool((time.start_sec >= self._min) & (time.end_sec <= self._max))
-
-    @classmethod
-    def _constructor(cls, secs: Array, xp: ArrayNS) -> Time:
-        """Internal constructor to create a Time object from seconds array
-        Avoids type checking in __init__."""
-
-        obj = cls.__new__(cls)
-        obj._xp = xp
-        obj._secs = secs
-        obj._min = obj._xp.min(secs)
-        obj._max = obj._xp.max(secs)
-        return obj
+    # --- Constructors ---
 
     @classmethod
     def from_datetime(
@@ -160,23 +147,40 @@ class Time(TimeLike):
         secs = xp.asarray([t.timestamp() for t in time])
         return cls(secs, backend=backend)
 
-    @property
-    def datetime(self) -> list[dt.datetime]:
-        return [
-            dt.datetime.fromtimestamp(float(s), tz=dt.timezone.utc) for s in self.secs
-        ]
+    @classmethod
+    def _constructor(cls, secs: Array, xp: ArrayNS) -> Time:
+        """Internal constructor to create a Time object from seconds array
+        Avoids type checking in __init__."""
+
+        obj = cls.__new__(cls)
+        obj._xp = xp
+        obj._secs = secs
+        obj._min = obj._xp.min(secs)
+        obj._max = obj._xp.max(secs)
+        return obj
+
+    # --- Dunder methods and properties ---
+
+    def __repr__(self) -> str:
+        if len(self) == 1:
+            return str(self.datetime[0])
+        else:
+            return f"Time array of length {len(self)} from {self.datetime[0]} to \
+            {self.datetime[-1]} with {self._xp.__name__} backend."
+
+    def __len__(self) -> int:
+        return self._secs.shape[0]
 
     def __getitem__(self, index: int) -> Time:
         return Time._constructor(
             self._xp.asarray(self.secs[index]).reshape(-1), xp=self._xp
         )
 
-    def convert_to(self, backend: BackendArg) -> Time:
-        """Convert the Time object to a different backend."""
-        xp = resolve_backend(backend)
-        if xp == self._xp:
-            return self
-        return Time._constructor(xp.asarray(self.secs), xp=xp)
+    @property
+    def datetime(self) -> list[dt.datetime]:
+        return [
+            dt.datetime.fromtimestamp(float(s), tz=dt.timezone.utc) for s in self.secs
+        ]
 
     @property
     def is_increasing(self) -> bool:
@@ -189,6 +193,16 @@ class Time(TimeLike):
         return self._secs
 
     @property
+    def start_sec(self) -> float | Array:
+        """Get the start time in seconds since epoch."""
+        return self._min
+
+    @property
+    def end_sec(self) -> float | Array:
+        """Get the end time in seconds since epoch."""
+        return self._max
+
+    @property
     def duration(self) -> float | Array:
         """Get the duration between the first and last time in seconds."""
         return self._max - self._min
@@ -198,28 +212,14 @@ class Time(TimeLike):
         """Get the name of the array backend in use (e.g., 'numpy', 'jax.numpy')."""
         return self._xp.__name__
 
-    def __repr__(self) -> str:
-        if len(self) == 1:
-            return str(self.datetime[0])
-        else:
-            return f"Time array of length {len(self)} from {self.datetime[0]} to \
-            {self.datetime[-1]} with {self._xp.__name__} backend."
+    # --- Methods ---
 
-    def __len__(self) -> int:
-        return self._secs.shape[0]
+    def in_bounds(self, time: Time) -> bool:
+        """Check if the given time(s) are within the bounds of this Time object."""
+        return bool((time.start_sec >= self._min) & (time.end_sec <= self._max))
 
     def offset(self, offset: float) -> Time:
         return Time(self.secs + offset, backend=self._xp)
-
-    @property
-    def start_sec(self) -> float | Array:
-        """Get the start time in seconds since epoch."""
-        return self._min
-
-    @property
-    def end_sec(self) -> float | Array:
-        """Get the end time in seconds since epoch."""
-        return self._max
 
     def _repeat_single(self, n: int) -> Time:
         """Private method to repeat a singular Time n times.
@@ -231,6 +231,13 @@ class Time(TimeLike):
                 "This is not supported. Use TimeGroup objects for multiple times."
             )
         return Time._constructor(self._xp.repeat(self.secs, n), xp=self._xp)
+
+    def convert_to(self, backend: BackendArg) -> Time:
+        """Convert the Time object to a different backend."""
+        xp = resolve_backend(backend)
+        if xp == self._xp:
+            return self
+        return Time._constructor(xp.asarray(self.secs), xp=xp)
 
 
 class TimeGroup:
@@ -327,6 +334,8 @@ class TimeGroup:
             )
         self._duration = self._overlap_bounds[1] - self._overlap_bounds[0]
 
+    # --- Dunder methods and properties ---
+
     def __str__(self) -> str:
         if self.is_invariant:
             return "TimeGroup: Time invariant"
@@ -344,6 +353,13 @@ class TimeGroup:
                 f"backend: {self._xp.__name__}"
             )
 
+    def __getitem__(self, index: int) -> TimeLike:
+        return self._times[index]
+
+    def __len__(self) -> int:
+        return len(self._times)
+
+
     @property
     def backend(self) -> str:
         return self._xp.__name__
@@ -356,33 +372,10 @@ class TimeGroup:
     def times(self) -> tuple[TimeLike, ...]:
         return tuple(self._times)
 
-    def in_bounds(self, time: Time) -> bool:
-        """Check if the given time(s) are within the overlap bounds of this TimeGroup."""
-        return bool(
-            (time.start_sec >= self._overlap_bounds[0])
-            & (time.end_sec <= self._overlap_bounds[1])
-        )
-
     @property
     def duration(self) -> float | Array:
         """Get the duration of the overlap bounds in seconds."""
         return self._duration
-
-    def convert_to(self, backend: BackendArg) -> TimeGroup:
-        """Convert the TimeGroup object to a different backend."""
-        xp = resolve_backend(backend)
-        if xp == self._xp:
-            return self
-        times_converted: list[TimeLike | TimeGroup] = [
-            t.convert_to(xp) for t in self._times
-        ]
-        return TimeGroup(times_converted, backend=xp)
-
-    def __getitem__(self, index: int) -> TimeLike:
-        return self._times[index]
-
-    def __len__(self) -> int:
-        return len(self._times)
 
     @property
     def overlap_bounds(self) -> tuple[TimeLike, TimeLike]:
@@ -413,6 +406,25 @@ class TimeGroup:
                     self._xp.asarray(self._extreme_bounds[1]).reshape(-1), xp=self._xp
                 ),
             )
+
+    # --- Methods ---
+
+    def in_bounds(self, time: Time) -> bool:
+        """Check if the given time(s) are within the overlap bounds of this TimeGroup."""
+        return bool(
+            (time.start_sec >= self._overlap_bounds[0])
+            & (time.end_sec <= self._overlap_bounds[1])
+        )
+
+    def convert_to(self, backend: BackendArg) -> TimeGroup:
+        """Convert the TimeGroup object to a different backend."""
+        xp = resolve_backend(backend)
+        if xp == self._xp:
+            return self
+        times_converted: list[TimeLike | TimeGroup] = [
+            t.convert_to(xp) for t in self._times
+        ]
+        return TimeGroup(times_converted, backend=xp)
 
 
 def time_linspace(t1: Time, t2: Time, num: int) -> Time:

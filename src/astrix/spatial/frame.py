@@ -18,11 +18,19 @@ from astrix._backend_utils import (
 from astrix.functs import ned_rotation
 
 
-from astrix.time import Time, TimeLike, TimeInvariant, TIME_INVARIANT, TimeGroup, time_linspace
+from astrix.time import (
+    Time,
+    TimeLike,
+    TimeInvariant,
+    TIME_INVARIANT,
+    TimeGroup,
+    time_linspace,
+)
 from astrix.spatial.location import Location, Point, POINT_ORIGIN, Path
 from astrix.spatial.rotation import RotationLike, RotationSequence, _RotationStatic
 
 ROT_IDENTITY = Rotation.from_quat([0.0, 0.0, 0.0, 1.0])
+
 
 class Frame:
     """A reference frame defined by a rotation and location.
@@ -223,27 +231,27 @@ class Frame:
         # Parse name
         self._name = name
 
-    def _create_interp_fn(
-        self, rot_chain: list[RotationLike]
-    ) -> Callable[[Array], Rotation]:
-        """Create a function that computes the composite rotation at given times.
-        Constructor function provided to allow backend conversion
-        """
+    # --- Dunder methods and properties ---
 
-        @backend_jit()
-        def _interp_rotation(secs: Array) -> Rotation:
-            rots = [r._interp_secs(secs) for r in rot_chain]
-            final_rot = rots[0]
-            for r in rots[1:]:
-                final_rot = final_rot * r
-            return final_rot
+    def __repr__(self) -> str:
+        return (
+            f"Frame(name={self._name}, static_rot={self._static_rot}, \
+                static_loc={self._static_loc}, has_ref={self._has_ref}, \
+                time_bounds={self.time_bounds}, backend={self.backend})"
+        )
 
-        return _interp_rotation
+    def __str__(self) -> str:
+        return f"Frame: {self._name}"
 
     @property
     def is_static(self) -> bool:
         """Check if the frame is static (single rotation and singular Point location)."""
         return self._static_rot and self._static_loc
+
+    @property
+    def has_ref(self) -> bool:
+        """Check if the frame has a reference frame."""
+        return self._has_ref
 
     @property
     def backend(self) -> str:
@@ -271,6 +279,8 @@ class Frame:
     def rel_rot(self) -> RotationLike:
         """Get the last rotation of the frame relative to the reference frame."""
         return self._rot
+
+    # --- Methods ---
 
     def interp_rot(
         self, time: TimeLike = TIME_INVARIANT, check_bounds: bool = True
@@ -318,11 +328,22 @@ class Frame:
         else:
             raise ValueError("time must be a Time or TimeInvariant")
 
-    @property
-    def has_ref(self) -> bool:
-        """Check if the frame has a reference frame."""
-        return self._has_ref
+    def _create_interp_fn(
+        self, rot_chain: list[RotationLike]
+    ) -> Callable[[Array], Rotation]:
+        """Create a function that computes the composite rotation at given times.
+        Constructor function provided to allow backend conversion
+        """
 
+        @backend_jit()
+        def _interp_rotation(secs: Array) -> Rotation:
+            rots = [r._interp_secs(secs) for r in rot_chain]
+            final_rot = rots[0]
+            for r in rots[1:]:
+                final_rot = final_rot * r
+            return final_rot
+
+        return _interp_rotation
 
     def convert_to(self, backend: BackendArg) -> Frame:
         """Convert the Frame object to a different backend."""
@@ -350,13 +371,15 @@ class Frame:
 
 
 FRAME_ECEF = Frame(
-    Rotation.from_quat([0., 0., 0., 1.]), POINT_ORIGIN, name="ECEF"
+    Rotation.from_quat([0.0, 0.0, 0.0, 1.0]), POINT_ORIGIN, name="ECEF"
 )  # ECEF frame at origin
 
 
-def ned_frame(loc: Location, downsample: float | None = 10., name="NED frame") -> Frame:
+def ned_frame(
+    loc: Location, downsample: float | None = 10.0, name="NED frame"
+) -> Frame:
     """Create a local NED (North-East-Down) frame at the given location(s).
-    NED rotations are evaluated at all times in the Point/Path.  
+    NED rotations are evaluated at all times in the Point/Path.
 
     Args:
         loc (Location): Location(s) to define the NED frame origin.
@@ -372,7 +395,7 @@ def ned_frame(loc: Location, downsample: float | None = 10., name="NED frame") -
     Returns:
         Frame: NED frame at the given location(s).
 
-    Notes: 
+    Notes:
         - Adopts backend from Location object.
     """
 
@@ -381,7 +404,9 @@ def ned_frame(loc: Location, downsample: float | None = 10., name="NED frame") -
 
     if isinstance(loc, Path) and downsample is not None:
         if len(loc.time) > loc.time.duration / downsample:
-            time_new = time_linspace(loc.time[0], loc.time[-1], int(loc.time.duration // downsample + 1))
+            time_new = time_linspace(
+                loc.time[0], loc.time[-1], int(loc.time.duration // downsample + 1)
+            )
             loc = Path._constructor(
                 loc.interp(time_new, check_bounds=False).ecef,
                 time=time_new,
@@ -389,7 +414,7 @@ def ned_frame(loc: Location, downsample: float | None = 10., name="NED frame") -
             )
 
     rots = ned_rotation(loc.geodet, xp=loc._xp)
-    if isinstance(loc.time, Time): 
+    if isinstance(loc.time, Time):
         rot_seq = RotationSequence(rots, loc.time, backend=loc.backend)
         frame = Frame(rot_seq, loc, backend=loc.backend, name=name)
     else:

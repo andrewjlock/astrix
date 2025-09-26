@@ -18,6 +18,7 @@ from astrix._backend_utils import (
 
 from astrix.time import Time, TimeLike, TimeInvariant, TIME_INVARIANT
 
+
 class RotationLike(ABC):
     """Abstract base class for rotation objects (RotationSingle, RotationSequence).
     'convert_to' function is required for integration with other modules.
@@ -26,9 +27,8 @@ class RotationLike(ABC):
     _rot: Rotation
     _xp: ArrayNS
 
-    @abstractmethod
-    def convert_to(self, backend: BackendArg) -> RotationLike:
-        pass
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__} of length {len(self)} with {self._xp.__name__} backend."
 
     @abstractmethod
     def __len__(self) -> int:
@@ -39,6 +39,10 @@ class RotationLike(ABC):
     def time(self) -> TimeLike:
         pass
 
+    @property
+    def backend(self) -> str:
+        return self._xp.__name__
+
     @abstractmethod
     def interp(self, time: Time) -> Rotation:
         pass
@@ -47,11 +51,9 @@ class RotationLike(ABC):
     def _interp_secs(self, secs: Array) -> Rotation:
         pass
 
-    def backend(self) -> str:
-        return self._xp.__name__
-
-    def __str__(self) -> str:
-        return f"{self.__class__.__name__} of length {len(self)} with {self._xp.__name__} backend."
+    @abstractmethod
+    def convert_to(self, backend: BackendArg) -> RotationLike:
+        pass
 
 
 class _RotationStatic(RotationLike):
@@ -68,20 +70,20 @@ class _RotationStatic(RotationLike):
                 "RotationSingle must be initialized with a single rotation"
             )
 
-    def convert_to(self, backend: BackendArg) -> _RotationStatic:
-        """Convert the RotationSingle object to a different backend."""
-        xp = resolve_backend(backend)
-        if xp == self._xp:
-            return self
-        return _RotationStatic(self._rot, xp)
+    def __len__(self) -> int:
+        return 1
 
     @property
     def time(self) -> TimeInvariant:
         """Get the Time object associated with the rotation (always static)."""
         return TIME_INVARIANT
 
-    def __len__(self) -> int:
-        return 1
+    def convert_to(self, backend: BackendArg) -> _RotationStatic:
+        """Convert the RotationSingle object to a different backend."""
+        xp = resolve_backend(backend)
+        if xp == self._xp:
+            return self
+        return _RotationStatic(self._rot, xp)
 
     def interp(self, time: Time | TimeInvariant) -> Rotation:
         """Interpolate the rotation at the given times (always returns the same rotation)."""
@@ -179,20 +181,13 @@ class RotationSequence(RotationLike):
         self._time = time.convert_to(self._xp)
         self._slerp = Slerp(self._time.secs, self._rot)
 
-    def convert_to(self, backend: BackendArg) -> RotationSequence:
-        """Convert the RotationSequence object to a different backend."""
-        xp = resolve_backend(backend)
-        if xp == self._xp:
-            return self
-        return RotationSequence(self._rot, self._time, xp)
+    def __len__(self) -> int:
+        return len(self._rot)
 
     @property
     def time(self) -> Time:
         """Get the Time object associated with the rotation sequence."""
         return self._time
-
-    def __len__(self) -> int:
-        return len(self._rot)
 
     def interp(self, time: Time, check_bounds: bool = True) -> Rotation:
         """Interpolate the rotation sequence at the given times to return Rotation(s)."""
@@ -208,3 +203,9 @@ class RotationSequence(RotationLike):
     def _interp_secs(self, secs: Array) -> Rotation:
         return self._slerp(secs)
 
+    def convert_to(self, backend: BackendArg) -> RotationSequence:
+        """Convert the RotationSequence object to a different backend."""
+        xp = resolve_backend(backend)
+        if xp == self._xp:
+            return self
+        return RotationSequence(self._rot, self._time, xp)
