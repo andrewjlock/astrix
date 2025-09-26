@@ -12,9 +12,9 @@ Source code is hosted on [GitHub](https://github.com/andrewjlock/astrix).
 
 ## Features
 
-- Simple, object-oriented interface to reconstruct position and reference frame of moving targets, observer stations, cameras projections, and more.
-- Support for NumPy and Jax backends using the [array api](https://data-apis.org/array-api/latest/) spec. Fully differentiable and JIT-compatible using Jax backend for efficient optimisation and state estimation.
-- Many convenience tools for interpolation, triangulation, and frame handling in ECEF coordinates.
+- Simple, object-oriented interface to reconstruct multiple simultaneously moving reference frames, and convert to/from camera image pixel coordinates.
+- Support for NumPy and Jax backends using the [array api](https://data-apis.org/array-api/latest/) spec. Most functinoality is differentiable and JIT-compilable using Jax backend, which allows efficient optimisation and state estimation.
+- Many convenience tools for interpolation, intrinsic frame handling, triangulation, position conversion, data validation etc.
 
 This toolbox has three main use cases:
 1. Planning flight paths and ground station placement for aerospace observation campaigns.
