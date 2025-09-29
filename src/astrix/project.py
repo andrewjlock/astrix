@@ -22,8 +22,8 @@ class CameraLike(ABC):
 
     _res: tuple[int, int]
     _sensor_size: tuple[float, float]
-    _rad_coef: ArrayNS | None
-    _zoom: AbstractValue | None
+    _rad_coef: Array | None
+    _zoom: AbstractValue[TimeLike] | None
     _xp: ArrayNS
 
     @property
@@ -43,12 +43,12 @@ class CameraLike(ABC):
         pass
 
     @abstractmethod
-    def mat(self, zoom: Array | None) -> Array:
+    def mat(self, time: TimeLike) -> Array:
         """Camera intrinsic matrix."""
         pass
 
     @abstractmethod
-    def rad_coef(self, zoom: float | None) -> Array:
+    def rad_coef(self, time: TimeLike) -> Array:
         """Radial distortion coefficients."""
         pass
 
@@ -79,7 +79,7 @@ class CameraLike(ABC):
 
 
 @dataclass
-class FixedZoomCamera:
+class FixedZoomCamera(CameraLike):
     """A simple pinhole camera model with fixed zoom.
 
     Notes:
@@ -202,7 +202,7 @@ class FixedZoomCamera:
         """Whether the camera has distortion coefficients."""
         return self._rad_coef is not None
 
-    def fov(self, _):
+    def fov(self, zoom: float | None = None) -> tuple[float, float]:
         """Field of view in degrees (horizontal, vertical)."""
 
         return (
@@ -214,13 +214,13 @@ class FixedZoomCamera:
             ),
         )
 
-    def mat(self, _: Any = None) -> Array:
+    def mat(self, time: TimeLike = TIME_INVARIANT) -> Array:
         """Camera intrinsic matrix.
         No zoom parameter needed as this is a fixed zoom camera.
         """
         return self._mat
 
-    def rad_coef(self, _):
+    def rad_coef(self, time: TimeLike = TIME_INVARIANT) -> Array:
         """Radial distortion coefficients."""
         if self._rad_coef is None:
             raise ValueError("Camera has no distortion coefficients.")

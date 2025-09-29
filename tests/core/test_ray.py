@@ -122,5 +122,5 @@ def test_ray_moving_frame(xp):
     assert np.allclose(
         ray_ecef.origin_points.ecef, xp.array([[0.5, 0.0, 0.0], [0., 1., 0.0]])
     )
-    assert np.allclose(ray_ecef.unit_rel, xp.array([[1.0, 0., 0.0],
+    assert np.allclose(ray_ecef.unit_rel, xp.array([[0.0, 1.0, 0.0],
                                                     [0, -0.70710678, 0.70710678]]))

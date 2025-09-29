@@ -128,7 +128,7 @@ class Ray:
         """
 
         xp = resolve_backend(backend)
-        if len(origin) != len(endpoint) or origin.is_singular:
+        if len(origin) != len(endpoint) and not origin.is_singular:
             raise ValueError(
                 "Origin and endpoint arrays must have the same shape or origin must be singular."
             )
@@ -180,7 +180,7 @@ class Ray:
         """
 
         xp = resolve_backend(backend)
-        mat = camera.mat(pixel.zoom)
+        mat = camera.mat(pixel.time)
         dir = pixel_to_vec(pixel.uv, mat, xp)
         return cls(
             dir,
@@ -285,9 +285,21 @@ class Ray:
         return self._to_frame(FRAME_ECEF)
 
     def to_ned(self) -> Ray:
+        """Convert the Ray object to a local NED frame at the ray origin."""
         warn_if_not_numpy(self._xp)
         frame_ned = ned_frame(self._frame._loc, name=self._frame._name + "-> NED")
         return self._to_frame(frame_ned)
+
+    def to_frame(self, frame: Frame) -> Ray:
+        """Convert the Ray object to a different reference frame.
+
+        Args:
+            frame (Frame): Reference frame to convert the ray to.
+
+        Returns:
+            Ray: Ray object defined in the new reference frame.
+        """
+        return self._to_frame(frame)
 
     def _to_frame(self, frame: Frame) -> Ray:
         """Internal method to convert ray origin and direction to a different frame."""
@@ -295,7 +307,7 @@ class Ray:
             frame = frame.convert_to(self.backend)
         rots_abs = self._frame.interp_rot(self.time, check_bounds=False)
         rots_new = frame.interp_rot(self.time, check_bounds=False)
-        rots_rel = rots_new * rots_abs.inv()
+        rots_rel = rots_new.inv() * rots_abs
         unit_new = apply_rot(rots_rel, self._unit_rel, xp=self._xp)
         origin_new = apply_rot(
             rots_new,
@@ -371,12 +383,8 @@ class Ray:
             - Rays that do not intersect the image plane will result in NaN pixel coordinates.
         """
 
-        if camera.has_zoom:
-            zoom = camera.interp_zoom(self.time)
-        else:
-            zoom = None
         camera = camera.convert_to(self.backend)
-        uv = vec_to_pixel(self._unit_rel, camera.mat(zoom), self._xp)
+        uv = vec_to_pixel(self._unit_rel, camera.mat(self.time), self._xp)
         return Pixel(uv, time=self.time, backend=self._xp)
 
 
