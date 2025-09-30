@@ -5,14 +5,11 @@ AeroSpace Trajectory Imaging toolboX
 
 .. toctree::
    :maxdepth: 2
+   :caption: Contents:
 
-   README.md
-
-.. toctree::
-   :maxdepth: 2
-   :caption: API Reference
-
-   astrix
+   Getting Started <getting_started>
+   examples
+   api/index
 
 * :ref:`genindex`
 * :ref:`modindex`

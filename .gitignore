@@ -69,14 +69,8 @@ instance/
 
 # Sphinx documentation
 docs/_build/
-docs/*.rst
+docs/api/*.rst
 docs/*.bat
-!docs/index.rst
-!docs/README.rst
-!docs/contributing.rst
-!docs/installation.rst
-!docs/usage.rst
-!docs/conf.rst
 
 # PyBuilder
 target/

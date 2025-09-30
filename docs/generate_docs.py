@@ -7,8 +7,8 @@ import subprocess
 
 def generate_module_docs():
     # Clean up old RST files first (except the important ones)
-    for file in os.listdir("."):
-        if file.endswith(".rst") and file not in ["index.rst", "conf.rst"]:
+    for file in os.listdir("./api/"):
+        if file.endswith(".rst") and file not in ["index.rst"]:
             os.remove(file)
 
     # Run sphinx-apidoc with minimal options
@@ -18,7 +18,7 @@ def generate_module_docs():
         "--module-first",  # Module documentation first
         "-e",  # Documentation for each module on it's own page (?)
         "-o",  
-        ".",
+        "./api/",
         "../src/astrix/",
         "../tests",
     ]

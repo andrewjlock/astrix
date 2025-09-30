@@ -29,6 +29,7 @@ html_theme = "furo"
 default_dark_mode = True
 html_theme_options = {
     "sidebar_hide_name": False,
+    "navigation_with_keys": True,
 }
 
 autodoc_default_options = {
