@@ -480,6 +480,24 @@ def vec_from_az_el(az_el: Array, backend: Backend = None) -> Array:
     return xp.stack((x, y, z), axis=1)
 
 @backend_jit("backend")
+def total_angle_from_vec(v: Array, backend: Backend = None) -> Array:
+    """Compute the total angle from a set of 3D vectors from forard (1, 0, 0).
+
+    Args:
+        v (Array): Array of shape (N, 3) of m 3D vectors.
+        backend (Backend, optional): Backend to use. Defaults to None.
+
+    Returns:
+        Array: Array of shape (N,) of total angles in degrees.
+            Total angle is in [0, 180].
+    """
+
+    xp = coerce_ns(backend)
+    v_unit = v / xp.linalg.norm(v, axis=1, keepdims=True)
+    total_angle = xp.rad2deg(xp.arccos(v_unit[:, 0]))
+    return total_angle
+
+@backend_jit("backend")
 def pixel_to_vec(pixels: Array, mat: Array, backend: Backend = None) -> Array:
     """Convert pixel coordinates to 3D unit vectors in camera frame.
 
@@ -518,3 +536,5 @@ def vec_to_pixel(vecs: Array, mat: Array, backend: Backend = None) -> Array:
     pixels_h = xp.einsum("ijk,ki->ji", mat.reshape(-1, 3, 3), vecs_cam) # shape (3, N)
     pixels = pixels_h[:2, :] / pixels_h[2, :] # shape (2, N)
     return pixels.T # shape (N, 2)
+
+

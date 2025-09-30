@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from types import ModuleType
 from functools import lru_cache
 from importlib.util import find_spec
-from array_api_compat import numpy as array_namespace
+from array_api_compat import array_namespace
 import numpy as np
 from numpy.typing import NDArray
 
@@ -47,7 +47,7 @@ def get_backend(*args: Any) -> ArrayNS:
     try:
         return array_namespace(
             *args,
-        )
+        ).split(".")[-1]
     except TypeError:
         return np
 
@@ -70,7 +70,7 @@ def require_jax():
         )
 
 
-def warn_if_not_numpy(arg: ModuleType | Array, fun: str = ""):
+def warn_if_not_numpy(arg: ModuleType | Array | str, fun: str = ""):
     if isinstance(arg, ModuleType):
         if arg is not np:  # pyright: ignore[reportUnnecessaryComparison]
             warnings.warn(
@@ -87,6 +87,16 @@ def warn_if_not_numpy(arg: ModuleType | Array, fun: str = ""):
                 + f"Function '{fun}' only supports NumPy arrays.",
                 stacklevel=2,
             )
+    if isinstance(arg, str):
+        xp = resolve_backend(arg)
+        if xp is not np:  # pyright: ignore[reportUnnecessaryComparison]
+            warnings.warn(
+                "Force converting backend to NumPy array for compatibility. "
+                + "This is incompatible with JAX's JIT and autograd features. "
+                + f"Function '{fun}' only supports NumPy backend.",
+                stacklevel=2,
+            )
+
 
 
 @lru_cache(None)
@@ -127,9 +137,10 @@ def enforce_cpu_x64():
 
 
 # pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false
-# pyright: reportUnknownVariableType=false
-def backend_jit(static_argnames: str | list[str] | None =None): #pyright: ignore
-    def decorator(func):
+# pyright: reportUnknownVariableType=false, reportUnknownParameterType=false
+# pyright: reportMissingParameterType=false
+def backend_jit(static_argnames: str | list[str] | None =None):
+    def decorator(func): 
         if not HAS_JAX:
             return func
         import jax    

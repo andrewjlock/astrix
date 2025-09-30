@@ -1,4 +1,3 @@
-# pyright: standard
 # pyright: reportAny=false, reportImplicitOverride=false
 
 from __future__ import annotations
@@ -13,7 +12,6 @@ from astrix._backend_utils import (
 )
 
 from astrix.functs import (
-    ensure_1d,
     ensure_2d,
     apply_rot,
     interp_nd,
@@ -21,6 +19,7 @@ from astrix.functs import (
     vec_from_az_el,
     pixel_to_vec,
     vec_to_pixel,
+    total_angle_from_vec
 )
 
 from astrix.time import Time, TimeLike, TimeInvariant, TIME_INVARIANT
@@ -212,12 +211,12 @@ class Ray:
 
     def __repr__(self) -> str:
         return f"""Ray of length {len(self)} with
-            origin in frame '{self._frame._name}' and
+            origin in frame '{self._frame.name}' and
             {self._xp.__name__} backend. 
             """
 
     def __str__(self) -> str:
-        return f"Ray, frame={self._frame._name}, n={len(self)})"
+        return f"Ray, frame={self._frame.name}, n={len(self)})"
 
     def __getitem__(self, index: int) -> Ray:
         return Ray._constructor(
@@ -274,6 +273,11 @@ class Ray:
         return az_el_from_vec(self._unit_rel, backend=self._xp)
 
     @property
+    def total_angle(self) -> Array:
+        """Return the total angle from the forward axis in degrees."""
+        return total_angle_from_vec(self._unit_rel, backend=self._xp)
+
+    @property
     def backend(self) -> str:
         """Get the name of the array backend in use (e.g., 'numpy', 'jax')."""
         return self._xp.__name__
@@ -287,7 +291,7 @@ class Ray:
     def to_ned(self) -> Ray:
         """Convert the Ray object to a local NED frame at the ray origin."""
         warn_if_not_numpy(self._xp)
-        frame_ned = ned_frame(self._frame._loc, name=self._frame._name + "-> NED")
+        frame_ned = ned_frame(self._frame._loc, name=self._frame.name + "-> NED")
         return self._to_frame(frame_ned)
 
     def to_frame(self, frame: Frame) -> Ray:
@@ -348,14 +352,14 @@ class Ray:
 
             interp_origin = interp_nd(
                 time.secs,
-                self.time.secs,  # pyright: ignore[reportOptionalMemberAccess]
+                self.time.secs,
                 self._origin_rel,
                 backend=self._xp,
             )
 
             interp_unit = interp_nd(
                 time.secs,
-                self.time.secs,  # pyright: ignore[reportOptionalMemberAccess]
+                self.time.secs,
                 self._unit_rel,
                 backend=self._xp,
             )
@@ -395,7 +399,7 @@ class Ray:
             return self
         unit_converted = xp.asarray(self._unit_rel)
         origin_converted = xp.asarray(self._origin_rel)
-        time_converted = self.time.convert_to(xp)  # pyright: ignore[reportOptionalMemberAccess]
+        time_converted = self.time.convert_to(xp)
         frame_converted = self._frame.convert_to(xp)
         return Ray._constructor(
             unit_converted, origin_converted, time_converted, frame_converted, xp

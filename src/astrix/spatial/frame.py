@@ -1,4 +1,3 @@
-# pyright: standard
 # pyright: reportAny=false, reportImplicitOverride=false
 
 from __future__ import annotations
@@ -136,7 +135,7 @@ class Frame:
     _rot: RotationLike
     _rot_chain: list[RotationLike]
     _interp_rot_fn: Callable[[Array], Rotation]
-    _loc: Location
+    _loc: Location[TimeLike]
     _time_group: TimeGroup
     _xp: ArrayNS
     _has_ref: bool
@@ -147,7 +146,7 @@ class Frame:
     def __init__(
         self,
         rot: Rotation | RotationSequence,
-        loc: Location | None = None,
+        loc: Location[TimeLike] | None = None,
         ref_frame: Frame | None = None,
         backend: BackendArg = None,
         name: str = "unnamed_frame",
@@ -188,7 +187,7 @@ class Frame:
                 if loc.has_time:
                     warnings.warn(
                         "Frame location Point has associated Time. \n"
-                        "Disregarding this time and assuming time invariant location"
+                        + "Disregarding this time and assuming time invariant location"
                     )
                     loc = Point(loc.ecef[0], backend=self._xp)
             self._loc = loc.convert_to(self._xp)
@@ -206,12 +205,12 @@ class Frame:
         if self._time_group.duration <= 0:
             raise ValueError(
                 "Frame TimeGroup has non-positive duration. \n"
-                "Check that all time objects have overlapping time ranges."
+                + "Check that all time objects have overlapping time ranges."
             )
 
         # Parse reference frame and create rotation chain
         self._has_ref = ref_frame is not None
-        _rot_chain = []
+        _rot_chain: list[RotationLike] = []
         if ref_frame is not None:
             if ref_frame.backend != self.backend:
                 ref_frame = ref_frame.convert_to(self.backend)
@@ -234,14 +233,17 @@ class Frame:
     # --- Dunder methods and properties ---
 
     def __repr__(self) -> str:
-        return (
-            f"Frame(name={self._name}, static_rot={self._static_rot}, \
+        return f"Frame(name={self._name}, static_rot={self._static_rot}, \
                 static_loc={self._static_loc}, has_ref={self._has_ref}, \
                 time_bounds={self.time_bounds}, backend={self.backend})"
-        )
 
     def __str__(self) -> str:
         return f"Frame: {self._name}"
+
+    @property
+    def name(self) -> str:
+        """Get the name of the frame."""
+        return self._name
 
     @property
     def is_static(self) -> bool:
@@ -376,7 +378,7 @@ FRAME_ECEF = Frame(
 
 
 def ned_frame(
-    loc: Location, downsample: float | None = 10.0, name="NED frame"
+    loc: Location[TimeLike], downsample: float | None = 10.0, name: str = "NED frame"
 ) -> Frame:
     """Create a local NED (North-East-Down) frame at the given location(s).
     NED rotations are evaluated at all times in the Point/Path.

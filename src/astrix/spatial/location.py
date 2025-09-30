@@ -1,4 +1,3 @@
-# pyright: standard
 # pyright: reportAny=false, reportImplicitOverride=false
 
 from __future__ import annotations
@@ -63,7 +62,7 @@ class Location(Generic[T], ABC):
         pass
 
     @abstractmethod
-    def convert_to(self, backend: BackendArg) -> Location:
+    def convert_to(self, backend: BackendArg) -> Location[T]:
         pass
 
     @property
@@ -153,6 +152,10 @@ class Point(Location[TimeLike]):
     - Use Path objects for interpolating between multiple points over time.
     """
 
+    _ecef: Array
+    _time: TimeLike
+    _xp: ArrayNS
+
     def __init__(
         self,
         ecef: Array | list[float],
@@ -199,7 +202,7 @@ class Point(Location[TimeLike]):
             raise ValueError("All points must either have time or not have time.")
         if time_types[0] is Time:
             time_joined = Time(
-                xp.concatenate([p.time.secs for p in points]),  # pyright: ignore
+                xp.concatenate([p.time.secs for p in points]), # pyright: ignore[reportAttributeAccessIssue]
                 backend=xp,
             )
         else:
@@ -273,7 +276,7 @@ class Point(Location[TimeLike]):
 
         if not self.is_singular:
             raise ValueError(
-                "Attempting to 'interpolate' (broadcast) a non-singular Point object. \n"
+                "Attempting to 'interpolate' (broadcast) a non-singular Point object. \n" +
                 "This is not supported. Use Path objects for interpolation between multiple points."
             )
         return Point._constructor(
@@ -288,7 +291,7 @@ class Point(Location[TimeLike]):
 
         if not self.is_singular:
             raise ValueError(
-                "Attempting to repeat a non-singular Point object. \n"
+                "Attempting to repeat a non-singular Point object. \n" +
                 "This is not supported. Use Path objects for interpolation between multiple points."
             )
         return Point._constructor(
@@ -453,7 +456,10 @@ class Path(Location[Time]):
     array([[0.40160966, 0.88354126, 0.2409658 ]])
     """
 
+    _ecef: Array
+    _time: Time
     _vel: Array
+    _xp: ArrayNS
 
     def __init__(self, point: Point | list[Point], backend: BackendArg = None) -> None:
         """Initialize a Path object from a Point object with associated Time."""
