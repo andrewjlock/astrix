@@ -133,7 +133,7 @@ class Frame:
     """
 
     _rot: RotationLike
-    _rot_chain: list[RotationLike]
+    _rot_chain: dict[str, RotationLike]
     _interp_rot_fn: Callable[[Array], Rotation]
     _loc: Location[TimeLike]
     _time_group: TimeGroup
@@ -149,7 +149,7 @@ class Frame:
         loc: Location[TimeLike] | None = None,
         ref_frame: Frame | None = None,
         backend: BackendArg = None,
-        name: str = "unnamed_frame",
+        name: str = "unnamed-frame",
     ) -> None:
         self._xp = resolve_backend(backend)
 
@@ -208,16 +208,30 @@ class Frame:
                 + "Check that all time objects have overlapping time ranges."
             )
 
+        # Parse name
+        if name == "unnamed-frame":
+            if ref_frame is not None:
+                n = len(ref_frame._rot_chain) + 1
+                name = f"frame-{n}"
+            else:
+                name = "frame-1"
+        elif ref_frame is not None and name in ref_frame._rot_chain:
+            raise ValueError(
+                f"Frame name '{name}' already exists in reference frame. \n"
+                + "Choose a different name to avoid rotation chain conflicts."
+            )
+        self._name = name
+
         # Parse reference frame and create rotation chain
         self._has_ref = ref_frame is not None
-        _rot_chain: list[RotationLike] = []
+        _rot_chain: dict[str, RotationLike] = {}
         if ref_frame is not None:
             if ref_frame.backend != self.backend:
                 ref_frame = ref_frame.convert_to(self.backend)
-            _rot_chain += ref_frame._rot_chain
-        _rot_chain.append(self._rot)  # New rotations applied to RHS
+            _rot_chain |= ref_frame._rot_chain
+        _rot_chain |= {self._name : self._rot}  # New rotations applied to RHS
 
-        if all(isinstance(r, _RotationStatic) for r in _rot_chain):
+        if all(isinstance(r, _RotationStatic) for r in _rot_chain.values()):
             self._static_rot = True
         else:
             self._static_rot = False
@@ -227,8 +241,6 @@ class Frame:
         # Create and store a flattened composite rotation interpolation function
         self._interp_rot_fn = self._create_interp_fn(self._rot_chain)
 
-        # Parse name
-        self._name = name
 
     # --- Dunder methods and properties ---
 
@@ -282,6 +294,11 @@ class Frame:
         """Get the last rotation of the frame relative to the reference frame."""
         return self._rot
 
+    @property
+    def loc(self) -> Location[TimeLike]:
+        """Get the location of the frame in ECEF coordinates."""
+        return self._loc
+
     # --- Methods ---
 
     def interp_rot(
@@ -331,7 +348,7 @@ class Frame:
             raise ValueError("time must be a Time or TimeInvariant")
 
     def _create_interp_fn(
-        self, rot_chain: list[RotationLike]
+        self, rot_chain: dict[str, RotationLike]
     ) -> Callable[[Array], Rotation]:
         """Create a function that computes the composite rotation at given times.
         Constructor function provided to allow backend conversion
@@ -339,13 +356,46 @@ class Frame:
 
         @backend_jit()
         def _interp_rotation(secs: Array) -> Rotation:
-            rots = [r._interp_secs(secs) for r in rot_chain]
+            rots = [r._interp_secs(secs) for r in rot_chain.values()]
             final_rot = rots[0]
             for r in rots[1:]:
                 final_rot = final_rot * r
             return final_rot
 
         return _interp_rotation
+
+    def replace_rot(self, frame_name: str, new_rot: Rotation) -> Frame:
+        """Replace a rotation in the rotation chain with a new rotation.
+
+        This is an advanced feature and currently only applicable for static rotations. 
+        Should primarily be used for optimisation purposes in autograd frameworks.
+
+        Args:
+            frame_name (str): Name of the frame whose rotation is to be replaced.
+            new_rot (Rotation): New scipy Rotation object to replace the existing rotation.
+        """
+
+        if frame_name not in self._rot_chain:
+            raise ValueError(f"Frame name '{frame_name}' not found in rotation chain")
+        if not isinstance(self._rot_chain[frame_name], _RotationStatic):
+            raise ValueError("Can only replace static rotations in composite frame for now")
+        _rot = _RotationStatic(new_rot, backend=self._xp)
+        self._rot_chain[frame_name] = _rot
+
+        obj = Frame.__new__(Frame)
+        obj._xp = self._xp
+        obj._loc = self._loc
+        obj._rot = self._rot_chain[self._name]
+        obj._rot_chain = self._rot_chain
+        obj._time_group = self._time_group
+        obj._interp_rot_fn = self._create_interp_fn(self._rot_chain)
+        obj._has_ref = self._has_ref
+        obj._static_rot = self._static_rot
+        obj._static_loc = self._static_loc
+        obj._name = self._name
+
+        return obj
+
 
     def convert_to(self, backend: BackendArg) -> Frame:
         """Convert the Frame object to a different backend."""
@@ -354,9 +404,9 @@ class Frame:
             return self
         _loc = self._loc.convert_to(xp)
         _rot = self._rot.convert_to(xp)
-        _rot_chain = [r.convert_to(xp) for r in self._rot_chain]
+        _rot_chain = {k: r.convert_to(xp) for k,r in self._rot_chain.items()}
         _time_group = self.time_group.convert_to(xp)
-        _interp_rpt_fn = self._create_interp_fn(_rot_chain)
+        _interp_rot_fn = self._create_interp_fn(_rot_chain)
 
         obj = Frame.__new__(Frame)
         obj._xp = xp
@@ -364,7 +414,7 @@ class Frame:
         obj._rot = _rot
         obj._rot_chain = _rot_chain
         obj._time_group = _time_group
-        obj._interp_rot_fn = _interp_rpt_fn
+        obj._interp_rot_fn = _interp_rot_fn
         obj._has_ref = self._has_ref
         obj._static_rot = self._static_rot
         obj._static_loc = self._static_loc

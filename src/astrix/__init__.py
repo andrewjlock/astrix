@@ -11,6 +11,7 @@ if _backend_utils.HAS_JAX:
 
 from .time import Time, TIME_INVARIANT
 from .spatial import Point, Path, Frame, Ray, RotationSequence
+from .spatial import location, frame, rotation, ray
 from .project import FixedZoomCamera, Pixel
 from . import utils
 from ._backend_utils import resolve_backend
@@ -28,4 +29,8 @@ __all__ = [
     "TIME_INVARIANT",
     "FixedZoomCamera",
     "Pixel",
+    "location",
+    "frame",
+    "rotation",
+    "ray",
 ]

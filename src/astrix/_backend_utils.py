@@ -11,7 +11,7 @@ from functools import lru_cache
 from importlib.util import find_spec
 from array_api_compat import array_namespace
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import ArrayLike, NDArray
 
 os.environ["SCIPY_ARRAY_API"] = "True"
 from scipy.spatial.transform import Rotation
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     """ Soon hopefully there will be a release of the array-api-typing package.
     These can then be replaced with proper types for better type checking."""
     Array: TypeAlias = NDArray[Any]
+    ArrayLike: TypeAlias = ArrayLike
     ArrayNS: TypeAlias = ModuleType
 else:
     ArrayNS = Any

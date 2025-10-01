@@ -11,6 +11,7 @@ from typing import ClassVar
 from ._backend_utils import (
     resolve_backend,
     Array,
+    ArrayLike,
     ArrayNS,
     BackendArg,
 )
@@ -123,7 +124,7 @@ class Time(TimeLike):
     _xp: ArrayNS
 
     def __init__(
-        self, secs: Array | list[float] | float, backend: BackendArg = None
+        self, secs: ArrayLike, backend: BackendArg = None
     ) -> None:
         self._xp = resolve_backend(backend)
         self._secs = ensure_1d(secs, backend=self._xp)
@@ -223,6 +224,7 @@ class Time(TimeLike):
         return bool((time.start_sec >= self._min) & (time.end_sec <= self._max))
 
     def offset(self, offset: float) -> Time:
+        """Return a new Time object with offset (seconds) added to all time values."""
         return Time(self.secs + offset, backend=self._xp)
 
     def _repeat_single(self, n: int) -> Time:
@@ -235,6 +237,11 @@ class Time(TimeLike):
                 "This is not supported. Use TimeGroup objects for multiple times."
             )
         return Time._constructor(self._xp.repeat(self.secs, n), xp=self._xp)
+
+    def return_in_bounds(self, time: Time) -> Time:
+        """Return a new Time object containing only the times within the bounds of this Time object."""
+        mask = (time.secs >= self._min) & (time.secs <= self._max)
+        return Time._constructor(time.secs[mask], xp=time._xp)
 
     def convert_to(self, backend: BackendArg) -> Time:
         """Convert the Time object to a different backend."""

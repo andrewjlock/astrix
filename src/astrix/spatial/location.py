@@ -10,8 +10,10 @@ from typing import Generic, TypeVar
 from astrix._backend_utils import (
     resolve_backend,
     Array,
+    ArrayLike,
     ArrayNS,
     BackendArg,
+    warn_if_not_numpy,
 )
 
 from astrix.functs import (
@@ -24,10 +26,11 @@ from astrix.functs import (
     interp_haversine,
 )
 
-from astrix.time import Time, TimeInvariant, TIME_INVARIANT, TimeLike
+from astrix.time import Time, TimeInvariant, TIME_INVARIANT, TimeLike, time_linspace
 
 
 T = TypeVar("T", bound=TimeLike, covariant=True)
+
 
 class Location(Generic[T], ABC):
     """Abstract base class for location objects (Point, Path).
@@ -158,7 +161,7 @@ class Point(Location[TimeLike]):
 
     def __init__(
         self,
-        ecef: Array | list[float],
+        ecef: ArrayLike,
         time: TimeLike = TIME_INVARIANT,
         backend: BackendArg = None,
     ) -> None:
@@ -178,7 +181,7 @@ class Point(Location[TimeLike]):
 
     @classmethod
     def from_geodet(
-        cls, geodet: Array, time: TimeLike = TIME_INVARIANT, backend: BackendArg = None
+        cls, geodet: ArrayLike, time: TimeLike = TIME_INVARIANT, backend: BackendArg = None
     ) -> Point:
         """Create a Point object from geodetic coordinates (lat, lon, alt).
         Lat and lon are in degrees, alt is in meters.
@@ -202,7 +205,7 @@ class Point(Location[TimeLike]):
             raise ValueError("All points must either have time or not have time.")
         if time_types[0] is Time:
             time_joined = Time(
-                xp.concatenate([p.time.secs for p in points]), # pyright: ignore[reportAttributeAccessIssue]
+                xp.concatenate([p.time.secs for p in points]),  # pyright: ignore[reportAttributeAccessIssue]
                 backend=xp,
             )
         else:
@@ -234,7 +237,8 @@ class Point(Location[TimeLike]):
         return f"Point, n=<Select> {len(self)}, backend='{self._xp.__name__}'"
 
     def __getitem__(self, index: int) -> Point:
-        return Point(self.ecef[index], backend=self._xp)
+        time = self.time[index]
+        return Point(self.ecef[index], time=time, backend=self._xp)
 
     def __add__(self, added_point: Point) -> Point:
         if self.has_time != added_point.has_time:
@@ -276,8 +280,8 @@ class Point(Location[TimeLike]):
 
         if not self.is_singular:
             raise ValueError(
-                "Attempting to 'interpolate' (broadcast) a non-singular Point object. \n" +
-                "This is not supported. Use Path objects for interpolation between multiple points."
+                "Attempting to 'interpolate' (broadcast) a non-singular Point object. \n"
+                + "This is not supported. Use Path objects for interpolation between multiple points."
             )
         return Point._constructor(
             self._xp.repeat(self.ecef, len(time), axis=0),
@@ -291,8 +295,8 @@ class Point(Location[TimeLike]):
 
         if not self.is_singular:
             raise ValueError(
-                "Attempting to repeat a non-singular Point object. \n" +
-                "This is not supported. Use Path objects for interpolation between multiple points."
+                "Attempting to repeat a non-singular Point object. \n"
+                + "This is not supported. Use Path objects for interpolation between multiple points."
             )
         return Point._constructor(
             self._xp.repeat(self.ecef, n, axis=0),
@@ -310,7 +314,6 @@ class Point(Location[TimeLike]):
         else:
             time_converted = TIME_INVARIANT
         return Point._constructor(xp.asarray(self.ecef), time_converted, xp)
-
 
 
 @dataclass(frozen=True)
@@ -401,7 +404,7 @@ class Velocity:
         return Velocity(xp.asarray(self.vec), self.time.convert_to(xp), xp)
 
 
-POINT_ORIGIN = Point([0., 0., 0.])
+POINT_ORIGIN = Point([0.0, 0.0, 0.0])
 
 
 class Path(Location[Time]):
@@ -481,7 +484,6 @@ class Path(Location[Time]):
 
     # --- Constructors ---
 
-
     @classmethod
     def _constructor(cls, ecef: Array, time: Time, xp: ArrayNS) -> Path:
         """Internal constructor to create a Path object from ECEF array and Time object.
@@ -511,12 +513,12 @@ class Path(Location[Time]):
         return f"Path, n={len(self)}, backend='{self._xp.__name__}')"
 
     @property
-    def start_time(self) -> TimeLike:
+    def start_time(self) -> Time:
         """Get the start time of the Path."""
         return self.time[0]
 
     @property
-    def end_time(self) -> TimeLike:
+    def end_time(self) -> Time:
         """Get the end time of the Path."""
         return self.time[-1]
 
@@ -527,12 +529,16 @@ class Path(Location[Time]):
         return False
 
     @property
+    def points(self) -> Point:
+        """Get the list of Point objects that make up the Path."""
+        return Point(self._ecef, time=self._time, backend=self._xp)
+
+    @property
     def vel(self) -> Velocity:
         """Get the Velocity object associated with the Path."""
         return Velocity(self._vel, self._time, self._xp)
 
     # --- Methods ---
-
 
     def interp(
         self, time: Time, method: str = "linear", check_bounds: bool = True
@@ -579,6 +585,22 @@ class Path(Location[Time]):
             raise ValueError("Currently only 'linear' interpolation is supported.")
         return Point._constructor(interp_ecef, time=time, xp=self._xp)
 
+    def downsample(self, dt_max: float) -> Path:
+        """Downsample the Path to a maximum time step of dt_max seconds.
+        Note: This function is not JIT-compatible due to data validation checks.
+        """
+
+        warn_if_not_numpy(self._xp, "Path.downsample()")
+
+        new_times = time_linspace(
+            self.start_time,
+            self.end_time,
+            self._xp.ceil(self.time.duration / dt_max),
+        )
+        new_points = self.interp(new_times)
+        return Path(new_points, backend=self._xp)
+
+
     def interp_vel(
         self, time: Time, method: str = "linear", check_bounds: bool = True
     ) -> Velocity:
@@ -604,6 +626,74 @@ class Path(Location[Time]):
             )
             return Velocity(interp_vel, time, self._xp)
 
+    def truncate(self, start_time: Time | None, end_time: Time | None) -> Path:
+        """Truncate the Path to the given start and end times.
+        If start_time or end_time is None, the Path is truncated to the start or end of the Path respectively.
+
+        Note: This function is not JIT-compatible due to data validation checks.
+        """
+
+        warn_if_not_numpy(self._xp, "Path.truncate()")
+
+        if start_time is None:
+            start_time = self.start_time
+        if end_time is None:
+            end_time = self.end_time
+        if start_time.secs[0] > end_time.secs[0]:
+            raise ValueError("start_time must be less than or equal to end_time.")
+        if not self.time.in_bounds(start_time) or not self.time.in_bounds(end_time):
+            raise ValueError(
+                "start_time and end_time must be within the Path time bounds."
+            )
+
+        p0 = self.interp(start_time, check_bounds=False)
+        p1 = self.interp(end_time, check_bounds=False)
+
+        start_idx = self._xp.searchsorted(
+            self.time.secs, start_time.secs[0], side="right"
+        )
+        end_idx = self._xp.searchsorted(self.time.secs, end_time.secs[0], side="left")
+
+        p_mid = Point(
+            self._ecef[start_idx:end_idx],
+            time=Time(self._time.secs[start_idx:end_idx], backend=self._xp),
+            backend=self._xp,
+        )
+        points = Point.from_list([p0, p_mid, p1])
+        return Path(points, backend=self._xp)
+
+    def time_at_alt(self, alt: float) -> Time:
+        """Find the times when the Path crosses the given altitude (in metres).
+        Uses linear interpolation between points to find the crossing times.
+        Note: This function is not JIT-compatible due to data validation checks.
+        """
+
+        warn_if_not_numpy(self._xp, "Path.time_at_alt()")
+
+        altitudes = self.geodet[:, 2]  # Extract altitudes from geodetic coordinates
+        above = altitudes >= alt
+        crossings = self._xp.where(above[:-1] != above[1:])[0]
+
+        if len(crossings) == 0:
+            raise ValueError("Path does not cross the specified altitude.")
+
+        if len(crossings) > 1:
+            warnings.warn(
+                f"Path crosses the specified altitude {len(crossings)} times. Returning all crossing times."
+            )
+
+        crossing_times = []
+        for idx in crossings:
+            t0, t1 = self.time.secs[idx], self.time.secs[idx + 1]
+            a0, a1 = altitudes[idx], altitudes[idx + 1]
+            if a1 == a0:
+                crossing_time = t0
+            else:
+                crossing_time = t0 + (alt - a0) * (t1 - t0) / (a1 - a0)
+            crossing_times.append(crossing_time)
+
+        return Time(self._xp.asarray(crossing_times), backend=self._xp)
+
     def convert_to(self, backend: BackendArg) -> Path:
         """Convert the Path object to a different backend."""
         xp = resolve_backend(backend)
@@ -612,4 +702,3 @@ class Path(Location[Time]):
         return Path(
             Point(self.ecef, time=self.time.convert_to(xp), backend=xp), backend=xp
         )
-

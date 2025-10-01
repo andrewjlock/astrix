@@ -30,7 +30,7 @@ jobs:
             **/uv.lock
 
       - name: sync dependencies
-        run: uv lock && uv sync --locked --group dev
+        run: uv lock && uv sync --locked --group test
 
       - name: pytest
         run: uv run pytest --cov --cov-branch --cov-report=xml

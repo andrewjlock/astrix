@@ -17,6 +17,7 @@ import pyproj
 
 from ._backend_utils import (
     Array,
+    ArrayLike,
     ArrayNS,
     np,
     warn_if_not_numpy,
@@ -27,7 +28,7 @@ from ._backend_utils import (
 )
 from astrix.constants import cam_to_frd_mat
 
-def ensure_1d(x: Array | float | list[float], backend: Backend = None) -> Array:
+def ensure_1d(x: ArrayLike | float | list[float], backend: Backend = None) -> Array:
     """Ensure the input array is 1-dimensional.
     Scalars are converted to shape (1,).
     """
@@ -41,7 +42,7 @@ def ensure_1d(x: Array | float | list[float], backend: Backend = None) -> Array:
     return x_arr
 
 def ensure_2d(
-    x: Array | float | list[float] | list[list[float]],
+    x: ArrayLike | float | list[float] | list[list[float]],
     n: int | None = None,
     backend: Backend = None,
 ) -> Array:
@@ -57,8 +58,11 @@ def ensure_2d(
         x_arr = xp.reshape(x_arr, (1, -1))
     elif x_arr.ndim > 2:
         raise ValueError("Input array must be 2-dimensional or less.")
-    if n is not None and x_arr.shape[1] != n:
-        raise ValueError(f"Input array must have shape (m, {n}), found {x_arr.shape}.")
+    elif n is not None and x_arr.shape[1] != n:
+        if x_arr.shape[0] == n and x_arr.shape[1] != n:
+            x_arr = x_arr.T
+        if x_arr.shape[1] != n:
+            raise ValueError(f"Input array must have shape (m, {n}), found {x_arr.shape}.")
     return x_arr
 
 
@@ -435,7 +439,7 @@ def az_el_from_vec(v: Array, backend: Backend = None) -> Array:
 
     Returns:
         Array: Array of shape (m, 2) of azimuth and elevation angles in degrees.
-            Azimuth is in [0, 360), elevation is in [-90, 90].
+            Azimuth is in [-180, 180), elevation is in [-90, 90].
 
     Notes:
         Assumes vectors are:
@@ -445,7 +449,7 @@ def az_el_from_vec(v: Array, backend: Backend = None) -> Array:
             - z points down
     """
     xp = coerce_ns(backend)
-    az = xp.rad2deg(xp.arctan2(v[:, 1], v[:, 0])) % 360
+    az = xp.rad2deg(xp.arctan2(v[:, 1], v[:, 0]))
     el = xp.rad2deg(xp.arctan2(-v[:, 2], xp.linalg.norm(v[:, 0:2], axis=1)))
 
     return xp.stack((az, el), axis=1)

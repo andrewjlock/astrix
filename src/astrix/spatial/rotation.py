@@ -13,10 +13,11 @@ from astrix._backend_utils import (
     ArrayNS,
     BackendArg,
     _convert_rot_backend,
+    warn_if_not_numpy,
 )
 
 
-from astrix.time import Time, TimeLike, TimeInvariant, TIME_INVARIANT
+from astrix.time import Time, TimeLike, TimeInvariant, TIME_INVARIANT, time_linspace
 
 
 class RotationLike(ABC):
@@ -97,6 +98,13 @@ class _RotationStatic(RotationLike):
             self._xp.repeat(self._rot._quat, len(secs), axis=0),  # pyright: ignore[reportAttributeAccessIssue]
             xp=self._xp,
         )
+
+    def _replace_rot(self, rot: Rotation) -> None:
+        if not (rot.single or len(rot) == 1):
+            raise ValueError(
+                "RotationSingle must be initialized with a single rotation"
+            )
+        self._rot = _convert_rot_backend(rot, self._xp)
 
 
 class RotationSequence(RotationLike):
@@ -189,6 +197,11 @@ class RotationSequence(RotationLike):
         """Get the Time object associated with the rotation sequence."""
         return self._time
 
+    @property
+    def rots(self) -> Rotation:
+        """Get the underlying scipy Rotation object containing all rotations."""
+        return self._rot
+
     def interp(self, time: Time, check_bounds: bool = True) -> Rotation:
         """Interpolate the rotation sequence at the given times to return Rotation(s)."""
         time = time.convert_to(self._xp)
@@ -202,6 +215,28 @@ class RotationSequence(RotationLike):
 
     def _interp_secs(self, secs: Array) -> Rotation:
         return self._slerp(secs)
+
+    def downsample(self, dt_max: float) -> RotationSequence:
+        """Downsample the rotation sequence to a coarser time resolution.
+
+        Parameters
+        ----------
+        dt_max : float
+            Desired maximum time step in seconds for downsampling.
+
+        Returns
+        -------
+        RotationSequence
+            A new RotationSequence object with downsampled rotations.
+        """
+
+        warn_if_not_numpy(self._xp, "Rotation downsampling")
+
+        new_times = time_linspace(
+            self._time[0], self._time[-1], int(self._xp.ceil(self._time.duration / dt_max))
+        )
+        new_rots = self.interp(new_times)
+        return RotationSequence(new_rots, new_times, backend=self._xp)
 
     def convert_to(self, backend: BackendArg) -> RotationSequence:
         """Convert the RotationSequence object to a different backend."""

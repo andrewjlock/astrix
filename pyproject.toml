@@ -34,7 +34,8 @@ jax = ["jax[cpu]>=0.6.1"]
 plot = ["basemap", "basemap-data-hires", "cartopy", "matplotlib"]
 
 [dependency-groups]
-dev = ["pytest", "pytest-cov>=7.0.0", "jax[cpu]"]
+dev = ["pytest", "pytest-cov>=7.0.0", "jax[cpu]", "cartopy", "matplotlib", "basemap", "basemap-data-hires"]
+test = ["pytest", "pytest-cov>=7.0.0"]
 docs = [
     "sphinx>=4.0.0",
     "myst-parser>=0.15.1",
