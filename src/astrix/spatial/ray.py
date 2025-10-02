@@ -32,9 +32,9 @@ class Ray:
     """A ray defined by an origin point, direction vector, reference frame, and optional time.
 
     Args:
-        dir (Array): Nx3 array of ray direction vectors in local frame.
+        dir_rel (Array): Nx3 array of ray direction vectors in local frame.
             Need not be normalised. E.g., (1, 0, 0) is a ray pointing along axis 1 of reference frame.
-        origin (Array): 1x3 or Nx3 array defining the ray origin(s) in local frame (meters).
+        origin_rel (Array): 1x3 or Nx3 array defining the ray origin(s) in local frame (meters).
             Typically (0,0,0) for camera reference frames, or ECEF coordinates for ECEF frame rays.
         frame (Frame, optional): Reference frame for the ray origin and direction.
         time (Time, optional): Time object associated with the rays.
@@ -351,15 +351,15 @@ class Ray:
                         Extrapolation is not supported and will raise an error.""")
 
             interp_origin = interp_nd(
-                time.secs,
-                self.time.secs,
+                time.unix,
+                self.time.unix,
                 self._origin_rel,
                 backend=self._xp,
             )
 
             interp_unit = interp_nd(
-                time.secs,
-                self.time.secs,
+                time.unix,
+                self.time.unix,
                 self._unit_rel,
                 backend=self._xp,
             )

@@ -23,7 +23,7 @@ def test_path_interpolate(xp):
         time = Time(t, backend=xp)
         return path.interp(time).ecef
 
-    jacobian = jax.jacobian(myfunction)(t_interp.secs)
+    jacobian = jax.jacobian(myfunction)(t_interp.unix)
     
     assert jacobian.shape == (1, 3, 1)
 
@@ -51,7 +51,7 @@ def test_path_velocity_interpolate(xp):
         time = Time(t, backend=xp)
         return path.interp_vel(time).vec
 
-    jacobian = jax.jacobian(myfunction)(t_interp.secs)
+    jacobian = jax.jacobian(myfunction)(t_interp.unix)
     
     assert jacobian.shape == (1, 3, 1)
 

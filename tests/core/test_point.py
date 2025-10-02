@@ -51,7 +51,7 @@ def test_point_with_time(xp):
     time2 = Time.from_datetime(
         dt.datetime(2023, 1, 1, 12, 10, 0, tzinfo=dt.timezone.utc), backend=xp
     )
-    time3 = Time(xp.array([time1.secs[0], time2.secs[0]]), backend=xp)
+    time3 = Time(xp.array([time1.unix[0], time2.unix[0]]), backend=xp)
 
     p_geo = Point.from_geodet(brisbane_geodet, time=time1, backend=xp)
     assert p_geo.ecef.shape == (1, 3)
@@ -129,7 +129,7 @@ def test_adding_points(xp):
 
     p3 = p1 + p2
     assert p3.ecef.shape == (2, 3)
-    assert p3.time.secs.shape == (2,)
+    assert p3.time.unix.shape == (2,)
 
     with pytest.raises(ValueError):
         p1 + Point(
@@ -155,4 +155,4 @@ def test_point_from_list(xp):
     )
     points = Point.from_list([point1, point2])
     assert points.ecef.shape == (2, 3)
-    assert points.time.secs.shape == (2,)
+    assert points.time.unix.shape == (2,)

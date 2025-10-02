@@ -17,17 +17,17 @@ def test_time(xp):
 
     t2 = t.offset(1)
     t3 = t2.offset(-1)
-    assert all(xp.isclose(t.secs, t3.secs))
+    assert all(xp.isclose(t.unix, t3.unix))
     t = t.convert_to(np)
 
-    assert t.secs.shape == (3,)
+    assert t.unix.shape == (3,)
     assert all(isinstance(dt_i, dt.datetime) for dt_i in t.datetime)
     assert t.in_bounds(t)
     assert t[1].datetime[0] == times[1]
 
-    t2 = Time(xp.asarray([t.secs[0] - 1000, t.secs[-1] + 1000]), backend=xp)
+    t2 = Time(xp.asarray([t.unix[0] - 1000, t.unix[-1] + 1000]), backend=xp)
     assert not t.in_bounds(t2)
-    assert t2.in_bounds(Time(xp.asarray([t.secs[0], t.secs[-1]]), backend=xp))
+    assert t2.in_bounds(Time(xp.asarray([t.unix[0], t.unix[-1]]), backend=xp))
 
     with pytest.raises(ValueError):
         Time(xp.asarray([[1, 2], [3, 4]]), backend=xp)

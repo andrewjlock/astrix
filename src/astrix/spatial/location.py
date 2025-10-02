@@ -173,7 +173,7 @@ class Point(Location[TimeLike]):
             if self._ecef.shape[0] != len(time):
                 raise ValueError(
                     "Point and Time must be similar lengths if associated.\n"
-                    + f"Found {self._ecef.shape[0]} points and {time.secs.shape[0]} times."
+                    + f"Found {self._ecef.shape[0]} points and {time.unix.shape[0]} times."
                 )
         self._time = time
 
@@ -205,7 +205,7 @@ class Point(Location[TimeLike]):
             raise ValueError("All points must either have time or not have time.")
         if time_types[0] is Time:
             time_joined = Time(
-                xp.concatenate([p.time.secs for p in points]),  # pyright: ignore[reportAttributeAccessIssue]
+                xp.concatenate([p.time.unix for p in points]),  # pyright: ignore[reportAttributeAccessIssue]
                 backend=xp,
             )
         else:
@@ -251,8 +251,8 @@ class Point(Location[TimeLike]):
             time_joined = Time(
                 self._xp.concatenate(
                     [
-                        self.time.secs,
-                        added_point.time.secs,
+                        self.time.unix,
+                        added_point.time.unix,
                     ]
                 )
             )
@@ -471,14 +471,14 @@ class Path(Location[Time]):
         if not isinstance(point.time, Time):
             raise ValueError("Point must have associated Time to create a Path.")
         self._xp = resolve_backend(backend)
-        sort_indices = self._xp.argsort(point.time.secs)
-        self._time = Time(point.time.secs[sort_indices], backend=self._xp)
+        sort_indices = self._xp.argsort(point.time.unix)
+        self._time = Time(point.time.unix[sort_indices], backend=self._xp)
         self._ecef = ensure_2d(point.ecef[sort_indices], n=3, backend=self._xp)
 
         if len(self.time) > 2:
-            self._vel = central_diff(self._time.secs, self._ecef, backend=self._xp)
+            self._vel = central_diff(self._time.unix, self._ecef, backend=self._xp)
         elif len(self.time) == 2:
-            self._vel = finite_diff_2pt(self._time.secs, self._ecef, backend=self._xp)
+            self._vel = finite_diff_2pt(self._time.unix, self._ecef, backend=self._xp)
         else:
             raise ValueError("Path must have at least 2 points with associated Time.")
 
@@ -494,9 +494,9 @@ class Path(Location[Time]):
         obj._ecef = ecef
         obj._time = time
         if len(obj.time) > 2:
-            obj._vel = central_diff(obj._time.secs, obj._ecef, backend=obj._xp)
+            obj._vel = central_diff(obj._time.unix, obj._ecef, backend=obj._xp)
         elif len(obj.time) == 2:
-            obj._vel = finite_diff_2pt(obj._time.secs, obj._ecef, backend=obj._xp)
+            obj._vel = finite_diff_2pt(obj._time.unix, obj._ecef, backend=obj._xp)
         return obj
 
     # --- Dunder methods and properties ---
@@ -569,15 +569,15 @@ class Path(Location[Time]):
 
         if method == "linear":
             interp_ecef = interp_nd(
-                time.secs,
-                self.time.secs,
+                time.unix,
+                self.time.unix,
                 self.ecef,
                 backend=self._xp,
             )
         elif method == "haversine":
             interp_ecef = interp_haversine(
-                time.secs,
-                self.time.secs,
+                time.unix,
+                self.time.unix,
                 self.ecef,
                 backend=self._xp,
             )
@@ -619,8 +619,8 @@ class Path(Location[Time]):
 
         if method == "linear":
             interp_vel = interp_nd(
-                time.secs,
-                self.time.secs,
+                time.unix,
+                self.time.unix,
                 self._vel,
                 backend=self._xp,
             )
@@ -639,7 +639,7 @@ class Path(Location[Time]):
             start_time = self.start_time
         if end_time is None:
             end_time = self.end_time
-        if start_time.secs[0] > end_time.secs[0]:
+        if start_time.unix[0] > end_time.unix[0]:
             raise ValueError("start_time must be less than or equal to end_time.")
         if not self.time.in_bounds(start_time) or not self.time.in_bounds(end_time):
             raise ValueError(
@@ -650,13 +650,13 @@ class Path(Location[Time]):
         p1 = self.interp(end_time, check_bounds=False)
 
         start_idx = self._xp.searchsorted(
-            self.time.secs, start_time.secs[0], side="right"
+            self.time.unix, start_time.unix[0], side="right"
         )
-        end_idx = self._xp.searchsorted(self.time.secs, end_time.secs[0], side="left")
+        end_idx = self._xp.searchsorted(self.time.unix, end_time.unix[0], side="left")
 
         p_mid = Point(
             self._ecef[start_idx:end_idx],
-            time=Time(self._time.secs[start_idx:end_idx], backend=self._xp),
+            time=Time(self._time.unix[start_idx:end_idx], backend=self._xp),
             backend=self._xp,
         )
         points = Point.from_list([p0, p_mid, p1])
@@ -684,7 +684,7 @@ class Path(Location[Time]):
 
         crossing_times = []
         for idx in crossings:
-            t0, t1 = self.time.secs[idx], self.time.secs[idx + 1]
+            t0, t1 = self.time.unix[idx], self.time.unix[idx + 1]
             a0, a1 = altitudes[idx], altitudes[idx + 1]
             if a1 == a0:
                 crossing_time = t0

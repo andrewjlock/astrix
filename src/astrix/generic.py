@@ -71,7 +71,7 @@ class TimeSeriesValue(AbstractValue[Time]):
         if isinstance(time, TimeInvariant):
                  raise ValueError("Cannot interpolate time-varying data with time_invariant time.")
         elif isinstance(time, Time):
-            return interp_nd(time.secs, self.time.secs, self.data, backend=self._xp)
+            return interp_nd(time.unix, self.time.unix, self.data, backend=self._xp)
         else:
             raise TypeError("time must be of type Time or TimeInvariant.")
 

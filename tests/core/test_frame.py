@@ -68,8 +68,8 @@ def test_dynamic_frame(xp):
         frame2.interp_loc(Time(0.5, backend=xp)).ecef, xp.asarray([0.5, 0.5, 0])
     )
 
-    assert xp.isclose(frame2.time_bounds[0].secs, 0.0)
-    assert xp.isclose(frame2.time_bounds[1].secs, 1.0)
+    assert xp.isclose(frame2.time_bounds[0].unix, 0.0)
+    assert xp.isclose(frame2.time_bounds[1].unix, 1.0)
 
     path2 = Path([loc1, loc2], backend=xp)
     with pytest.raises(ValueError):
@@ -110,8 +110,8 @@ def test_frame_with_ref(xp):
     assert xp.allclose(
         frame2.interp_loc(Time(0.5, backend=xp)).ecef, xp.asarray([-0.5, 0.5, 0])
     )
-    assert xp.isclose(frame2.time_bounds[0].secs, 0.0)
-    assert xp.isclose(frame2.time_bounds[1].secs, 1.0)
+    assert xp.isclose(frame2.time_bounds[0].unix, 0.0)
+    assert xp.isclose(frame2.time_bounds[1].unix, 1.0)
 
     # Dynamic frame with dynamic reference
 
@@ -143,8 +143,8 @@ def test_frame_with_ref(xp):
     assert xp.allclose(
         frame3.interp_loc(Time(1.5, backend=xp)).ecef, xp.asarray([-0.5, 0.5, 0])
     )
-    assert xp.isclose(frame3.time_bounds[0].secs, 1.0)
-    assert xp.isclose(frame3.time_bounds[1].secs, 2.0)
+    assert xp.isclose(frame3.time_bounds[0].unix, 1.0)
+    assert xp.isclose(frame3.time_bounds[1].unix, 2.0)
     frame3.convert_to(np)
     frame3.convert_to(xp)
 

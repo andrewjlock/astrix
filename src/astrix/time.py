@@ -87,7 +87,7 @@ class Time(TimeLike):
 
     Parameters
     ----------
-    secs : Array | list of float | float
+    unix : Array | list of float | float
         Time values in seconds since Unix epoch (1970-01-01 UTC)
     backend : BackendArg, optional
         Array backend to use (numpy, jax, etc.). Defaults to numpy.
@@ -118,18 +118,18 @@ class Time(TimeLike):
     All datetime objects must be timezone-aware to avoid ambiguity.
     """
 
-    _secs: Array
+    _unix: Array
     _min: float | Array
     _max: float | Array
     _xp: ArrayNS
 
     def __init__(
-        self, secs: ArrayLike, backend: BackendArg = None
+        self, unix: ArrayLike, backend: BackendArg = None
     ) -> None:
         self._xp = resolve_backend(backend)
-        self._secs = ensure_1d(secs, backend=self._xp)
-        self._min = self._xp.min(self._secs)
-        self._max = self._xp.max(self._secs)
+        self._unix = ensure_1d(unix, backend=self._xp)
+        self._min = self._xp.min(self._unix)
+        self._max = self._xp.max(self._unix)
 
     # --- Constructors ---
 
@@ -149,19 +149,19 @@ class Time(TimeLike):
         ):
             raise ValueError("All datetime objects must be timezone-aware")
         xp = resolve_backend(backend)
-        secs = xp.asarray([t.timestamp() for t in time])
-        return cls(secs, backend=backend)
+        unix = xp.asarray([t.timestamp() for t in time])
+        return cls(unix, backend=backend)
 
     @classmethod
-    def _constructor(cls, secs: Array, xp: ArrayNS) -> Time:
+    def _constructor(cls, unix: Array, xp: ArrayNS) -> Time:
         """Internal constructor to create a Time object from seconds array
         Avoids type checking in __init__."""
 
         obj = cls.__new__(cls)
         obj._xp = xp
-        obj._secs = secs
-        obj._min = obj._xp.min(secs)
-        obj._max = obj._xp.max(secs)
+        obj._unix = unix
+        obj._min = obj._xp.min(unix)
+        obj._max = obj._xp.max(unix)
         return obj
 
     # --- Dunder methods and properties ---
@@ -174,28 +174,28 @@ class Time(TimeLike):
             {self.datetime[-1]} with {self._xp.__name__} backend."
 
     def __len__(self) -> int:
-        return self._secs.shape[0]
+        return self._unix.shape[0]
 
     def __getitem__(self, index: int) -> Time:
         return Time._constructor(
-            self._xp.asarray(self.secs[index]).reshape(-1), xp=self._xp
+            self._xp.asarray(self.unix[index]).reshape(-1), xp=self._xp
         )
 
     @property
     def datetime(self) -> list[dt.datetime]:
         return [
-            dt.datetime.fromtimestamp(float(s), tz=dt.timezone.utc) for s in self.secs
+            dt.datetime.fromtimestamp(float(s), tz=dt.timezone.utc) for s in self.unix
         ]
 
     @property
     def is_increasing(self) -> bool:
         """Check if the time values are strictly increasing."""
-        return is_increasing(self._secs, backend=self._xp)
+        return is_increasing(self._unix, backend=self._xp)
 
     @property
-    def secs(self) -> Array:
+    def unix(self) -> Array:
         """Get the time values in seconds since epoch."""
-        return self._secs
+        return self._unix
 
     @property
     def start_sec(self) -> float | Array:
@@ -225,7 +225,7 @@ class Time(TimeLike):
 
     def offset(self, offset: float) -> Time:
         """Return a new Time object with offset (seconds) added to all time values."""
-        return Time(self.secs + offset, backend=self._xp)
+        return Time(self.unix + offset, backend=self._xp)
 
     def _repeat_single(self, n: int) -> Time:
         """Private method to repeat a singular Time n times.
@@ -236,19 +236,19 @@ class Time(TimeLike):
                 "Attempting to repeat a non-singular Time object. \n"
                 "This is not supported. Use TimeGroup objects for multiple times."
             )
-        return Time._constructor(self._xp.repeat(self.secs, n), xp=self._xp)
+        return Time._constructor(self._xp.repeat(self.unix, n), xp=self._xp)
 
     def return_in_bounds(self, time: Time) -> Time:
         """Return a new Time object containing only the times within the bounds of this Time object."""
-        mask = (time.secs >= self._min) & (time.secs <= self._max)
-        return Time._constructor(time.secs[mask], xp=time._xp)
+        mask = (time.unix >= self._min) & (time.unix <= self._max)
+        return Time._constructor(time.unix[mask], xp=time._xp)
 
     def convert_to(self, backend: BackendArg) -> Time:
         """Convert the Time object to a different backend."""
         xp = resolve_backend(backend)
         if xp == self._xp:
             return self
-        return Time._constructor(xp.asarray(self.secs), xp=xp)
+        return Time._constructor(xp.asarray(self.unix), xp=xp)
 
 
 class TimeGroup:
@@ -319,8 +319,8 @@ class TimeGroup:
             if isinstance(t, TimeInvariant):
                 self._times.append(t)
             if isinstance(t, Time):
-                mins.append(self._xp.min(t.secs))
-                maxs.append(self._xp.max(t.secs))
+                mins.append(self._xp.min(t.unix))
+                maxs.append(self._xp.max(t.unix))
                 self._times.append(t.convert_to(self._xp))
             if isinstance(t, TimeGroup):
                 if not t.is_invariant:
@@ -481,5 +481,5 @@ def time_linspace(t1: Time, t2: Time, num: int) -> Time:
         raise ValueError("num must be at least 2")
 
     xp = resolve_backend(t1.backend)
-    secs = xp.linspace(float(t1.start_sec), float(t2.end_sec), num=num)
-    return Time._constructor(secs=secs, xp=xp)
+    unix = xp.linspace(float(t1.start_sec), float(t2.end_sec), num=num)
+    return Time._constructor(unix=unix, xp=xp)

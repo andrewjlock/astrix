@@ -26,8 +26,8 @@ def test_path_create(xp):
     to_text(path)
 
     assert path.ecef.shape == (3, 3)
-    assert path.start_time.secs == posix[1]
-    assert path.end_time.secs == posix[0]
+    assert path.start_time.unix == posix[1]
+    assert path.end_time.unix == posix[0]
     assert path.geodet.shape == (3, 3)
     assert path.vel.vec.shape == (3, 3)
 

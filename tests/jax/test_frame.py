@@ -34,7 +34,7 @@ def test_frame_interpolate(xp):
         time = Time(t, backend=xp)
         return frame.interp_loc(time).ecef
 
-    jacobian_loc = jax.jacobian(myfunction)(t_interp.secs)
+    jacobian_loc = jax.jacobian(myfunction)(t_interp.unix)
     
     assert jacobian_loc.shape == (1, 3, 1)
 
@@ -46,6 +46,6 @@ def test_frame_interpolate(xp):
         time = Time(t, backend=xp)
         return frame.interp_rot(time, check_bounds=False).as_quat()
 
-    jacobian_rot = jax.jacobian(myfunction_rot)(t_interp.secs)
-    rot_jit = jax.jit(myfunction_rot)(t_interp.secs)
+    jacobian_rot = jax.jacobian(myfunction_rot)(t_interp.unix)
+    rot_jit = jax.jit(myfunction_rot)(t_interp.unix)
 

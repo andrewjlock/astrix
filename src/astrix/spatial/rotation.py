@@ -49,7 +49,7 @@ class RotationLike(ABC):
         pass
 
     @abstractmethod
-    def _interp_secs(self, secs: Array) -> Rotation:
+    def _interp_unix(self, unix: Array) -> Rotation:
         pass
 
     @abstractmethod
@@ -93,9 +93,9 @@ class _RotationStatic(RotationLike):
             xp=self._xp,
         )
 
-    def _interp_secs(self, secs: Array) -> Rotation:
+    def _interp_unix(self, unix: Array) -> Rotation:
         return Rotation._from_raw_quat(  # pyright: ignore
-            self._xp.repeat(self._rot._quat, len(secs), axis=0),  # pyright: ignore[reportAttributeAccessIssue]
+            self._xp.repeat(self._rot._quat, len(unix), axis=0),  # pyright: ignore[reportAttributeAccessIssue]
             xp=self._xp,
         )
 
@@ -187,7 +187,7 @@ class RotationSequence(RotationLike):
                 "Time values must be strictly increasing to construct RotationSequence"
             )
         self._time = time.convert_to(self._xp)
-        self._slerp = Slerp(self._time.secs, self._rot)
+        self._slerp = Slerp(self._time.unix, self._rot)
 
     def __len__(self) -> int:
         return len(self._rot)
@@ -211,10 +211,10 @@ class RotationSequence(RotationLike):
                     RotationSequence time range: {self._time[0]} to {self._time[-1]}
                     Interpolation time range: {time[0]} to {time[-1]}
                     Extrapolation is not supported and will raise an error.""")
-        return self._slerp(time.secs)
+        return self._slerp(time.unix)
 
-    def _interp_secs(self, secs: Array) -> Rotation:
-        return self._slerp(secs)
+    def _interp_unix(self, unix: Array) -> Rotation:
+        return self._slerp(unix)
 
     def downsample(self, dt_max: float) -> RotationSequence:
         """Downsample the rotation sequence to a coarser time resolution.

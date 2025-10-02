@@ -127,8 +127,8 @@ def turn_from_radius(
 
     pts_rel = np.vstack((xt, yt, zt)).T
     pts_ecef = (ned_rot.as_matrix() @ pts_rel.T).T + point_centre.ecef
-    secs = point_start.time.secs + t
-    times = Time(secs)
+    unix = point_start.time.unix + t
+    times = Time(unix)
     pts = Point(pts_ecef, time=times, backend=np)
     return pts
 

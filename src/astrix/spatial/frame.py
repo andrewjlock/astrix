@@ -314,7 +314,7 @@ class Frame:
                         Frame time range: {self.time_bounds[0]} to {self.time_bounds[1]}
                         Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
                         Extrapolation is not supported and will raise an error.""")
-            return self._interp_rot_fn(time.secs)
+            return self._interp_rot_fn(time.unix)
         elif isinstance(time, TimeInvariant):
             if not self._static_rot:
                 raise ValueError(
@@ -355,8 +355,8 @@ class Frame:
         """
 
         @backend_jit()
-        def _interp_rotation(secs: Array) -> Rotation:
-            rots = [r._interp_secs(secs) for r in rot_chain.values()]
+        def _interp_rotation(unix: Array) -> Rotation:
+            rots = [r._interp_unix(unix) for r in rot_chain.values()]
             final_rot = rots[0]
             for r in rots[1:]:
                 final_rot = final_rot * r

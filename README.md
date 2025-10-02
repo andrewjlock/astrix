@@ -43,19 +43,29 @@ For a lean install you can omit both the `[jax]` and `[plot]` extra,
 $ python3 -m pip install -e .
 ```
 
-For development, use the `dev` group, which includes linting and testing tools, and all optional extras,
+For development, use the `dev` and `docs` groups, which includes linting, testing, document generation, as well as plotting and jax extras,
 
 ```bash
-$ python3 -m pip install -e .[plot] --group dev
+$ python3 -m pip install -e .[plot] --group dev --group docs
 ```
 
 Alternatively, this project has been developed with, and is compliant with, the `uv` package manager.
-The `dev` group is installed by default.
+The `dev` and `docs` groups are installed by default.
 
+To develop using `uv`: 
 ```bash
-$ uv pip install -e .[jax,plot]
+$ git clone https://github.com/andrewjlock/astrix.git
+$ cd astrix
+$ uv python install 3.12
+$ uv sync
+$ uv run pytest tests/ # to run tests
 ```
 
+To use in another `uv` project (from a local install):
+```bash
+$ cd ../path/to/your/other/uv/project
+$ uv add --editable ../path/to/astrix[plot] # or extras as needed
+```
 
 ### Dependencies
 
@@ -118,6 +128,10 @@ import os
 os.environ["JAX_ENABLE_X64"] = "1"
 os.environ["JAX_PLATFORMS"] = "cpu"
 ```
+
+## Contributing
+
+Contributions are very welcome! Please submit proposed changes via pull requests on GitHub.
 
 ## Tests
 
