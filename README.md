@@ -13,8 +13,8 @@ Source code is hosted on [GitHub](https://github.com/andrewjlock/astrix).
 ## Features
 
 - Simple, object-oriented interface to reconstruct simultaneous moving and rotating reference frames, calculate local line-of-sight vectors, and project to image planes.
-- Support for NumPy and Jax backends using the [array api](https://data-apis.org/array-api/latest/) spec. Most functionality is differentiable and JIT-compilable using Jax backend, allowing efficient optimisation and state estimation.
 - Many convenience tools for interpolation, intrinsic frame handling, triangulation, position conversion, data validation etc.
+- Support for NumPy and Jax backends using the [array api](https://data-apis.org/array-api/latest/) spec. Most functionality is differentiable and JIT-compilable using Jax backend, allowing efficient optimisation and state estimation.
 
 This toolbox has three main use cases:
 1. Planning flight paths and ground station placement for aerospace observation campaigns.
@@ -33,17 +33,17 @@ $ cd astrix
 While under development editable installation is recommend
 
 ```bash
-$ python3 -m pip install -e .[jax,plot]
+$ python3 -m pip install -e .[plot,jax]
 ```
-The `jax` extra instals [Jax](https://github.com/jax-ml/jax) which is used for optional advanced automatic differentiation and state/parameter estimation capabilities. 
 The `plot` extra install [basemap](https://matplotlib.org/basemap/) and [cartopy](https://scitools.org.uk/cartopy/docs/latest/) for geographic plotting.
+The `jax` extra installs [Jax](https://github.com/jax-ml/jax) which is used for optional advanced automatic differentiation and state/parameter estimation capabilities. 
 For a lean install you can omit both the `[jax]` and `[plot]` extra,
 
 ```bash
 $ python3 -m pip install -e .
 ```
 
-For development, use the `dev` group, which includes linting and testing tools.
+For development, use the `dev` group, which includes linting and testing tools, and all optional extras,
 
 ```bash
 $ python3 -m pip install -e .[plot] --group dev
