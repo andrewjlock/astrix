@@ -139,8 +139,8 @@ class Ray:
         cls,
         az_el: Array,
         frame: Frame = FRAME_ECEF,
-        origin_rel: Array = POINT_ORIGIN.ecef,
         time: TimeLike = TIME_INVARIANT,
+        origin_rel: Array = POINT_ORIGIN.ecef,
         backend: BackendArg = None,
     ) -> Ray:
         """Create a Ray object from origin points and heading/elevation angles.
@@ -266,6 +266,11 @@ class Ray:
     def time(self) -> TimeLike:
         """Get the associated Time object, if any."""
         return self._time
+
+    @property
+    def frame(self) -> Frame:
+        """Get the reference Frame of the ray."""
+        return self._frame
 
     @property
     def az_el(self):
