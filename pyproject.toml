@@ -31,10 +31,10 @@ dependencies = [
 
 [project.optional-dependencies]
 jax = ["jax[cpu]>=0.6.1"]
-plot = ["basemap", "basemap-data-hires", "cartopy", "matplotlib"]
+plot = ["basemap", "basemap-data-hires", "cartopy", "matplotlib","pyvista","rasterio","contextily"]
 
 [dependency-groups]
-dev = ["pytest", "pytest-cov>=7.0.0", "jax[cpu]", "cartopy", "matplotlib", "basemap", "basemap-data-hires"]
+dev = ["pytest", "pytest-cov>=7.0.0", "jax[cpu]", "cartopy", "matplotlib", "basemap", "basemap-data-hires","pyvista","rasterio","contextily"]
 test = ["pytest", "pytest-cov>=7.0.0"]
 docs = [
     "sphinx>=4.0.0",
@@ -55,6 +55,10 @@ scipy = { index = "scipy-nightly" }    # <-- only SciPy comes from the nightly i
 name = "scipy-nightly"
 url = "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"
 explicit = true
+
+[tool.basedpyright]
+typeCheckingMode = "recommended"
+reportIgnoreCommentWithoutRule = false
 
 # CLI entry points (safe even without package code yet)
 [project.scripts]

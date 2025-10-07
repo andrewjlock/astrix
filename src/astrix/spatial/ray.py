@@ -66,14 +66,16 @@ class Ray:
         origin_rel: Array = POINT_ORIGIN.ecef,
         frame: Frame = FRAME_ECEF,
         time: TimeLike = TIME_INVARIANT,
+        check: bool = True,
         backend: BackendArg = None,
     ) -> None:
         self._xp = resolve_backend(backend)
 
         # Data validate direction and origin arrays
         _dir_rel = ensure_2d(dir_rel, n=3, backend=self._xp)
-        if self._xp.isclose(self._xp.linalg.norm(_dir_rel, axis=1), 0.0).any():
-            raise ValueError("Ray direction vectors cannot be zero.")
+        if check:
+            if self._xp.isclose(self._xp.linalg.norm(_dir_rel, axis=1), 0.0).any():
+                raise ValueError("Ray direction vectors cannot be zero.")
         self._unit_rel = _dir_rel / self._xp.linalg.norm(
             _dir_rel, axis=1, keepdims=True
         )
@@ -106,8 +108,8 @@ class Ray:
     @classmethod
     def from_points(
         cls,
-        origin: Point,
         endpoint: Point,
+        origin: Point,
         time: TimeLike = TIME_INVARIANT,
         backend: BackendArg = None,
     ) -> Ray:
@@ -141,6 +143,7 @@ class Ray:
         frame: Frame = FRAME_ECEF,
         time: TimeLike = TIME_INVARIANT,
         origin_rel: Array = POINT_ORIGIN.ecef,
+        check: bool = True,
         backend: BackendArg = None,
     ) -> Ray:
         """Create a Ray object from origin points and heading/elevation angles.
@@ -149,14 +152,17 @@ class Ray:
             az_el (Array): Nx2 array of azimuth and elevation angles in degrees, relative to the reference frame.
             frame (Frame, optional): Reference frame for the ray origin and direction.
                 Defaults to ECEF frame.
+            time (Time, optional): Time object associated with the rays.
             origin_rel (Array, optional): Nx3 array of ray origin points in local frame coordinates.
                 Defaults to (0,0,0), which is the reference frame origin.
-            time (Time, optional): Time object associated with the rays.
+            check (bool, optional): Whether to check input arrays for validity (not JIT compatible).
+                Defaults to True.
+            backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
         """
         xp = resolve_backend(backend)
         az_el = ensure_2d(az_el, n=2, backend=xp)
         dir_rel = vec_from_az_el(az_el, backend=xp)
-        return cls(dir_rel, origin_rel, frame, time, xp)
+        return cls(dir_rel, origin_rel, frame, time, check, xp)
 
     @classmethod
     def from_camera(
@@ -188,6 +194,43 @@ class Ray:
             time=pixel.time,
             backend=xp,
         )
+
+    @classmethod
+    def from_target_frame(
+        cls,
+        target: Point,
+        frame: Frame,
+        check_bounds: bool = True,
+        backend: BackendArg = None,
+    ) -> Ray:
+        """Create a Ray object from a reference frame and target point(s).
+
+        Args:
+            target (Point): Target point(s) in ECEF coordinates. Must be length N or 1.
+            frame (Frame): Reference frame for the ray origin and direction.
+            backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
+
+        Returns:
+            Ray: Ray object defined by the frame origin and direction to the target point(s).
+        """
+    
+        if check_bounds:
+            if not target.has_time and not frame.is_static:
+                raise ValueError(
+                    "Target Point must have associated Time if Frame is time-varying."
+                )
+            if isinstance(target.time, Time) and not frame.is_static:
+                if not frame.time_group.in_bounds(target.time):
+                    raise ValueError(
+                        "Target Point time is out of bounds of Frame time range."
+                    )
+
+        xp = resolve_backend(backend)
+        frame = frame.convert_to(xp)
+        origin = frame.interp_loc(target.time, check_bounds=check_bounds)
+        dir_ecef = target.ecef - origin.ecef
+        return cls(dir_ecef, origin.ecef, time=target.time, frame=FRAME_ECEF, check=False, backend=xp).to_frame(frame)
+
 
     @classmethod
     def _constructor(
@@ -331,6 +374,27 @@ class Ray:
         return Ray._constructor(
             unit_new,
             origin_new,
+            self.time,
+            frame,
+            self._xp,
+        )
+
+    def replace_frame(self, frame: Frame) -> Ray:
+        """Replace the reference frame of the Ray without changing origin or direction.
+        Not a transformation, but direct replacement. Use with caution.
+
+        Args:
+            frame (Frame): New reference frame for the ray.
+        Returns:
+            Ray: Ray object with the new reference frame.
+
+        """
+
+        if frame.backend != self.backend:
+            frame = frame.convert_to(self.backend)
+        return Ray._constructor(
+            self._unit_rel,
+            self._origin_rel,
             self.time,
             frame,
             self._xp,

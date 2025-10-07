@@ -274,7 +274,7 @@ class Point(Location[TimeLike]):
         """Check if the Point has associated Time."""
         return isinstance(self.time, Time)
 
-    def _interp(self, time: Time | TimeInvariant, check_bounds: bool = True) -> Point:
+    def _interp(self, time: Time | TimeInvariant) -> Point:
         """Private method to 'interpolate' (broadcast) a singular Point to multiple times.
         Enables compatibility between static Points and dynamic Paths in other modules."""
 

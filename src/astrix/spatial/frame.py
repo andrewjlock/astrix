@@ -14,7 +14,7 @@ from astrix._backend_utils import (
     backend_jit,
 )
 
-from astrix.functs import ned_rotation
+from astrix.functs import ned_rotation, apply_rot, az_el_from_vec
 
 
 from astrix.time import (
@@ -258,6 +258,11 @@ class Frame:
         return self._name
 
     @property
+    def name_chain(self) -> list[str]:
+        """Get the names of all frames in the rotation chain, from base to current."""
+        return list(self._rot_chain.keys())
+
+    @property
     def is_static(self) -> bool:
         """Check if the frame is static (single rotation and singular Point location)."""
         return self._static_rot and self._static_loc
@@ -472,3 +477,49 @@ def ned_frame(
     else:
         frame = Frame(rots, loc, backend=loc.backend, name=name)
     return frame
+
+
+def velocity_frame(path: Path, downsample: float | None = 10.0, name: str = "velocity frame") -> Frame:
+    """
+    Create a velocity-aligned frame at each point along a Path.
+    The frame is defined such that the x-axis aligns with the velocity vector,
+    the z-axis aligns with the local vertical plane, and the y-axis completes the right-handed system.
+
+    Args:
+        path (Path): Path object defining the trajectory.
+        downsample (float, optional): Downsample interval for Path objects in seconds.
+            If None, no downsampling is performed. Defaults to 10s.
+            If path time resolution is greater than downsample interval,
+            the Path will be downsampled before creating the velocity frame to reduce computational load.
+        name (str, optional): Name of the frame. Defaults to "velocity frame".
+
+    Returns:
+        Frame: Velocity-aligned frame along the Path.
+
+    Notes:
+        - Adopts backend from Path object.
+    """
+
+    if isinstance(path, Path) and downsample is not None:
+        if len(path.time) > path.time.duration / downsample:
+            time_new = time_linspace(
+                path.time[0], path.time[-1], int(path.time.duration // downsample + 1)
+            )
+            path = Path._constructor(
+                path.interp(time_new, check_bounds=False).ecef,
+                time=time_new,
+                xp=path._xp,
+            )
+
+    frame_ned_temp = ned_frame(path, downsample=None, name="temp-ned-frame")
+    vel = path.vel
+    vel_ned_vec = apply_rot(frame_ned_temp.interp_rot(vel.time), vel.unit, inverse=True, xp=path._xp)
+    head_pitch = az_el_from_vec(vel_ned_vec, backend=path._xp)
+
+    rots = Rotation.from_euler("ZY", head_pitch, degrees=True)
+    rot_seq = RotationSequence(rots, path.time, backend=path.backend)
+    frame = Frame(rot_seq, ref_frame=frame_ned_temp, backend=path.backend, name=name)
+    return frame
+
+
+

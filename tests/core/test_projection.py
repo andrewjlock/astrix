@@ -35,7 +35,7 @@ def test_vector_to_pixel(xp):
 
     time_interp = Time(0.5, backend=xp)
 
-    ray = Ray.from_points(origin, target, time=time_interp, backend=xp)
+    ray = Ray.from_points(target, origin, time=time_interp, backend=xp)
     ray_cam = ray.to_frame(frame_cam)
     pixel = ray_cam.project_to_cam(camera)
 
