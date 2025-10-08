@@ -295,6 +295,24 @@ class Frame:
         )
 
     @property
+    def path(self) -> Path:
+        """Get the time-varying Path of the frame location, if applicable.
+        If the frame location is static, raises AttributeError.
+        """
+        if isinstance(self._loc, Path):
+            return self._loc
+        raise AttributeError("Frame location is static; no Path available.")
+
+    @property
+    def point(self) -> Point:
+        """Get the singular Point of the frame location, if applicable.
+        If the frame location is time-varying, raises AttributeError.
+        """
+        if isinstance(self._loc, Point):
+            return self._loc
+        raise AttributeError("Frame location is time-varying; no singular Point available.")
+
+    @property
     def rel_rot(self) -> RotationLike:
         """Get the last rotation of the frame relative to the reference frame."""
         return self._rot

@@ -236,7 +236,7 @@ class Point(Location[TimeLike]):
     def __str__(self) -> str:
         return f"Point, n=<Select> {len(self)}, backend='{self._xp.__name__}'"
 
-    def __getitem__(self, index: int) -> Point:
+    def __getitem__(self, index: int | slice) -> Point:
         time = self.time[index]
         return Point(self.ecef[index], time=time, backend=self._xp)
 

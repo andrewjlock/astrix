@@ -176,7 +176,7 @@ class Time(TimeLike):
     def __len__(self) -> int:
         return self._unix.shape[0]
 
-    def __getitem__(self, index: int) -> Time:
+    def __getitem__(self, index: int | slice) -> Time:
         return Time._constructor(
             self._xp.asarray(self.unix[index]).reshape(-1), xp=self._xp
         )
@@ -242,6 +242,41 @@ class Time(TimeLike):
         """Return a new Time object containing only the times within the bounds of this Time object."""
         mask = (time.unix >= self._min) & (time.unix <= self._max)
         return Time._constructor(time.unix[mask], xp=time._xp)
+
+    def nearest_idx(self, time: Time) -> Array:
+        """Find the index of the nearest time in this Time object for each time in the input Time object.
+
+        Parameters
+        ----------
+        time : Time
+            Time object containing times to find nearest indices for.
+
+        Returns
+        -------
+        Array
+            Array of indices corresponding to the nearest times in this Time object.
+
+        Examples
+        --------
+
+        >>> from astrix.primitives import Time
+        >>> from datetime import datetime, timezone
+        >>> t1 = Time.from_datetime([
+        ...     datetime(2021, 1, 1, tzinfo=timezone.utc),
+        ...     datetime(2021, 1, 2, tzinfo=timezone.utc),
+        ...     datetime(2021, 1, 3, tzinfo=timezone.utc)
+        ... ])
+        >>> t2 = Time.from_datetime([
+        ...     datetime(2021, 1, 1, 12, tzinfo=timezone.utc),
+        ...     datetime(2021, 1, 2, 12, tzinfo=timezone.utc)
+        ... ])
+        >>> idx = t1.nearest_idx(t2)
+        >>> idx.tolist()
+        [0, 1]
+        """
+
+        idx = self._xp.abs(self.unix[:, None] - time.unix[None, :]).argmin(axis=0)
+        return idx
 
     def convert_to(self, backend: BackendArg) -> Time:
         """Convert the Time object to a different backend."""

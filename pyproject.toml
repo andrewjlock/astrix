@@ -31,10 +31,10 @@ dependencies = [
 
 [project.optional-dependencies]
 jax = ["jax[cpu]>=0.6.1"]
-plot = ["basemap", "basemap-data-hires", "cartopy", "matplotlib","pyvista","rasterio","contextily"]
+plot = ["basemap", "basemap-data-hires", "cartopy", "matplotlib","pyvista","rasterio","contextily","pyvista"]
 
 [dependency-groups]
-dev = ["pytest", "pytest-cov>=7.0.0", "jax[cpu]", "cartopy", "matplotlib", "basemap", "basemap-data-hires","pyvista","rasterio","contextily"]
+dev = ["pytest", "pytest-cov>=7.0.0", "jax[cpu]", "cartopy", "matplotlib", "basemap", "basemap-data-hires","pyvista","rasterio","contextily","pyvista"]
 test = ["pytest", "pytest-cov>=7.0.0"]
 docs = [
     "sphinx>=4.0.0",

@@ -222,7 +222,7 @@ class Plot3D:
         if color is None:
             color = _DEFAULT_COLOR_CYCLE[len(self.data) % len(_DEFAULT_COLOR_CYCLE)]
         curve = pv.lines_from_points(path.ecef)
-        act = self.p.add_mesh(curve, color=color, line_width=line_width, name=name, opacity=1)
+        act = self.p.add_mesh(curve, color=color, line_width=line_width, name=name, opacity=alpha)
         geodet = path.points.geodet
         self.data[name] = PlotData(
             name=name,
