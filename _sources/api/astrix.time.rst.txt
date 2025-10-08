@@ -1,0 +1,7 @@
+astrix.time module
+==================
+
+.. automodule:: astrix.time
+   :members:
+   :show-inheritance:
+   :undoc-members:
