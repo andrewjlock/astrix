@@ -100,9 +100,9 @@ class Point(Location[TimeLike]):
     >>> p1 = Point(
     ...     [-5047162.4, 2568329.79, -2924521.17]
     ... )  # ECEF coordinates of Brisbane in metres
-    >>> p.geodet  # Convert to geodetic coordinates (lat, lon, alt)
-    array([[153.03, 27.47, 0.0]])
-    >>> p2 = Point.from_geodet([27.47, 153.03, 0])  # lat, lon in degrees, alt in metres
+    >>> p1.geodet  # Convert to geodetic coordinates (lat, lon, alt)
+    array([[-27.47, 153.03, 0.0]])
+    >>> p2 = Point.from_geodet([-27.47, 153.03, 0])  # lat, lon in degrees, alt in metres
     >>> p2.ecef  # Convert back to ECEF coordinates
     array([[-5047162.4, 2568329.79, -2924521.17]])
 
