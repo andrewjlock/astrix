@@ -35,6 +35,10 @@ class RotationLike(ABC):
     def __len__(self) -> int:
         pass
 
+    @abstractmethod
+    def __getitem__(self, index: int | slice) -> Rotation:
+        pass
+
     @property
     @abstractmethod
     def time(self) -> TimeLike:
@@ -73,6 +77,10 @@ class _RotationStatic(RotationLike):
 
     def __len__(self) -> int:
         return 1
+
+    def __getitem__(self, index: int | slice) -> Rotation:
+        """Get the single rotation as a Rotation object."""
+        return self._rot
 
     @property
     def time(self) -> TimeInvariant:
@@ -176,6 +184,11 @@ class RotationSequence(RotationLike):
             if len(rot) == 0:
                 raise ValueError("rot list cannot be empty")
             rot = Rotation.concatenate(rot)
+        else:
+            if rot.as_quat().ndim == 1:
+                raise ValueError(
+                    "RotationSequence requires multiple rotations; use RotationSingle for a single rotation"
+                )
         self._rot = _convert_rot_backend(rot, self._xp)
 
         if len(time) != len(self._rot):
@@ -191,6 +204,10 @@ class RotationSequence(RotationLike):
 
     def __len__(self) -> int:
         return len(self._rot)
+
+    def __getitem__(self, index: int | slice) -> Rotation:
+        """Get a subset of the rotation sequence as a Rotation object."""
+        return self._rot[index]
 
     @property
     def time(self) -> Time:
@@ -241,6 +258,6 @@ class RotationSequence(RotationLike):
     def convert_to(self, backend: BackendArg) -> RotationSequence:
         """Convert the RotationSequence object to a different backend."""
         xp = resolve_backend(backend)
-        if xp == self._xp:
+        if xp is self._xp:
             return self
         return RotationSequence(self._rot, self._time, xp)

@@ -111,6 +111,7 @@ class Ray:
         endpoint: Point,
         origin: Point,
         time: TimeLike = TIME_INVARIANT,
+        check: bool =  True,
         backend: BackendArg = None,
     ) -> Ray:
         """Create a Ray object from origin and endpoint arrays in ECEF frame.
@@ -134,7 +135,7 @@ class Ray:
                 "Origin and endpoint arrays must have the same shape or origin must be singular."
             )
         dir = endpoint.ecef - origin.ecef
-        return cls(dir, origin.ecef, time=time, frame=FRAME_ECEF, backend=xp)
+        return cls(dir, origin.ecef, time=time, frame=FRAME_ECEF, check=check, backend=xp)
 
     @classmethod
     def from_az_el(

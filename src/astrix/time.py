@@ -27,7 +27,7 @@ class TimeLike(ABC):
     """
 
     @abstractmethod
-    def __getitem__(self, index: int) -> TimeLike:
+    def __getitem__(self, index: int | slice) -> TimeLike:
         pass
 
     @abstractmethod
@@ -61,7 +61,7 @@ class TimeInvariant(TimeLike):
     def __repr__(self) -> str:
         return "TimeInvariant object"
 
-    def __getitem__(self, index: int) -> TimeInvariant:
+    def __getitem__(self, index: int | slice) -> TimeInvariant:
         return self
 
     def in_bounds(self, time: Time) -> bool:

@@ -52,6 +52,10 @@ class Location(Generic[T], ABC):
     def __len__(self) -> int:
         return self._ecef.shape[0]
 
+    @abstractmethod
+    def __getitem__(self, index: int | slice) -> Point:
+        pass
+
     @property
     def backend(self) -> str:
         return self._xp.__name__
@@ -171,10 +175,16 @@ class Point(Location[TimeLike]):
         if isinstance(time, Time):
             time = time.convert_to(self._xp)
             if self._ecef.shape[0] != len(time):
-                raise ValueError(
-                    "Point and Time must be similar lengths if associated.\n"
-                    + f"Found {self._ecef.shape[0]} points and {time.unix.shape[0]} times."
-                )
+                if len(time) == 1:
+                    time = Time(
+                        self._xp.repeat(time.unix, self._ecef.shape[0]),
+                        backend=self._xp,
+                    )
+                else:
+                    raise ValueError(
+                        "Point and Time must be similar lengths if associated.\n"
+                        + f"Found {self._ecef.shape[0]} points and {time.unix.shape[0]} times."
+                    )
         self._time = time
 
     # --- Constructors ---
@@ -512,6 +522,10 @@ class Path(Location[Time]):
     def __str__(self) -> str:
         return f"Path, n={len(self)}, backend='{self._xp.__name__}')"
 
+    def __getitem__(self, index: int | slice) -> Point:
+        time = self.time[index]
+        return Point._constructor(self.ecef[index], time=time, xp=self._xp)
+
     @property
     def start_time(self) -> Time:
         """Get the start time of the Path."""
@@ -699,6 +713,4 @@ class Path(Location[Time]):
         xp = resolve_backend(backend)
         if xp == self._xp:
             return self
-        return Path(
-            Point(self.ecef, time=self.time.convert_to(xp), backend=xp), backend=xp
-        )
+        return Path._constructor(xp.asarray(self.ecef), self.time.convert_to(xp), xp)

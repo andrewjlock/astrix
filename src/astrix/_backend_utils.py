@@ -122,6 +122,7 @@ def resolve_backend(
 def enforce_cpu_x64():
     os.environ["JAX_ENABLE_X64"] = "1"
     os.environ["JAX_PLATFORMS"] = "cpu"
+    # os.environ["JAX_USE_SIMPLIFIED_JAXPR_CONSTANTS"] = "true" # Currnently breaks some things
     if "jax" in sys.modules:
         import jax
 

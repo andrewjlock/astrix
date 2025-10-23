@@ -3,7 +3,6 @@
 from __future__ import annotations
 import warnings
 
-from typing import Callable
 from scipy.spatial.transform import Rotation
 
 from astrix._backend_utils import (
@@ -134,7 +133,6 @@ class Frame:
 
     _rot: RotationLike
     _rot_chain: dict[str, RotationLike]
-    _interp_rot_fn: Callable[[Array], Rotation]
     _loc: Location[TimeLike]
     _time_group: TimeGroup
     _xp: ArrayNS
@@ -229,7 +227,7 @@ class Frame:
             if ref_frame.backend != self.backend:
                 ref_frame = ref_frame.convert_to(self.backend)
             _rot_chain |= ref_frame._rot_chain
-        _rot_chain |= {self._name : self._rot}  # New rotations applied to RHS
+        _rot_chain |= {self._name: self._rot}  # New rotations applied to RHS
 
         if all(isinstance(r, _RotationStatic) for r in _rot_chain.values()):
             self._static_rot = True
@@ -237,10 +235,6 @@ class Frame:
             self._static_rot = False
 
         self._rot_chain = _rot_chain
-
-        # Create and store a flattened composite rotation interpolation function
-        self._interp_rot_fn = self._create_interp_fn(self._rot_chain)
-
 
     # --- Dunder methods and properties ---
 
@@ -310,7 +304,9 @@ class Frame:
         """
         if isinstance(self._loc, Point):
             return self._loc
-        raise AttributeError("Frame location is time-varying; no singular Point available.")
+        raise AttributeError(
+            "Frame location is time-varying; no singular Point available."
+        )
 
     @property
     def rel_rot(self) -> RotationLike:
@@ -337,13 +333,13 @@ class Frame:
                         Frame time range: {self.time_bounds[0]} to {self.time_bounds[1]}
                         Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
                         Extrapolation is not supported and will raise an error.""")
-            return self._interp_rot_fn(time.unix)
+            return self._interp_rotation_unix(time.unix)
         elif isinstance(time, TimeInvariant):
             if not self._static_rot:
                 raise ValueError(
                     "Time must be provided to interpolate time-varying frame rotation."
                 )
-            return self._interp_rot_fn(self._xp.array([0.0]))
+            return self._interp_rotation_unix(self._xp.array([0.0]))
         else:
             raise ValueError("time must be a Time or TimeInvariant")
 
@@ -370,27 +366,48 @@ class Frame:
         else:
             raise ValueError("time must be a Time or TimeInvariant")
 
-    def _create_interp_fn(
-        self, rot_chain: dict[str, RotationLike]
-    ) -> Callable[[Array], Rotation]:
-        """Create a function that computes the composite rotation at given times.
+    def index_rot(self, index: int) -> Rotation:
+        """Get the absolute rotation of the frame at the given index.
+
+        Warning: This should only be used after downsampling so that location
+        and rotation indeces align. Prefer interp_rot for general use.
+
+        """
+        return self._index_rotation(index)
+
+    def index_loc(self, index: int) -> Point:
+        """Get the location of the frame at the given index.
+
+        Warning: This should only be used after downsampling so that location
+        and rotation indeces align. Prefer interp_rot for general use.
+
+        """
+        return self._loc[index]
+
+    @backend_jit(["self"])
+    def _interp_rotation_unix(self, unix: Array) -> Rotation:
+        rots = [r._interp_unix(unix) for r in self._rot_chain.values()]
+        final_rot = rots[0]
+        for r in rots[1:]:
+            final_rot = final_rot * r
+        return final_rot
+
+    @backend_jit(["self"])
+    def _index_rotation(self, index: int) -> Rotation:
+        """Compute the composite rotation at a given index.
         Constructor function provided to allow backend conversion
         """
 
-        @backend_jit()
-        def _interp_rotation(unix: Array) -> Rotation:
-            rots = [r._interp_unix(unix) for r in rot_chain.values()]
-            final_rot = rots[0]
-            for r in rots[1:]:
-                final_rot = final_rot * r
-            return final_rot
-
-        return _interp_rotation
+        rots = [r[index] for r in self._rot_chain.values()]
+        final_rot = rots[0]
+        for r in rots[1:]:
+            final_rot = final_rot * r
+        return final_rot
 
     def replace_rot(self, frame_name: str, new_rot: Rotation) -> Frame:
         """Replace a rotation in the rotation chain with a new rotation.
 
-        This is an advanced feature and currently only applicable for static rotations. 
+        This is an advanced feature and currently only applicable for static rotations.
         Should primarily be used for optimisation purposes in autograd frameworks.
 
         Args:
@@ -401,7 +418,9 @@ class Frame:
         if frame_name not in self._rot_chain:
             raise ValueError(f"Frame name '{frame_name}' not found in rotation chain")
         if not isinstance(self._rot_chain[frame_name], _RotationStatic):
-            raise ValueError("Can only replace static rotations in composite frame for now")
+            raise ValueError(
+                "Can only replace static rotations in composite frame for now"
+            )
         _rot = _RotationStatic(new_rot, backend=self._xp)
         self._rot_chain[frame_name] = _rot
 
@@ -411,7 +430,6 @@ class Frame:
         obj._rot = self._rot_chain[self._name]
         obj._rot_chain = self._rot_chain
         obj._time_group = self._time_group
-        obj._interp_rot_fn = self._create_interp_fn(self._rot_chain)
         obj._has_ref = self._has_ref
         obj._static_rot = self._static_rot
         obj._static_loc = self._static_loc
@@ -419,6 +437,51 @@ class Frame:
 
         return obj
 
+    def sample_at_time(self, time: Time) -> Frame:
+        """Sample the Frame object at specific times, returning a new Frame with 
+        time-varying components sampled at those times. The new frame can then be 
+        indexed at these times directly to avoid interpolation
+
+        Args:
+            time (Time): Time object specifying the times to sample the Frame at.
+
+        Returns:
+            Frame: New Frame object with components sampled at the specified times.
+        """
+
+        if not self.time_group.in_bounds(time):
+            raise ValueError("Sampling times are out of bounds for Frame time range")
+
+        if isinstance(self._loc, Path):
+            _loc = Path(self._loc.interp(time))
+        else:
+            _loc = self._loc
+
+        if isinstance(self._rot, RotationSequence):
+            _rot = RotationSequence(self._rot.interp(time), time, backend=self._xp)
+        else:
+            _rot = self._rot
+
+        _rot_chain = {}
+        for k, r in self._rot_chain.items():
+            if isinstance(r, RotationSequence):
+                _rot_chain[k] = RotationSequence(r.interp(time), time, backend=self._xp)
+            else:
+                _rot_chain[k] = r
+
+        _time_group = TimeGroup([time], backend=self._xp)
+
+        obj = Frame.__new__(Frame)
+        obj._xp = self._xp
+        obj._loc = _loc
+        obj._rot = _rot
+        obj._rot_chain = _rot_chain
+        obj._time_group = _time_group
+        obj._has_ref = self._has_ref
+        obj._static_rot = False
+        obj._static_loc = False
+        obj._name = self._name
+        return obj
 
     def convert_to(self, backend: BackendArg) -> Frame:
         """Convert the Frame object to a different backend."""
@@ -427,9 +490,8 @@ class Frame:
             return self
         _loc = self._loc.convert_to(xp)
         _rot = self._rot.convert_to(xp)
-        _rot_chain = {k: r.convert_to(xp) for k,r in self._rot_chain.items()}
+        _rot_chain = {k: r.convert_to(xp) for k, r in self._rot_chain.items()}
         _time_group = self.time_group.convert_to(xp)
-        _interp_rot_fn = self._create_interp_fn(_rot_chain)
 
         obj = Frame.__new__(Frame)
         obj._xp = xp
@@ -437,7 +499,6 @@ class Frame:
         obj._rot = _rot
         obj._rot_chain = _rot_chain
         obj._time_group = _time_group
-        obj._interp_rot_fn = _interp_rot_fn
         obj._has_ref = self._has_ref
         obj._static_rot = self._static_rot
         obj._static_loc = self._static_loc
@@ -497,7 +558,9 @@ def ned_frame(
     return frame
 
 
-def velocity_frame(path: Path, downsample: float | None = 10.0, name: str = "velocity frame") -> Frame:
+def velocity_frame(
+    path: Path, downsample: float | None = 10.0, name: str = "velocity frame"
+) -> Frame:
     """
     Create a velocity-aligned frame at each point along a Path.
     The frame is defined such that the x-axis aligns with the velocity vector,
@@ -531,13 +594,12 @@ def velocity_frame(path: Path, downsample: float | None = 10.0, name: str = "vel
 
     frame_ned_temp = ned_frame(path, downsample=None, name="temp-ned-frame")
     vel = path.vel
-    vel_ned_vec = apply_rot(frame_ned_temp.interp_rot(vel.time), vel.unit, inverse=True, xp=path._xp)
+    vel_ned_vec = apply_rot(
+        frame_ned_temp.interp_rot(vel.time), vel.unit, inverse=True, xp=path._xp
+    )
     head_pitch = az_el_from_vec(vel_ned_vec, backend=path._xp)
 
     rots = Rotation.from_euler("ZY", head_pitch, degrees=True)
     rot_seq = RotationSequence(rots, path.time, backend=path.backend)
     frame = Frame(rot_seq, ref_frame=frame_ned_temp, backend=path.backend, name=name)
     return frame
-
-
-
