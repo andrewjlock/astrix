@@ -5,7 +5,7 @@ from __future__ import annotations
 import pyvista as pv
 import numpy as np
 from typing import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from numpy.typing import NDArray
 from rasterio.transform import from_bounds
 from rasterio.warp import reproject, Resampling
@@ -20,14 +20,17 @@ from astrix.time import Time, TimeGroup, time_linspace
 
 _DEFAULT_COLOR_CYCLE = [
     "#8dd3c7",
-    "#ffffb3",
-    "#bebada",
     "#fb8072",
-    "#80b1d3",
-    "#fdb462",
     "#b3de69",
+    "#bebada",
+    "#fdb462",
+    "#ffffb3",
     "#fccde5",
+    "#80b1d3",
 ]
+
+def color_from_int(i: int) -> str:
+    return _DEFAULT_COLOR_CYCLE[i % len(_DEFAULT_COLOR_CYCLE)]
 
 
 def _geodet2ecef_grid(
@@ -41,6 +44,7 @@ def _geodet2ecef_grid(
     Z = xyz[:, :, 2]
 
     return X, Y, Z
+
 
 @dataclass
 class ConnectingLines:
@@ -56,7 +60,9 @@ class ConnectingLines:
         return cls(points_1, points_2)
 
     def truncate(self, start: Time, end: Time) -> ConnectingLines:
-        mask = (self.points_1.time.unix >= start.unix) & (self.points_1.time.unix <= end.unix) 
+        mask = (self.points_1.time.unix >= start.unix) & (
+            self.points_1.time.unix <= end.unix
+        )
         return ConnectingLines(self.points_1[mask], self.points_2[mask])
 
 
@@ -67,6 +73,7 @@ class PlotData:
     actor: pv.Actor
     lat_bounds: tuple[float, float]
     lon_bounds: tuple[float, float]
+    data: dict = field(default_factory=dict)
 
 
 class Plot3D:
@@ -76,7 +83,13 @@ class Plot3D:
 
     def __init__(self):
         self.p = pv.Plotter()
+        self.p.window_size = [1920, 1080]
         self.p.set_background("black")  # pyright: ignore
+        self.p.disable_anti_aliasing()
+        self.p.enable_anti_aliasing("fxaa")
+        # self.p.enable_anti_aliasing("msaa", multi_samples=8)
+        # self.p.enable_anti_aliasing(None)
+        self.p.enable_depth_peeling(occlusion_ratio=0.0, number_of_peels=50)
         self.data = {}
         self.text_actors = {}
 
@@ -93,7 +106,7 @@ class Plot3D:
         cam_dir = rot.apply(np.array([1, 0, 0]))
         cam_pos = ecef_cent + cam_dir * 2e5  # 100 km
 
-        self.p.enable_parallel_projection() # pyright: ignore
+        self.p.enable_parallel_projection()  # pyright: ignore
         self.p.set_focus(ecef_cent)
         self.p.set_position(cam_pos)
         if pitch_deg == 90 or pitch_deg == -90:
@@ -103,7 +116,9 @@ class Plot3D:
             self.p.set_viewup(rot_ned.apply(np.array([0.0, 0, -1])))
         self.p.camera.zoom(1.5)
 
-    def add_texture(self, lat_bounds: Sequence[float], lon_bounds: Sequence[float], alpha=0.6):
+    def add_texture(
+        self, lat_bounds: Sequence[float], lon_bounds: Sequence[float], alpha=0.5
+    ):
         img, ext = cx.bounds2img(
             lon_bounds[0],
             lat_bounds[0],
@@ -161,7 +176,7 @@ class Plot3D:
         self.p.add_mesh(
             grid,
             texture=tex,
-            lighting=True,
+            lighting=False,
             smooth_shading=True,
             show_edges=False,
             opacity=alpha,
@@ -216,23 +231,145 @@ class Plot3D:
             always_visible=False,
         )
 
-    def add_path(
-        self, name: str, path: Path, line_width: float = 2.0, color: str | None = None, alpha: float = 1.0
-    ):
-        if color is None:
-            color = _DEFAULT_COLOR_CYCLE[len(self.data) % len(_DEFAULT_COLOR_CYCLE)]
+    def _create_path_data(self, path: Path) -> pv.PolyData:
         curve = pv.lines_from_points(path.ecef)
-        act = self.p.add_mesh(curve, color=color, line_width=line_width, name=name, opacity=alpha)
-        geodet = path.points.geodet
+        return curve
+
+    def add_path(
+        self,
+        name: str,
+        path: Path,
+        path_max: Path | None = None,
+        line_width: float = 2.0,
+        color: str | int | None = None,
+        alpha: float = 1.0,
+    ):
+        if isinstance(color, int):
+            color = color_from_int(color)
+        elif color is None:
+            color = _DEFAULT_COLOR_CYCLE[len(self.data) % len(_DEFAULT_COLOR_CYCLE)]
+        curve = self._create_path_data(path)
+        act = self.p.add_mesh(
+            curve,
+            color=color,
+            line_width=line_width,
+            name=name,
+            opacity=alpha,
+            lighting=False,
+            render_lines_as_tubes=True,
+            smooth_shading=True,
+        )
+        # Use maximum path for bounds (so bounds isn't changed during animation)
+        if path_max is None:
+            path_max = path
+        geodet_max = path_max.points.geodet
         self.data[name] = PlotData(
             name=name,
             type="path",
+            actor=act,
+            lat_bounds=(np.min(geodet_max[:, 0]), np.max(geodet_max[:, 0])),
+            lon_bounds=(np.min(geodet_max[:, 1]), np.max(geodet_max[:, 1])),
+        )
+
+    def update_path(self, name: str, path: Path):
+        if name not in self.data:
+            raise ValueError(f"Path '{name}' not found in plot data.")
+        curve = self._create_path_data(path)
+        act = self.data[name].actor
+        act.mapper.SetInputData(curve)
+        act.mapper.Update()
+
+    def add_ground_track(
+        self,
+        name: str,
+        path: Path,
+        vert_dt: float = 10.0,
+        line_width: float = 1.0,
+        color: str = "white",
+        alpha: float = 0.6,
+    ):
+        geodet = path.points.geodet
+        geodet[:, 2] = 0.0  # set altitude to 0
+        path_gt = Path(Point.from_geodet(geodet, time=path.time))
+
+        # Get times of vertical path joins
+        # We want this to start at first time and be spaced strictly at vert_dt intervals,
+        # with a final time at the end
+        n_bars = int(np.floor((path.time.unix[-1] - path.time.unix[0]) / vert_dt))
+        bar_t = np.concatenate(
+            [path.time.unix[0] + np.arange(n_bars) * vert_dt, [path.time.unix[-1]]]
+        )
+        bar_time = Time(bar_t)
+        pt_path = path.interp(bar_time)
+        pt_path_gt = path_gt.interp(bar_time)
+
+        N = len(bar_t)
+        points = np.vstack((pt_path.ecef, pt_path_gt.ecef))
+        cells = np.c_[np.full(N, 2), np.arange(N), np.arange(N) + N].ravel()
+        vert_lines = pv.PolyData(points, lines=cells)
+        ground_lines = pv.lines_from_points(path_gt.ecef)
+        lines = vert_lines + ground_lines
+
+        act = self.p.add_mesh(
+            lines,
+            color=color,
+            line_width=line_width,
+            name=name,
+            opacity=alpha,
+            lighting=False,
+        )
+        self.data[name] = PlotData(
+            name=name,
+            type="ground_track",
             actor=act,
             lat_bounds=(np.min(geodet[:, 0]), np.max(geodet[:, 0])),
             lon_bounds=(np.min(geodet[:, 1]), np.max(geodet[:, 1])),
         )
 
-    # def add_multi_lines(self, name: str, Path, line_width: float = 1.0):
+    def _create_point_data(self, point: Point, size: int):
+        sphere = pv.Sphere(radius=size, center=point.ecef[0])
+        return sphere
+
+    def add_point(
+        self,
+        name: str,
+        point: Point,
+        size: float = 2.0,
+        color: str | int | None = None,
+        alpha: float = 1.0,
+    ):
+
+        if isinstance(color, int):
+            color = color_from_int(color)
+        elif color is None:
+            color = _DEFAULT_COLOR_CYCLE[len(self.data) % len(_DEFAULT_COLOR_CYCLE)]
+
+        sphere = self._create_point_data(point, size * 1000)
+        act = self.p.add_mesh(
+            sphere,
+            color=color,
+            name=name,
+            opacity=alpha,
+            lighting=False,
+        )
+        geodet = point.geodet[0]
+        self.data[name] = PlotData(
+            name=name,
+            type="point",
+            actor=act,
+            lat_bounds=(geodet[0], geodet[0]),
+            lon_bounds=(geodet[1], geodet[1]),
+            data = {"size": size}
+        )
+
+    def update_point(self, name: str, point: Point):
+        if name not in self.data:
+            raise ValueError(f"Point '{name}' not found in plot data.")
+        size = self.data[name].data.get("size", 5.0)
+        sphere = self._create_point_data(point, size * 1000)
+        act = self.data[name].actor
+        act.mapper.SetInputData(sphere)
+        act.mapper.Update()
 
     def add_2d_text(
         self,
@@ -266,8 +403,13 @@ class Plot3D:
             max(lon_maxs) + buffer,
         )
 
-    def autocomplete(self):
-        lat_bounds, lon_bounds = self.calc_bounds()
+    def autocomplete(
+        self, bounds: tuple[tuple[float, float], tuple[float, float]] | None = None
+    ):
+        if bounds is not None:
+            lat_bounds, lon_bounds = bounds
+        else:
+            lat_bounds, lon_bounds = self.calc_bounds()
         self.add_texture(lat_bounds, lon_bounds)
         self.add_grid(lat_bounds, lon_bounds)
 
@@ -276,6 +418,15 @@ class Plot3D:
 
     def show(self):
         self.p.show()
+
+    def start_animation(self, filepath: str = "./animation.mp4", fps: int = 10):
+        self.p.open_movie(filepath, framerate=fps)  # uses imageio/ffmpeg under the hood
+
+    def frame(self):
+        self.p.write_frame()
+
+    def close(self):
+        self.p.close()
 
 
 if __name__ == "__main__":

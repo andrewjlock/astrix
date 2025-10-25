@@ -422,13 +422,14 @@ class Frame:
                 "Can only replace static rotations in composite frame for now"
             )
         _rot = _RotationStatic(new_rot, backend=self._xp)
-        self._rot_chain[frame_name] = _rot
+        _rot_chain = self._rot_chain.copy()
+        _rot_chain[frame_name] = _rot
 
         obj = Frame.__new__(Frame)
         obj._xp = self._xp
         obj._loc = self._loc
-        obj._rot = self._rot_chain[self._name]
-        obj._rot_chain = self._rot_chain
+        obj._rot = _rot_chain[self._name]
+        obj._rot_chain = _rot_chain
         obj._time_group = self._time_group
         obj._has_ref = self._has_ref
         obj._static_rot = self._static_rot
@@ -559,7 +560,7 @@ def ned_frame(
 
 
 def velocity_frame(
-    path: Path, downsample: float | None = 10.0, name: str = "velocity frame"
+    path: Path, downsample: float | None = 1.0, name: str = "velocity frame"
 ) -> Frame:
     """
     Create a velocity-aligned frame at each point along a Path.
@@ -600,6 +601,50 @@ def velocity_frame(
     head_pitch = az_el_from_vec(vel_ned_vec, backend=path._xp)
 
     rots = Rotation.from_euler("ZY", head_pitch, degrees=True)
+    rot_seq = RotationSequence(rots, path.time, backend=path.backend)
+    frame = Frame(rot_seq, ref_frame=frame_ned_temp, backend=path.backend, name=name)
+    return frame
+
+def heading_frame(path: Path, downsample: float | None = 1.0, name: str = "heading frame") -> Frame:
+    """
+    Create a heading-aligned frame at each point along a Path.
+    The frame is defined such that the first aligns with the heading direction (azimuth),
+    the z-axis aligns with the local vertical plane, and the y-axis completes the right-handed system.
+
+    Args:
+        path (Path): Path object defining the trajectory.
+        downsample (float, optional): Downsample interval for Path objects in seconds.
+            If None, no downsampling is performed. Defaults to 10s.
+            If path time resolution is greater than downsample interval,
+            the Path will be downsampled before creating the heading frame to reduce computational load.
+        name (str, optional): Name of the frame. Defaults to "heading frame".
+
+    Returns:
+        Frame: Heading-aligned frame along the Path.
+
+    Notes:
+        - Adopts backend from Path object.
+    """
+
+    if isinstance(path, Path) and downsample is not None:
+        if len(path.time) > path.time.duration / downsample:
+            time_new = time_linspace(
+                path.time[0], path.time[-1], int(path.time.duration // downsample + 1)
+            )
+            path = Path._constructor(
+                path.interp(time_new, check_bounds=False).ecef,
+                time=time_new,
+                xp=path._xp,
+            )
+
+    frame_ned_temp = ned_frame(path, downsample=None, name="temp-ned-frame")
+    vel = path.vel
+    vel_ned_vec = apply_rot(
+        frame_ned_temp.interp_rot(vel.time), vel.unit, inverse=True, xp=path._xp
+    )
+    head_pitch = az_el_from_vec(vel_ned_vec, backend=path._xp)
+
+    rots = Rotation.from_euler("Z", head_pitch[:, 0].reshape(-1, 1), degrees=True)
     rot_seq = RotationSequence(rots, path.time, backend=path.backend)
     frame = Frame(rot_seq, ref_frame=frame_ned_temp, backend=path.backend, name=name)
     return frame

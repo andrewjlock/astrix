@@ -32,5 +32,5 @@ def rot_window_lh(backend: Backend = None) -> Rotation:
 def rot_identity(backend: Backend = None) -> Rotation:
     """Identity rotation matrix."""
     xp = resolve_backend(backend)
-    return Rotation.from_quat(xp.array([0, 0, 0, 1]))
+    return Rotation.from_quat(xp.array([[0, 0, 0, 1]]))
 

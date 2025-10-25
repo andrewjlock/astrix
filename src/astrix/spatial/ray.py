@@ -230,7 +230,13 @@ class Ray:
         frame = frame.convert_to(xp)
         origin = frame.interp_loc(target.time, check_bounds=check_bounds)
         dir_ecef = target.ecef - origin.ecef
-        return cls(dir_ecef, origin.ecef, time=target.time, frame=FRAME_ECEF, check=False, backend=xp).to_frame(frame)
+        dir_frame = apply_rot(
+            frame.interp_rot(target.time, check_bounds=check_bounds).inv(),
+            dir_ecef,
+            xp=xp,
+        )
+        origin_frame = xp.zeros((1, 3))  # Ray origin at frame origin
+        return cls(dir_frame, origin_frame, time=target.time, frame=frame, check=False, backend=xp)
 
 
     @classmethod

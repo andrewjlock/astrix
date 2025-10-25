@@ -48,6 +48,9 @@ class TimeLike(ABC):
     def in_bounds(self, time: Time) -> bool:
         pass
 
+    @abstractmethod
+    def copy(self) -> TimeLike: ...
+
 
 @dataclass(frozen=True)
 class TimeInvariant(TimeLike):
@@ -72,6 +75,9 @@ class TimeInvariant(TimeLike):
 
     def datetime(self) -> list[str]:
         return ["<Time Invariant Object>"]
+
+    def copy(self) -> TimeInvariant:
+        return self
 
 
 TIME_INVARIANT = TimeInvariant()
@@ -180,6 +186,9 @@ class Time(TimeLike):
         return Time._constructor(
             self._xp.asarray(self.unix[index]).reshape(-1), xp=self._xp
         )
+
+    def copy(self) -> Time:
+        return Time._constructor(self.unix.copy(), xp=self._xp)
 
     @property
     def datetime(self) -> list[dt.datetime]:

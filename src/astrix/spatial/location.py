@@ -43,7 +43,7 @@ class Location(Generic[T], ABC):
 
     @property
     def ecef(self) -> Array:
-        return self._ecef
+        return self._ecef.copy()
 
     @property
     def geodet(self) -> Array:
@@ -62,7 +62,7 @@ class Location(Generic[T], ABC):
 
     @property
     def time(self) -> T:
-        return self._time
+        return self._time.copy()
 
     @abstractmethod
     def _interp(self, time: Time) -> Point:
@@ -413,6 +413,14 @@ class Velocity:
             return self
         return Velocity(xp.asarray(self.vec), self.time.convert_to(xp), xp)
 
+    @classmethod
+    def from_data(cls, vec: ArrayLike, time: TimeLike, backend: BackendArg = None) -> Velocity:
+        """Create a Velocity object from velocity vector array and Time object."""
+        xp = resolve_backend(backend)
+        time = time.convert_to(xp)
+        vec = ensure_2d(vec, n=3, backend=xp)
+        return cls(vec, time, xp)
+
 
 POINT_ORIGIN = Point([0.0, 0.0, 0.0])
 
@@ -640,7 +648,7 @@ class Path(Location[Time]):
             )
             return Velocity(interp_vel, time, self._xp)
 
-    def truncate(self, start_time: Time | None, end_time: Time | None) -> Path:
+    def truncate(self, start_time: Time | None = None, end_time: Time | None = None) -> Path:
         """Truncate the Path to the given start and end times.
         If start_time or end_time is None, the Path is truncated to the start or end of the Path respectively.
 
@@ -668,12 +676,15 @@ class Path(Location[Time]):
         )
         end_idx = self._xp.searchsorted(self.time.unix, end_time.unix[0], side="left")
 
-        p_mid = Point(
-            self._ecef[start_idx:end_idx],
-            time=Time(self._time.unix[start_idx:end_idx], backend=self._xp),
-            backend=self._xp,
-        )
-        points = Point.from_list([p0, p_mid, p1])
+        if start_idx == end_idx:
+            points = Point.from_list([p0, p1])
+        else:
+            p_mid = Point(
+                self._ecef[start_idx:end_idx],
+                time=Time(self._time.unix[start_idx:end_idx], backend=self._xp),
+                backend=self._xp,
+            )
+            points = Point.from_list([p0, p_mid, p1])
         return Path(points, backend=self._xp)
 
     def time_at_alt(self, alt: float) -> Time:
