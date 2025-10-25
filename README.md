@@ -87,6 +87,9 @@ The following conventions are used data representation throughout the package:
 - By default, position is stored as Cartesian ECEF coordinates represented as `(x, y, z)` in metres.
 - Geodetic coordinates are represented as `(latitude, longitude, altitude)`, where latitude and longitude are in degrees and altitude is in metres.
 
+In addition, all classes in the package are designed to be immutable (for Jax compatibiliy). 
+Any method which modifies the state of an object will return a new instance of the object with the modified state (although child objects, such as arrays, may be shared, depending on the operation).
+
 
 ## Backend Compatibility - NumPy and Jax
 
@@ -95,14 +98,16 @@ _Note: This section is only relevant for those wishing to do efficient optimisat
 This project uses the [Array API](https://data-apis.org/array-api/) standard to enable switching between NumPy and [Jax](https://jax.readthedocs.io/en/latest/) backends for most core classes and functions, using their common native API. 
 NumPy is the default, and superior for most use cases. 
 Jax provides two extra capabilities: automatic differentiation and JIT compilation, which can be useful for batch processing and optimisation problems.
+If Jax is of no interest to you, you can safely ignore backend arguments altogether.
 
-Classes and functions which support both backends have a `backend` argument, which can be set to either `'numpy'`/`'np'` or `'jax'`/`'jnp'`, or a reference to either namespace.
-Moreover, classes also have methods to convert between backends, e.g. `to_jax()` and `to_numpy()` (including all dependent objects).
-Functions/methods that have no anticipated need for Jax capabilities are implemented in NumPy only, as are those that have Jax incompatible dependencies (for example, conversion between ECEF and geodetic coordinates which uses the [`pyproj`](https://github.com/pyproj4/pyproj) package).
+Classes and functions which support both backends have a constructor `backend` argument, which can be set to either `'numpy'`/`'np'` or `'jax'`/`'jnp'`, or a reference to either namespace.
+Moreover, classes also have a `.convert_to("desired_backend")` method to convert between backends.
+This conversion is recursive, and will also convert all required child objects. 
+The suggested use case is therefore to create a model in NumPy, and then convery only the relevant objects to Jax when needed for JIT compilation or differentiation.
+Functions/methods that have no anticipated need for Jax capabilities are implemented in NumPy only, as are those that have Jax incompatible dependencies (for example, accurate conversion between ECEF and geodetic coordinates which uses the [`pyproj`](https://github.com/pyproj4/pyproj) package).
 Users will be alerted to attempts to use Jax backend in such cases with warnings or errors.
 
-The backend is specified per-instance and per-function call (with NumPy defaults), as there are use cases when both may be wanted simultaneously.
-Although effort has been made to ensure any two interacting objects use similar/compatible backends, this is not guaranteed. 
+Although effort has been made to ensure any two interacting objects use similar or compatible backends, this is not guaranteed. 
 The primary CI workflows test NumPy backends only. 
 
 To use the Jax backend, you will need to ensure the SciPy environment environment variable is set, via Python before you import `scipy.spatial.transform.Rotation`. This is done automatically when you import `astrix`, but can also be done manually: 
