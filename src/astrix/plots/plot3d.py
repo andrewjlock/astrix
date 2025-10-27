@@ -12,6 +12,7 @@ from rasterio.warp import reproject, Resampling
 from rasterio.crs import CRS
 import contextily as cx
 from scipy.spatial.transform import Rotation
+from pyproj import Transformer
 
 from astrix.functs import geodet2ecef, ned_rotation
 from astrix.spatial.location import Path, Point
@@ -29,6 +30,7 @@ _DEFAULT_COLOR_CYCLE = [
     "#80b1d3",
 ]
 
+
 def color_from_int(i: int) -> str:
     return _DEFAULT_COLOR_CYCLE[i % len(_DEFAULT_COLOR_CYCLE)]
 
@@ -36,8 +38,10 @@ def color_from_int(i: int) -> str:
 def _geodet2ecef_grid(
     llat: NDArray, llon: NDArray, alt: float = 0
 ) -> tuple[NDArray, NDArray, NDArray]:
+    transformer = Transformer.from_crs("EPSG:4326", "EPSG:4978", always_xy=True)
     geodet = np.stack([llat.ravel(), llon.ravel(), np.full(llat.size, alt)], axis=1)
-    ecef = geodet2ecef(geodet)
+    ecef = np.array(transformer.transform(geodet[:, 1], geodet[:, 0], geodet[:, 2])).T
+    # ecef = geodet2ecef(geodet)
     xyz = ecef.reshape(*llat.shape, 3)
     X = xyz[:, :, 0]
     Y = xyz[:, :, 1]
@@ -83,7 +87,7 @@ class Plot3D:
 
     def __init__(self):
         self.p = pv.Plotter()
-        self.p.window_size = [1920, 1080]
+        self.p.window_size = [1200, 600]
         self.p.set_background("black")  # pyright: ignore
         self.p.disable_anti_aliasing()
         self.p.enable_anti_aliasing("fxaa")
@@ -98,6 +102,7 @@ class Plot3D:
         cent: Point,
         heading_deg: float = 180,
         pitch_deg: float = -45,
+        zoom: float = 2.5,
     ):
         ecef_cent = cent.ecef[0]
         rot_ned = ned_rotation(cent.geodet)
@@ -114,10 +119,10 @@ class Plot3D:
             self.p.set_viewup(rot_ned.apply(np.array([1.0, 0, 0])))
         else:
             self.p.set_viewup(rot_ned.apply(np.array([0.0, 0, -1])))
-        self.p.camera.zoom(1.5)
+        self.p.camera.zoom(zoom)
 
     def add_texture(
-        self, lat_bounds: Sequence[float], lon_bounds: Sequence[float], alpha=0.5
+        self, lat_bounds: Sequence[float], lon_bounds: Sequence[float], alpha=0.8
     ):
         img, ext = cx.bounds2img(
             lon_bounds[0],
@@ -130,57 +135,50 @@ class Plot3D:
         )
         img = np.flip(img, axis=0)  # flip y axis
 
-        dst_crs = CRS.from_string("EPSG:4326")  # WGS84
-        transform_dst = from_bounds(
-            lon_bounds[0],
-            lat_bounds[0],
-            lon_bounds[1],
-            lat_bounds[1],
-            img.shape[1],
-            img.shape[0],
+        transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
+        l_bounds = transformer.transform_bounds(
+            ext[0], ext[2], ext[1], ext[3], densify_pts=21
         )
-        transform_src = from_bounds(
-            ext[0], ext[2], ext[1], ext[3], img.shape[1], img.shape[0]
-        )
-        dst = np.empty_like(img)
-        for i, band in enumerate(img.transpose(2, 0, 1)):  # loop over bands
-            dst_band = np.empty_like(band)
-            reproject(
-                band,
-                dst_band,
-                src_transform=transform_src,
-                src_crs=CRS.from_string("EPSG:3857"),  # Web Mercator
-                dst_transform=transform_dst,
-                dst_crs=dst_crs,
-                resampling=Resampling.bilinear,
-            )
-            dst[:, :, i] = dst_band
 
         # 3) Build a WGS-84 curved patch and drape the reprojected texture
-        n_lat, n_lon = 400, 400
-        lats = np.linspace(lat_bounds[0], lat_bounds[1], n_lat)
-        lons = np.linspace(lon_bounds[0], lon_bounds[1], n_lon)
-        llon, llat = np.meshgrid(lons, lats, indexing="xy")
+        n_lat, n_lon = 100, 100
+        lats = np.linspace(l_bounds[1], l_bounds[3], n_lat)
+        lons = np.linspace(l_bounds[0], l_bounds[2], n_lon)
+        llon, llat = np.meshgrid(lons, lats, indexing="ij")
+
+        to_merc = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
+        xm, ym = to_merc.transform(llon, llat)  # same shapes as llon/llat
+
+        xmin, xmax, ymin, ymax = ext
+        u = (xm - xmin) / (xmax - xmin)
+        v = 1.0 - (ym - ymin) / (ymax - ymin)  # invert vertical
+
         X, Y, Z = _geodet2ecef_grid(llat, llon)
         grid = pv.StructuredGrid(X, Y, Z)  # creates a surface grid
 
-        # Plate Carrée texture coords match lon/lat linearly
-        u = (llon - lon_bounds[0]) / (lon_bounds[1] - lon_bounds[0])
-        v = 1.0 - (llat - lat_bounds[0]) / (lat_bounds[1] - lat_bounds[0])
         tcoords = np.c_[u.ravel(order="F"), v.ravel(order="F")].astype(np.float32)
         grid.active_texture_coordinates = tcoords
 
-        tex = pv.Texture(dst)  # pyright: ignore
+        tex = pv.Texture(img)  # pyright: ignore
         tex.repeat = False
 
-        self.p.add_mesh(
+        act = self.p.add_mesh(
             grid,
             texture=tex,
-            lighting=False,
+            lighting=True,
             smooth_shading=True,
             show_edges=False,
             opacity=alpha,
         )
+
+        self.data["texture"] = PlotData(
+            "texture",
+            "texture",
+            act,
+            (l_bounds[1], l_bounds[3]),
+            (l_bounds[0], l_bounds[2]),
+        )
+
 
     def add_grid(self, lat_bounds: Sequence[float], lon_bounds: Sequence[float]):
         # Get grid lines to nearest 0.5 degree
@@ -338,7 +336,6 @@ class Plot3D:
         color: str | int | None = None,
         alpha: float = 1.0,
     ):
-
         if isinstance(color, int):
             color = color_from_int(color)
         elif color is None:
@@ -359,7 +356,7 @@ class Plot3D:
             actor=act,
             lat_bounds=(geodet[0], geodet[0]),
             lon_bounds=(geodet[1], geodet[1]),
-            data = {"size": size}
+            data={"size": size},
         )
 
     def update_point(self, name: str, point: Point):
@@ -390,6 +387,26 @@ class Plot3D:
         )
         self.text_actors[name] = act
 
+    def add_legend(self, labels: list[tuple[str, str]]):
+        """Add a legend to the plot
+
+        Args:
+            labels: List of (data_name, label) tuples
+            font_size: Font size for the legend text
+        """
+        legend_entries = []
+        for data_name, label in labels:
+            if data_name not in self.data:
+                raise ValueError(f"Data '{data_name}' not found in plot data.")
+            color = self.data[data_name].actor.GetProperty().GetColor()
+            color_hex = "#{:02x}{:02x}{:02x}".format(
+                int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)
+            )
+            legend_entries.append([label, color_hex])
+        self.p.add_legend(
+            legend_entries, bcolor="black", size=(0.15, 0.15), face="rectangle"
+        )
+
     def calc_bounds(
         self, buffer=0.5
     ) -> tuple[tuple[float, float], tuple[float, float]]:
@@ -411,6 +428,7 @@ class Plot3D:
         else:
             lat_bounds, lon_bounds = self.calc_bounds()
         self.add_texture(lat_bounds, lon_bounds)
+        lat_bounds, lon_bounds = self.calc_bounds()
         self.add_grid(lat_bounds, lon_bounds)
 
     def render(self):
