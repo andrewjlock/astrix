@@ -122,7 +122,7 @@ class Plot3D:
         self.p.camera.zoom(zoom)
 
     def add_texture(
-        self, lat_bounds: Sequence[float], lon_bounds: Sequence[float], alpha=0.8
+        self, lat_bounds: Sequence[float], lon_bounds: Sequence[float], alpha=0.6
     ):
         img, ext = cx.bounds2img(
             lon_bounds[0],
@@ -141,7 +141,7 @@ class Plot3D:
         )
 
         # 3) Build a WGS-84 curved patch and drape the reprojected texture
-        n_lat, n_lon = 100, 100
+        n_lat, n_lon = 20, 20
         lats = np.linspace(l_bounds[1], l_bounds[3], n_lat)
         lons = np.linspace(l_bounds[0], l_bounds[2], n_lon)
         llon, llat = np.meshgrid(lons, lats, indexing="ij")
@@ -192,7 +192,7 @@ class Plot3D:
         lons = np.linspace(lon_min, lon_max, n_lon)
 
         LLon, LLat = np.meshgrid(lons, lats, indexing="xy")
-        X, Y, Z = _geodet2ecef_grid(LLat, LLon, alt=1)
+        X, Y, Z = _geodet2ecef_grid(LLat, LLon, alt=10)
         sg = pv.StructuredGrid(X, Y, Z)  # creates a surface grid
         edges = sg.extract_all_edges()  # just the lines between nodes
         self.p.add_mesh(edges, color="grey", line_width=1, opacity=0.5)
@@ -384,6 +384,31 @@ class Plot3D:
             shadow=True,
             font="arial",
             name=name,
+        )
+        self.text_actors[name] = act
+
+    def add_labelled_point(
+        self,
+        name: str,
+        text: str,
+        position: Point,
+        font_size: int = 12,
+        color: str | int = "lightgrey",
+    ):
+        act = self.p.add_point_labels(
+            position.ecef,
+            [text],
+            font_size=font_size,
+            text_color=color,
+            show_points=True,
+            shape_opacity=0.0,
+            always_visible=True,
+            name=name,
+            bold=False,
+            point_size=6,
+            shape_color="grey",
+            margin=2,
+            
         )
         self.text_actors[name] = act
 
