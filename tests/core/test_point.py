@@ -75,7 +75,7 @@ def test_point_with_time(xp):
     )
     p_multi = Point(multi_ecef, time=time3, backend=xp)
     assert p_multi.ecef.shape == (2, 3)
-    assert p_multi.time == time3
+    assert xp.array_equal(p_multi.time.unix, time3.unix)
 
 def test_bad_time_length(xp):
     with pytest.raises(ValueError):

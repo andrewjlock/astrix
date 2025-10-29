@@ -138,7 +138,7 @@ class Time(TimeLike):
         self._unix = ensure_1d(unix, backend=self._xp)
         self._min = self._xp.min(self._unix)
         self._max = self._xp.max(self._unix)
-        self.n = self._unix.shape[0]
+        self._n = self._unix.shape[0]
 
     # --- Constructors ---
 
@@ -171,6 +171,7 @@ class Time(TimeLike):
         obj._unix = unix
         obj._min = obj._xp.min(unix)
         obj._max = obj._xp.max(unix)
+        obj._n = unix.shape[0]
         return obj
 
     # --- Dunder methods and properties ---
@@ -195,7 +196,7 @@ class Time(TimeLike):
         return self
 
     def __next__(self) -> Time:
-        if self._i >= len(self):
+        if self._i >= self._n:
             raise StopIteration
         value = self[self._i]
         self._i += 1
