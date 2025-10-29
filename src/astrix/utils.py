@@ -26,7 +26,7 @@ def dist(a: Point, b: Point, backend: BackendArg = None) -> Array:
             backend = a.backend
     xp = resolve_backend(backend)
 
-    if len(a) != len(b) and any([len(a) != 1, len(b) != 1]):
+    if len(a) != len(b) and all([len(a) != 1, len(b) != 1]):
         raise ValueError(
             "To calculate distance point objects have be same length, or one singular."
         )

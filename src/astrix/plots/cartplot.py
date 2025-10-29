@@ -9,12 +9,13 @@ from astrix.spatial.ray import Ray
 
 
 class CartPlot:
-    def __init__(self, width: float = 12.0):
+    def __init__(self, width: float = 12.0, aspect: float = 0.6):
         self.fig = plt.figure()
         m = self.fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
         m.set_box_aspect(1)
         self.fig.set_figwidth(width)
-        m.set_box_aspect(0.6)
+        self.fig.set_figheight(width * aspect)
+        m.set_box_aspect(aspect)
         m.set_aspect(1)
 
         gl = m.gridlines(
@@ -39,7 +40,12 @@ class CartPlot:
         self.gl = gl
 
     def add_path(
-        self, path: Path, color: str = "r", style: str = "-", label: str | None = None
+        self,
+        path: Path,
+        color: str = "r",
+        style: str = "-",
+        label: str | None = None,
+        show_label: bool = True,
     ):
         """Add a path to the map.
         Args:
@@ -48,11 +54,17 @@ class CartPlot:
             style (str, optional): The style of the path. Defaults to "-".
         """
         pts_geo = path.points.geodet
-        self.m.plot(pts_geo[:, 1], pts_geo[:, 0], style, color=color, linewidth=1)
-        if label is not None:
+        self.m.plot(
+            pts_geo[:, 1], pts_geo[:, 0], style, color=color, linewidth=1, label=label
+        )
+        if show_label and label is not None:
             mid_idx = len(pts_geo) // 2
             self.m.text(
-                pts_geo[mid_idx, 1] + 0.005, pts_geo[mid_idx, 0] + 0.005, label, size=10
+                pts_geo[mid_idx, 1] + 0.005,
+                pts_geo[mid_idx, 0] + 0.005,
+                label,
+                size=10,
+                color=color,
             )
 
     def add_point(
@@ -62,11 +74,33 @@ class CartPlot:
         marker: str = "o",
         ms: float = 6.0,
         label: str | None = None,
+        ha: str = "left",
+        fw: str = "normal",
+        bgc: str = "none",
     ):
         pts_geo = point.geodet
         self.m.plot(pts_geo[:, 1], pts_geo[:, 0], marker, color=color, ms=ms)
         if label is not None:
-            self.m.text(point.geodet[1] + 0.05, point.geodet[0, 0], label, size=10)
+            if ha == "left":
+                offset = 0.05
+            else:
+                offset = -0.05
+            self.m.text(
+                point.geodet[0, 1] + offset,
+                point.geodet[0, 0],
+                label,
+                size=10,
+                ha=ha,
+                fontweight=fw,
+                backgroundcolor=bgc,
+                bbox=dict(
+                    facecolor=bgc,
+                    edgecolor="none",
+                    pad=0.5,
+                    alpha=0.5,
+                    boxstyle="round,pad=0.2",
+                ),
+            )
 
     def add_vectors(self, points1: Point, points2: Point, color: str = "grey"):
         for pts_geo1, pts_geo2 in zip(points1.geodet, points2.geodet):
@@ -88,5 +122,13 @@ class CartPlot:
         pts_end = Point(ray_ecef.origin_rel + ray_ecef.unit_rel * length.reshape(-1, 1))
         self.add_vectors(pts_start, pts_end, color=color)
 
+    def legend(self, loc: str = "upper right"):
+        self.m.legend(loc=loc)
+
     def show(self):
+        plt.tight_layout()
         plt.show()
+
+    def save(self, filename: str, dpi: int = 300):
+        plt.tight_layout()
+        self.fig.savefig(filename, dpi=dpi)

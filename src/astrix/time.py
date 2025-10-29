@@ -128,6 +128,8 @@ class Time(TimeLike):
     _min: float | Array
     _max: float | Array
     _xp: ArrayNS
+    _n: int
+    _i: int = 0  # For compatibility with TimeSequence
 
     def __init__(
         self, unix: ArrayLike, backend: BackendArg = None
@@ -136,6 +138,7 @@ class Time(TimeLike):
         self._unix = ensure_1d(unix, backend=self._xp)
         self._min = self._xp.min(self._unix)
         self._max = self._xp.max(self._unix)
+        self.n = self._unix.shape[0]
 
     # --- Constructors ---
 
@@ -186,6 +189,17 @@ class Time(TimeLike):
         return Time._constructor(
             self._xp.asarray(self.unix[index]).reshape(-1), xp=self._xp
         )
+
+    def __iter__(self) -> Time:
+        self._i = 0
+        return self
+
+    def __next__(self) -> Time:
+        if self._i >= len(self):
+            raise StopIteration
+        value = self[self._i]
+        self._i += 1
+        return value
 
     def copy(self) -> Time:
         return Time._constructor(self.unix.copy(), xp=self._xp)

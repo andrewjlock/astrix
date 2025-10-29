@@ -207,6 +207,45 @@ def interp_nd(x: Array, xd: Array, fd: Array, backend: Backend = None) -> Array:
     slope = (f1 - f0) / (x1 - x0)[..., xp.newaxis]
     return f0 + slope * (x - x0)[..., xp.newaxis]
 
+@backend_jit("backend")
+def interp_unit_vec(t: Array, td: Array, vecs: Array, backend: Backend = None) -> Array:
+    """Interpolate unit vectors along the first axis using spherical linear interpolation (slerp).
+
+    Args:
+        t (Array): 1D array of times to interpolate at.
+        td (Array): 1D array of times of the data points.
+        vecs (Array): Nx3 array of unit vectors to interpolate.
+
+    Returns:
+        Array: Interpolated unit vectors at times t.
+    """
+
+    xp = coerce_ns(backend)
+    t = xp.asarray(t)
+    td = xp.asarray(td)
+    vecs = xp.asarray(vecs)
+
+    indices = xp.searchsorted(td, t, side="right") - 1
+    indices = xp.clip(indices, 0, td.shape[0] - 2)
+
+    t0, t1 = td[indices], td[indices + 1]
+    v0, v1 = vecs[indices], vecs[indices + 1]
+
+    dot = xp.sum(v0 * v1, axis=1)
+    dot = xp.clip(dot, -1.0, 1.0)
+    theta = xp.arccos(dot)
+
+    sin_theta = xp.sin(theta)
+    sin_theta = xp.where(sin_theta == 0, 1e-10, sin_theta)
+
+    f0 = xp.sin((t1 - t) / (t1 - t0) * theta) / sin_theta
+    f1 = xp.sin((t - t0) / (t1 - t0) * theta) / sin_theta
+
+    interp_vecs = f0[:, xp.newaxis] * v0 + f1[:, xp.newaxis] * v1
+    interp_vecs /= xp.linalg.norm(interp_vecs, axis=1, keepdims=True)
+
+    return interp_vecs
+
 
 @backend_jit("backend")
 def central_diff(xd: Array, fd: Array, backend: Backend = None) -> Array:

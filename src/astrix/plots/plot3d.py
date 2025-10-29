@@ -16,6 +16,7 @@ from pyproj import Transformer
 
 from astrix.functs import geodet2ecef, ned_rotation
 from astrix.spatial.location import Path, Point
+from astrix.spatial.ray import Ray
 from astrix.spatial.frame import Frame
 from astrix.time import Time, TimeGroup, time_linspace
 
@@ -85,14 +86,20 @@ class Plot3D:
     data: dict[str, PlotData]
     text_actors: dict[str, pv.Actor]
 
-    def __init__(self):
+    def __init__(self, size: int = 900, aspect_ratio: float = 1.0):
         self.p = pv.Plotter()
-        self.p.window_size = [1200, 600]
+        self.p.window_size = [
+            int(size * (aspect_ratio**0.5)),
+            int(size / (aspect_ratio**0.5)),
+        ]
         self.p.set_background("black")  # pyright: ignore
         self.p.disable_anti_aliasing()
         self.p.enable_anti_aliasing("fxaa")
         # self.p.enable_anti_aliasing("msaa", multi_samples=8)
         # self.p.enable_anti_aliasing(None)
+
+        self.p.add_key_event("s", self.save)
+
         self.p.enable_depth_peeling(occlusion_ratio=0.0, number_of_peels=50)
         self.data = {}
         self.text_actors = {}
@@ -100,26 +107,32 @@ class Plot3D:
     def set_view(
         self,
         cent: Point,
-        heading_deg: float = 180,
-        pitch_deg: float = -45,
-        zoom: float = 2.5,
+        heading: float = 180,
+        pitch: float = -45,
+        zoom: float = 1.0,
+        parrallel: bool = False,
     ):
         ecef_cent = cent.ecef[0]
         rot_ned = ned_rotation(cent.geodet)
-        rot_cam = Rotation.from_euler("ZY", [heading_deg, pitch_deg], degrees=True)
+        rot_cam = Rotation.from_euler("ZY", [heading, pitch], degrees=True)
         rot = rot_ned * rot_cam
         cam_dir = rot.apply(np.array([1, 0, 0]))
-        cam_pos = ecef_cent + cam_dir * 2e5  # 100 km
+        cam_pos = ecef_cent + cam_dir * 2e5 / zoom  # 100 km
 
-        self.p.enable_parallel_projection()  # pyright: ignore
-        self.p.set_focus(ecef_cent)
-        self.p.set_position(cam_pos)
-        if pitch_deg == 90 or pitch_deg == -90:
+        self.p.set_position(cam_pos, render=False)
+        self.p.set_focus(ecef_cent, render=False)
+        if pitch == 90 or pitch == -90:
             # looking straight up or down, set_viewup() has no effect
-            self.p.set_viewup(rot_ned.apply(np.array([1.0, 0, 0])))
+            self.p.set_viewup(
+                rot_ned.apply(np.array([1.0, 0, 0])), reset=False, render=False
+            )
         else:
-            self.p.set_viewup(rot_ned.apply(np.array([0.0, 0, -1])))
-        self.p.camera.zoom(zoom)
+            self.p.set_viewup(
+                rot_ned.apply(np.array([0.0, 0, -1])), reset=False, render=False
+            )
+        # self.p.camera.zoom(zoom, render=False)
+        if parrallel:
+            self.p.enable_parallel_projection()  # pyright: ignore
 
     def add_texture(
         self, lat_bounds: Sequence[float], lon_bounds: Sequence[float], alpha=0.6
@@ -133,23 +146,60 @@ class Plot3D:
             source=cx.providers.Esri.WorldImagery,  # pyright: ignore
             ll=True,
         )
-        img = np.flip(img, axis=0)  # flip y axis
 
         transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
         l_bounds = transformer.transform_bounds(
-            ext[0], ext[2], ext[1], ext[3], densify_pts=21
+            ext[0],
+            ext[2],
+            ext[1],
+            ext[3],
         )
+
+        # Convert original bounds to EPSG:3857
+        to_merc = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
+        x_min, y_min = to_merc.transform(lon_bounds[0], lat_bounds[0])
+        x_max, y_max = to_merc.transform(lon_bounds[1], lat_bounds[1])
+        ext_bounds = (x_min, x_max, y_min, y_max)
+
+        # Crop image to requested bounds
+        out_transform = from_bounds(
+            ext_bounds[0],
+            ext_bounds[2],
+            ext_bounds[1],
+            ext_bounds[3],
+            img.shape[1],
+            img.shape[0],
+        )
+        in_transform = from_bounds(
+            ext[0], ext[2], ext[1], ext[3], img.shape[1], img.shape[0]
+        )
+        src = np.moveaxis(img, 2, 0)  # HWC -> CHW
+        dst = np.zeros_like(src)
+        reproject(
+            source=src,
+            destination=dst,
+            src_transform=in_transform,
+            src_crs=CRS.from_epsg(3857),
+            dst_transform=out_transform,
+            dst_crs=CRS.from_epsg(3857),
+            resampling=Resampling.bilinear,
+        )
+        cropped = np.moveaxis(dst, 0, 2)  # CHW -> HWC (back to normal)
+        img = cropped
+        img = np.flip(img, axis=0)  # flip y axis
 
         # 3) Build a WGS-84 curved patch and drape the reprojected texture
         n_lat, n_lon = 20, 20
-        lats = np.linspace(l_bounds[1], l_bounds[3], n_lat)
-        lons = np.linspace(l_bounds[0], l_bounds[2], n_lon)
+        # lats = np.linspace(l_bounds[1], l_bounds[3], n_lat)
+        # lons = np.linspace(l_bounds[0], l_bounds[2], n_lon)
+        lats = np.linspace(lat_bounds[0], lat_bounds[1], n_lat)
+        lons = np.linspace(lon_bounds[0], lon_bounds[1], n_lon)
         llon, llat = np.meshgrid(lons, lats, indexing="ij")
 
         to_merc = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
         xm, ym = to_merc.transform(llon, llat)  # same shapes as llon/llat
 
-        xmin, xmax, ymin, ymax = ext
+        xmin, xmax, ymin, ymax = ext_bounds
         u = (xm - xmin) / (xmax - xmin)
         v = 1.0 - (ym - ymin) / (ymax - ymin)  # invert vertical
 
@@ -169,16 +219,16 @@ class Plot3D:
             smooth_shading=True,
             show_edges=False,
             opacity=alpha,
+            render=False,
         )
 
         self.data["texture"] = PlotData(
             "texture",
             "texture",
             act,
-            (l_bounds[1], l_bounds[3]),
-            (l_bounds[0], l_bounds[2]),
+            lat_bounds=(lat_bounds[0], lat_bounds[1]),
+            lon_bounds=(lon_bounds[0], lon_bounds[1]),
         )
-
 
     def add_grid(self, lat_bounds: Sequence[float], lon_bounds: Sequence[float]):
         # Get grid lines to nearest 0.5 degree
@@ -195,7 +245,7 @@ class Plot3D:
         X, Y, Z = _geodet2ecef_grid(LLat, LLon, alt=10)
         sg = pv.StructuredGrid(X, Y, Z)  # creates a surface grid
         edges = sg.extract_all_edges()  # just the lines between nodes
-        self.p.add_mesh(edges, color="grey", line_width=1, opacity=0.5)
+        self.p.add_mesh(edges, color="grey", line_width=1, opacity=0.5, render=False)
 
         def fmt_lon(deg):
             s = "E" if deg >= 0 else "W"
@@ -254,8 +304,9 @@ class Plot3D:
             name=name,
             opacity=alpha,
             lighting=False,
-            render_lines_as_tubes=True,
+            # render_lines_as_tubes=True,
             smooth_shading=True,
+            render=False,
         )
         # Use maximum path for bounds (so bounds isn't changed during animation)
         if path_max is None:
@@ -281,7 +332,7 @@ class Plot3D:
         self,
         name: str,
         path: Path,
-        vert_dt: float = 10.0,
+        dt: float = 10.0,
         line_width: float = 1.0,
         color: str = "white",
         alpha: float = 0.6,
@@ -290,12 +341,17 @@ class Plot3D:
         geodet[:, 2] = 0.0  # set altitude to 0
         path_gt = Path(Point.from_geodet(geodet, time=path.time))
 
+        if isinstance(color, int):
+            color = color_from_int(color)
+        elif color is None:
+            color = _DEFAULT_COLOR_CYCLE[len(self.data) % len(_DEFAULT_COLOR_CYCLE)]
+
         # Get times of vertical path joins
-        # We want this to start at first time and be spaced strictly at vert_dt intervals,
+        # We want this to start at first time and be spaced strictly at dt intervals,
         # with a final time at the end
-        n_bars = int(np.floor((path.time.unix[-1] - path.time.unix[0]) / vert_dt))
+        n_bars = int(np.floor((path.time.unix[-1] - path.time.unix[0]) / dt))
         bar_t = np.concatenate(
-            [path.time.unix[0] + np.arange(n_bars) * vert_dt, [path.time.unix[-1]]]
+            [path.time.unix[0] + np.arange(n_bars + 1) * dt, [path.time.unix[-1]]]
         )
         bar_time = Time(bar_t)
         pt_path = path.interp(bar_time)
@@ -315,6 +371,7 @@ class Plot3D:
             name=name,
             opacity=alpha,
             lighting=False,
+            render=False,
         )
         self.data[name] = PlotData(
             name=name,
@@ -322,7 +379,42 @@ class Plot3D:
             actor=act,
             lat_bounds=(np.min(geodet[:, 0]), np.max(geodet[:, 0])),
             lon_bounds=(np.min(geodet[:, 1]), np.max(geodet[:, 1])),
+            data={
+                "dt": dt,
+                "color": color,
+                "line_width": line_width,
+                "alpha": alpha,
+            },
         )
+
+    def update_ground_track(self, name: str, path: Path):
+        if name not in self.data:
+            raise ValueError(f"Ground track '{name}' not found in plot data.")
+        dt = self.data[name].data.get("dt", 10.0)
+
+        geodet = path.points.geodet
+        geodet[:, 2] = 0.0  # set altitude to 0
+        path_gt = Path(Point.from_geodet(geodet, time=path.time))
+
+        # Get times of vertical path joins
+        n_bars = int(np.floor((path.time.unix[-1] - path.time.unix[0]) / dt))
+        bar_t = np.concatenate(
+            [path.time.unix[0] + np.arange(n_bars + 1) * dt, [path.time.unix[-1]]]
+        )
+        bar_time = Time(bar_t)
+        pt_path = path.interp(bar_time)
+        pt_path_gt = path_gt.interp(bar_time)
+
+        N = len(bar_t)
+        points = np.vstack((pt_path.ecef, pt_path_gt.ecef))
+        cells = np.c_[np.full(N, 2), np.arange(N), np.arange(N) + N].ravel()
+        vert_lines = pv.PolyData(points, lines=cells)
+        ground_lines = pv.lines_from_points(path_gt.ecef)
+        lines = vert_lines + ground_lines
+
+        act = self.data[name].actor
+        act.mapper.SetInputData(lines)
+        act.mapper.Update()
 
     def _create_point_data(self, point: Point, size: int):
         sphere = pv.Sphere(radius=size, center=point.ecef[0])
@@ -341,14 +433,27 @@ class Plot3D:
         elif color is None:
             color = _DEFAULT_COLOR_CYCLE[len(self.data) % len(_DEFAULT_COLOR_CYCLE)]
 
-        sphere = self._create_point_data(point, size * 1000)
-        act = self.p.add_mesh(
-            sphere,
+        act = self.p.add_points(
+            point.ecef,
             color=color,
             name=name,
             opacity=alpha,
             lighting=False,
+            smooth_shading=True,
+            render=False,
+            render_points_as_spheres=True,
+            point_size=size * 5,
         )
+        # sphere = self._create_point_data(point, size * 1000)
+        # act = self.p.add_mesh(
+        #     sphere,
+        #     color=color,
+        #     name=name,
+        #     opacity=alpha,
+        #     lighting=False,
+        #     smooth_shading=True,
+        #     render=False,
+        # )
         geodet = point.geodet[0]
         self.data[name] = PlotData(
             name=name,
@@ -359,11 +464,68 @@ class Plot3D:
             data={"size": size},
         )
 
+    def _create_ray_data(self, ray: Ray, length: float | NDArray) -> pv.PolyData:
+        ray = ray.to_ecef()
+        origins = ray.origin_rel
+        directions = ray.unit_rel
+        endpoints = origins + directions * np.array(length).reshape(-1, 1)
+        points = np.vstack((origins, endpoints))
+        n_rays = origins.shape[0]
+        cells = np.c_[
+            np.full(n_rays, 2), np.arange(n_rays), np.arange(n_rays) + n_rays
+        ].ravel()
+        lines = pv.PolyData(points, lines=cells)
+        return lines
+
+    def add_ray(
+        self,
+        name: str,
+        ray: Ray,
+        length: float | NDArray = 1e5,
+        color: str | int = "grey",
+        alpha: float = 0.5,
+    ):
+        if isinstance(color, int):
+            color = color_from_int(color)
+
+        lines = self._create_ray_data(ray, length)
+        origins_geodet = ray.to_ecef().origin_points.geodet
+        act = self.p.add_mesh(
+            lines,
+            color=color,
+            opacity=alpha,
+            lighting=False,
+            render=False,
+            line_width=1.0,
+        )
+        self.data[name] = PlotData(
+            name=name,
+            type="ray",
+            actor=act,
+            lat_bounds=(
+                np.min(origins_geodet[:, 0]),
+                np.max(origins_geodet[:, 0]),
+            ),
+            lon_bounds=(
+                np.min(origins_geodet[:, 1]),
+                np.max(origins_geodet[:, 1]),
+            ),
+            data={"color": color, "alpha": alpha},
+        )
+
+    def update_ray(self, name: str, ray: Ray, length: float | NDArray = 1e5):
+        if name not in self.data:
+            raise ValueError(f"Ray '{name}' not found in plot data.")
+        lines = self._create_ray_data(ray, length)
+        act = self.data[name].actor
+        act.mapper.SetInputData(lines)
+        act.mapper.Update()
+
     def update_point(self, name: str, point: Point):
         if name not in self.data:
             raise ValueError(f"Point '{name}' not found in plot data.")
-        size = self.data[name].data.get("size", 5.0)
-        sphere = self._create_point_data(point, size * 1000)
+        size = self.data[name].data.get("size", 2.0)
+        sphere = self._create_point_data(point, size * 5)
         act = self.data[name].actor
         act.mapper.SetInputData(sphere)
         act.mapper.Update()
@@ -392,25 +554,40 @@ class Plot3D:
         name: str,
         text: str,
         position: Point,
-        font_size: int = 12,
-        color: str | int = "lightgrey",
+        font_size: int = 14,
+        text_color: str | int = "lightgrey",
+        marker_color: str | int = "red",
     ):
+        if isinstance(text_color, int):
+            text_color = color_from_int(text_color)
+        if isinstance(marker_color, int):
+            marker_color = color_from_int(marker_color)
+
         act = self.p.add_point_labels(
             position.ecef,
             [text],
             font_size=font_size,
-            text_color=color,
+            text_color=text_color,
+            background_color="black",
+            point_color=marker_color,
+            reset_camera=False,
             show_points=True,
-            shape_opacity=0.0,
-            always_visible=True,
+            shape_opacity=0.4,
+            # always_visible=True,
             name=name,
             bold=False,
             point_size=6,
             shape_color="grey",
-            margin=2,
-            
+            margin=3,
         )
         self.text_actors[name] = act
+        self.data[name] = PlotData(
+            name=name,
+            type="labelled_point",
+            actor=act,
+            lat_bounds=(position.geodet[0, 0], position.geodet[0, 0]),
+            lon_bounds=(position.geodet[0, 1], position.geodet[0, 1]),
+        )
 
     def add_legend(self, labels: list[tuple[str, str]]):
         """Add a legend to the plot
@@ -433,7 +610,7 @@ class Plot3D:
         )
 
     def calc_bounds(
-        self, buffer=0.5
+        self, buffer=0.3
     ) -> tuple[tuple[float, float], tuple[float, float]]:
         lat_mins = [d.lat_bounds[0] for d in self.data.values()]
         lat_maxs = [d.lat_bounds[1] for d in self.data.values()]
@@ -451,13 +628,19 @@ class Plot3D:
         if bounds is not None:
             lat_bounds, lon_bounds = bounds
         else:
-            lat_bounds, lon_bounds = self.calc_bounds()
+            lat_bounds, lon_bounds = self.calc_bounds(buffer=0.4)
         self.add_texture(lat_bounds, lon_bounds)
-        lat_bounds, lon_bounds = self.calc_bounds()
+        lat_bounds, lon_bounds = self.calc_bounds(buffer=0.0)
         self.add_grid(lat_bounds, lon_bounds)
 
     def render(self):
         self.p.render()
+
+    def save(self, filepath: str = "./plot3d_screenshot.png"):
+        old_size = self.p.window_size
+        # self.p.window_size = (old_size[0] * 2, old_size[1] * 2)
+        self.p.screenshot(filepath)
+        # self.p.window_size = old_size
 
     def show(self):
         self.p.show()

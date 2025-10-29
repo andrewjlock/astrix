@@ -19,7 +19,8 @@ from astrix.functs import (
     vec_from_az_el,
     pixel_to_vec,
     vec_to_pixel,
-    total_angle_from_vec
+    total_angle_from_vec,
+    interp_unit_vec
 )
 
 from astrix.time import Time, TimeLike, TimeInvariant, TIME_INVARIANT
@@ -433,16 +434,23 @@ class Ray:
                 backend=self._xp,
             )
 
-            interp_unit = interp_nd(
+            # interp_unit = interp_nd(
+            #     time.unix,
+            #     self.time.unix,
+            #     self._unit_rel,
+            #     backend=self._xp,
+            # )
+            # interp_unit = (
+            #     interp_unit
+            #     / self._xp.linalg.norm(interp_unit, axis=1)[:, self._xp.newaxis]
+            # )
+            interp_unit = interp_unit_vec(
                 time.unix,
                 self.time.unix,
                 self._unit_rel,
                 backend=self._xp,
             )
-            interp_unit = (
-                interp_unit
-                / self._xp.linalg.norm(interp_unit, axis=1)[:, self._xp.newaxis]
-            )
+
             return Ray._constructor(
                 interp_unit, interp_origin, time, self._frame, self._xp
             )

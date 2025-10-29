@@ -707,7 +707,7 @@ class Path(Location[Time]):
                 f"Path crosses the specified altitude {len(crossings)} times. Returning all crossing times."
             )
 
-        crossing_times = []
+        crossing_times: list[Array] = []
         for idx in crossings:
             t0, t1 = self.time.unix[idx], self.time.unix[idx + 1]
             a0, a1 = altitudes[idx], altitudes[idx + 1]
@@ -716,6 +716,11 @@ class Path(Location[Time]):
             else:
                 crossing_time = t0 + (alt - a0) * (t1 - t0) / (a1 - a0)
             crossing_times.append(crossing_time)
+
+        if len(crossing_times) > 1:
+            warnings.warn(
+                "Multiple altitudes found in time_at_alt(); returning all crossing times."
+            )
 
         return Time(self._xp.asarray(crossing_times), backend=self._xp)
 
