@@ -5,7 +5,8 @@ import warnings
 
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, cast
+from functools import cached_property
 
 from astrix._backend_utils import (
     resolve_backend,
@@ -62,7 +63,7 @@ class Location(Generic[T], ABC):
 
     @property
     def time(self) -> T:
-        return self._time.copy()
+        return cast(T, self._time.copy())
 
     @abstractmethod
     def _interp(self, time: Time) -> Point:
@@ -106,7 +107,9 @@ class Point(Location[TimeLike]):
     ... )  # ECEF coordinates of Brisbane in metres
     >>> p1.geodet  # Convert to geodetic coordinates (lat, lon, alt)
     array([[-27.47, 153.03, 0.0]])
-    >>> p2 = Point.from_geodet([-27.47, 153.03, 0])  # lat, lon in degrees, alt in metres
+    >>> p2 = Point.from_geodet(
+    ...     [-27.47, 153.03, 0]
+    ... )  # lat, lon in degrees, alt in metres
     >>> p2.ecef  # Convert back to ECEF coordinates
     array([[-5047162.4, 2568329.79, -2924521.17]])
 
@@ -191,7 +194,10 @@ class Point(Location[TimeLike]):
 
     @classmethod
     def from_geodet(
-        cls, geodet: ArrayLike, time: TimeLike = TIME_INVARIANT, backend: BackendArg = None
+        cls,
+        geodet: ArrayLike,
+        time: TimeLike = TIME_INVARIANT,
+        backend: BackendArg = None,
     ) -> Point:
         """Create a Point object from geodetic coordinates (lat, lon, alt).
         Lat and lon are in degrees, alt is in meters.
@@ -215,7 +221,7 @@ class Point(Location[TimeLike]):
             raise ValueError("All points must either have time or not have time.")
         if time_types[0] is Time:
             time_joined = Time(
-                xp.concatenate([p.time.unix for p in points]),  # pyright: ignore[reportAttributeAccessIssue]
+                xp.concatenate([p.time.unix for p in points]),  # pyright: ignore
                 backend=xp,
             )
         else:
@@ -327,6 +333,99 @@ class Point(Location[TimeLike]):
 
 
 @dataclass(frozen=True)
+class Acceleration:
+    """
+    Acceleration vector(s) in ECEF coordinates (ax, ay, az) in m/s².
+    Associated with a Time object for the time instances of the accelerations.
+    Internal use only, typically created from Path objects.
+    No data validation is performed.
+
+    Parameters
+    ----------
+    vec : Array
+        Acceleration vectors in ECEF coordinates (ax, ay, az) in m/s². Shape (n, 3).
+    time : Time
+        Time object associated with the accelerations. Length must match number of acceleration vectors.
+    backend : BackendArg, optional
+        Array backend to use (numpy, jax, etc.). Defaults to numpy.
+    """
+
+    vec: Array
+    time: Time
+    _xp: ArrayNS
+
+    # --- Dunder methods and properties ---
+
+    def __str__(self) -> str:
+        return f"Acceleration array of length {self.vec.shape[0]} with {self._xp.__name__} backend."
+
+    def __repr__(self) -> str:
+        return f"Acceleration, n={len(self)}, backend='{self._xp.__name__}')"
+
+    def __len__(self) -> int:
+        return self.vec.shape[0]
+
+    @property
+    def magnitude(self) -> Array:
+        """Get the acceleration magnitude in m/s²."""
+        return self._xp.linalg.norm(self.vec, axis=1)
+
+    @property
+    def unit(self) -> Array:
+        """Get the unit acceleration vector."""
+        mag = self.magnitude
+        return self.vec / mag[:, self._xp.newaxis]
+
+    @property
+    def backend(self) -> str:
+        return self._xp.__name__
+
+    # --- Methods ---
+
+    def convert_to(self, backend: BackendArg) -> Acceleration:
+        """Convert the Acceleration object to a different backend."""
+        xp = resolve_backend(backend)
+        if xp == self._xp:
+            return self
+        return Acceleration(xp.asarray(self.vec), self.time.convert_to(xp), xp)
+
+    @classmethod
+    def from_data(
+        cls, vec: ArrayLike, time: Time, backend: BackendArg = None
+    ) -> Acceleration:
+        """Create an Acceleration object from acceleration vector array and Time object."""
+        xp = resolve_backend(backend)
+        time = time.convert_to(xp)
+        vec = ensure_2d(vec, n=3, backend=xp)
+        return cls(vec, time, xp)
+
+    def interp(
+        self, time: Time, method: str = "linear", check_bounds: bool = True
+    ) -> Acceleration:
+        """Interpolate the Acceleration to the given times using the specified method.
+        Currently only 'linear' interpolation is supported.
+        """
+
+        if method != "linear":
+            raise ValueError("Currently only 'linear' interpolation is supported.")
+        if check_bounds:
+            if not self.time.in_bounds(time):
+                warnings.warn(f"""Acceleration interpolation times are out of bounds.
+                    Acceleration time range: {self.time.datetime[0]} to {self.time.datetime[-1]}
+                    Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
+                    Extrapolation is not supported and will raise an error.""")
+
+        if method == "linear":
+            interp_vec = interp_nd(
+                time.unix,
+                self.time.unix,
+                self.vec,
+                backend=self._xp,
+            )
+            return Acceleration(interp_vec, time, self._xp)
+
+
+@dataclass(frozen=True)
 class Velocity:
     """
     Velocity vector(s) in ECEF coordinates (vx, vy, vz) in m/s.
@@ -375,7 +474,7 @@ class Velocity:
     """
 
     vec: Array
-    time: TimeLike
+    time: Time
     _xp: ArrayNS
 
     # --- Dunder methods and properties ---
@@ -414,12 +513,53 @@ class Velocity:
         return Velocity(xp.asarray(self.vec), self.time.convert_to(xp), xp)
 
     @classmethod
-    def from_data(cls, vec: ArrayLike, time: TimeLike, backend: BackendArg = None) -> Velocity:
+    def from_data(
+        cls, vec: ArrayLike, time: Time, backend: BackendArg = None
+    ) -> Velocity:
         """Create a Velocity object from velocity vector array and Time object."""
         xp = resolve_backend(backend)
         time = time.convert_to(xp)
         vec = ensure_2d(vec, n=3, backend=xp)
         return cls(vec, time, xp)
+
+    def interp(
+        self, time: Time, method: str = "linear", check_bounds: bool = True
+    ) -> Velocity:
+        """Interpolate the Velocity to the given times using the specified method.
+        Currently only 'linear' interpolation is supported.
+        """
+
+        if method != "linear":
+            raise ValueError("Currently only 'linear' interpolation is supported.")
+        if check_bounds:
+            if not self.time.in_bounds(time):
+                warnings.warn(f"""Velocity interpolation times are out of bounds.
+                    Velocity time range: {self.time.datetime[0]} to {self.time.datetime[-1]}
+                    Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
+                    Extrapolation is not supported and will raise an error.""")
+
+        if method == "linear":
+            interp_vec = interp_nd(
+                time.unix,
+                self.time.unix,
+                self.vec,
+                backend=self._xp,
+            )
+            return Velocity(interp_vec, time, self._xp)
+
+    @cached_property
+    def acc(self) -> Acceleration:
+        """Calculate the acceleration from the velocity using central differences."""
+
+        if len(self.time) > 2:
+            acc_vec = central_diff(self.time.unix, self.vec, backend=self._xp)
+        elif len(self.time) == 2:
+            acc_vec = finite_diff_2pt(self.time.unix, self.vec, backend=self._xp)
+        else:
+            raise ValueError(
+                "Velocity must have at least 2 points to calculate acceleration."
+            )
+        return Acceleration(acc_vec, self.time, self._xp)
 
 
 POINT_ORIGIN = Point([0.0, 0.0, 0.0])
@@ -479,7 +619,6 @@ class Path(Location[Time]):
 
     _ecef: Array
     _time: Time
-    _vel: Array
     _xp: ArrayNS
 
     def __init__(self, point: Point | list[Point], backend: BackendArg = None) -> None:
@@ -493,13 +632,6 @@ class Path(Location[Time]):
         self._time = Time(point.time.unix[sort_indices], backend=self._xp)
         self._ecef = ensure_2d(point.ecef[sort_indices], n=3, backend=self._xp)
 
-        if len(self.time) > 2:
-            self._vel = central_diff(self._time.unix, self._ecef, backend=self._xp)
-        elif len(self.time) == 2:
-            self._vel = finite_diff_2pt(self._time.unix, self._ecef, backend=self._xp)
-        else:
-            raise ValueError("Path must have at least 2 points with associated Time.")
-
     # --- Constructors ---
 
     @classmethod
@@ -511,10 +643,6 @@ class Path(Location[Time]):
         obj._xp = xp
         obj._ecef = ecef
         obj._time = time
-        if len(obj.time) > 2:
-            obj._vel = central_diff(obj._time.unix, obj._ecef, backend=obj._xp)
-        elif len(obj.time) == 2:
-            obj._vel = finite_diff_2pt(obj._time.unix, obj._ecef, backend=obj._xp)
         return obj
 
     # --- Dunder methods and properties ---
@@ -555,10 +683,22 @@ class Path(Location[Time]):
         """Get the list of Point objects that make up the Path."""
         return Point(self._ecef, time=self._time, backend=self._xp)
 
-    @property
+    @cached_property
     def vel(self) -> Velocity:
-        """Get the Velocity object associated with the Path."""
-        return Velocity(self._vel, self._time, self._xp)
+        """Calculate the velocity from the Path using central differences."""
+
+        if len(self.time) > 2:
+            vel_vec = central_diff(self.time.unix, self.ecef, backend=self._xp)
+        elif len(self.time) == 2:
+            vel_vec = finite_diff_2pt(self.time.unix, self.ecef, backend=self._xp)
+        else:
+            raise ValueError("Path must have at least 2 points to calculate velocity.")
+        return Velocity(vel_vec, self.time, self._xp)
+
+    @cached_property
+    def acc(self) -> Acceleration:
+        """Calculate the acceleration from the Path using central differences."""
+        return self.vel.acc
 
     # --- Methods ---
 
@@ -622,33 +762,9 @@ class Path(Location[Time]):
         new_points = self.interp(new_times)
         return Path(new_points, backend=self._xp)
 
-
-    def interp_vel(
-        self, time: Time, method: str = "linear", check_bounds: bool = True
-    ) -> Velocity:
-        """Interpolate the Path velocity to the given times using the specified method.
-        Currently only 'linear' interpolation is supported.
-        """
-
-        if method != "linear":
-            raise ValueError("Currently only 'linear' interpolation is supported.")
-        if check_bounds:
-            if not self.time.in_bounds(time):
-                warnings.warn(f"""Path interpolation times are out of bounds.
-                    Path time range: {self.time.datetime[0]} to {self.time.datetime[-1]}
-                    Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
-                    Extrapolation is not supported and will raise an error.""")
-
-        if method == "linear":
-            interp_vel = interp_nd(
-                time.unix,
-                self.time.unix,
-                self._vel,
-                backend=self._xp,
-            )
-            return Velocity(interp_vel, time, self._xp)
-
-    def truncate(self, start_time: Time | None = None, end_time: Time | None = None) -> Path:
+    def truncate(
+        self, start_time: Time | None = None, end_time: Time | None = None
+    ) -> Path:
         """Truncate the Path to the given start and end times.
         If start_time or end_time is None, the Path is truncated to the start or end of the Path respectively.
 
