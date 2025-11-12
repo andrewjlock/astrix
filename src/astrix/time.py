@@ -131,9 +131,7 @@ class Time(TimeLike):
     _n: int
     _i: int = 0  # For compatibility with TimeSequence
 
-    def __init__(
-        self, unix: ArrayLike, backend: BackendArg = None
-    ) -> None:
+    def __init__(self, unix: ArrayLike, backend: BackendArg = None) -> None:
         self._xp = resolve_backend(backend)
         self._unix = ensure_1d(unix, backend=self._xp)
         self._min = self._xp.min(self._unix)
@@ -201,6 +199,11 @@ class Time(TimeLike):
         value = self[self._i]
         self._i += 1
         return value
+
+    def __array__(self, dtype=None) -> Array:
+        if dtype is not None:
+            return self._xp.asarray(self._unix, dtype=dtype)
+        return self._unix
 
     def copy(self) -> Time:
         return Time._constructor(self.unix.copy(), xp=self._xp)
@@ -285,15 +288,19 @@ class Time(TimeLike):
 
         >>> from astrix.primitives import Time
         >>> from datetime import datetime, timezone
-        >>> t1 = Time.from_datetime([
-        ...     datetime(2021, 1, 1, tzinfo=timezone.utc),
-        ...     datetime(2021, 1, 2, tzinfo=timezone.utc),
-        ...     datetime(2021, 1, 3, tzinfo=timezone.utc)
-        ... ])
-        >>> t2 = Time.from_datetime([
-        ...     datetime(2021, 1, 1, 12, tzinfo=timezone.utc),
-        ...     datetime(2021, 1, 2, 12, tzinfo=timezone.utc)
-        ... ])
+        >>> t1 = Time.from_datetime(
+        ...     [
+        ...         datetime(2021, 1, 1, tzinfo=timezone.utc),
+        ...         datetime(2021, 1, 2, tzinfo=timezone.utc),
+        ...         datetime(2021, 1, 3, tzinfo=timezone.utc),
+        ...     ]
+        ... )
+        >>> t2 = Time.from_datetime(
+        ...     [
+        ...         datetime(2021, 1, 1, 12, tzinfo=timezone.utc),
+        ...         datetime(2021, 1, 2, 12, tzinfo=timezone.utc),
+        ...     ]
+        ... )
         >>> idx = t1.nearest_idx(t2)
         >>> idx.tolist()
         [0, 1]
@@ -429,7 +436,6 @@ class TimeGroup:
 
     def __len__(self) -> int:
         return len(self._times)
-
 
     @property
     def backend(self) -> str:

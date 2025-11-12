@@ -5,7 +5,7 @@
 Should not be imported to core type modules to avoid circular dependencies.
 """
 
-from .spatial.location import Point, Path
+from .spatial.location import Point, Path, Location
 from ._backend_utils import (
     coerce_ns,
     BackendArg,
@@ -16,6 +16,8 @@ from ._backend_utils import (
     warn_if_not_numpy,
 )
 from .time import TimeLike, TIME_INVARIANT, Time
+from .functs import ned_rotation
+from scipy.spatial.transform import Rotation
 
 
 def dist(a: Point, b: Point, backend: BackendArg = None) -> Array:
@@ -71,7 +73,8 @@ def point_from_heading(
     elif method == "haversine":
         # Based on Haversine formula (shortest ciruclar path)
         lat2_r = np.arcsin(
-            np.sin(lat1) * np.cos(dist / r) + np.cos(lat1) * np.sin(dist / r) * np.cos(a)
+            np.sin(lat1) * np.cos(dist / r)
+            + np.cos(lat1) * np.sin(dist / r) * np.cos(a)
         )
         lon2_r = lon1 + np.arctan2(
             np.sin(a) * np.sin(dist / r) * np.cos(lat1),
@@ -87,7 +90,7 @@ def point_from_heading(
 
 
 def defeature_path(path: Path, tol: float = 50.0) -> Path:
-    """ Defeature a path by removing points that are within tol meters of a straight line 
+    """Defeature a path by removing points that are within tol meters of a straight line
     between their neighbors. The first and last points are always kept. Useful for plotting.
 
     Args:
@@ -104,26 +107,28 @@ def defeature_path(path: Path, tol: float = 50.0) -> Path:
 
     ecef = path.points.ecef
     n = len(ecef)
-    keep = np.zeros(n, bool); keep[0] = keep[-1] = True
-    stack = [(0, n-1)]
+    keep = np.zeros(n, bool)
+    keep[0] = keep[-1] = True
+    stack = [(0, n - 1)]
     while stack:
         s, e = stack.pop()
-        if e <= s+1: 
+        if e <= s + 1:
             continue
         a, b = ecef[s], ecef[e]
-        ab = b - a; L2 = np.dot(ab, ab)
-        P = ecef[s+1:e]
+        ab = b - a
+        L2 = np.dot(ab, ab)
+        P = ecef[s + 1 : e]
         if L2 == 0:
-            d2 = np.sum((P - a)**2, axis=1)
+            d2 = np.sum((P - a) ** 2, axis=1)
         else:
             t = np.clip(((P - a) @ ab) / L2, 0.0, 1.0)
             proj = a + t[:, None] * ab
-            d2 = np.sum((P - proj)**2, axis=1)  # point-to-segment distance^2
+            d2 = np.sum((P - proj) ** 2, axis=1)  # point-to-segment distance^2
         i = np.argmax(d2)
-        if d2[i] > tol*tol:
+        if d2[i] > tol * tol:
             m = s + 1 + i
             keep[m] = True
-            stack.extend([(s, m), (m, e)])
+            stack.extend([(s, m), (m, e)])  # pyright: ignore
 
     new_time = Time(path.time.unix[keep])
     points = Point(ecef[keep], time=new_time, backend=path.points.backend)
@@ -143,11 +148,31 @@ def ground_path(path: Path, alt: float = 0.0) -> Path:
         Path
             A new path with all points at the specified altitude.
     """
-    
+
     geodet = path.points.geodet
     new_geodet = np.c_[geodet[:, 0], geodet[:, 1], np.full(len(geodet), alt)]
-    new_points = Point.from_geodet(new_geodet, time=path.time, backend=path.points.backend)
+    new_points = Point.from_geodet(
+        new_geodet, time=path.time, backend=path.points.backend
+    )
     new_path = Path(new_points)
     return new_path
 
 
+def get_ned_rotation(loc: Location[TimeLike], backend: BackendArg = None) -> Rotation:
+    """Calculate the rotation matrix from ECEF to NED frame at the given location.
+
+    Args:
+        loc: Location
+            The location to calculate the NED rotation matrix for.
+        backend: BackendArg
+            The backend to use. If None, uses the backend of the location.
+    Returns:
+        Rotation
+            The rotation matrix from ECEF to NED frame at the given location.
+    """
+
+    if backend is None:
+        backend = loc.backend
+    xp = resolve_backend(backend)
+    rot = ned_rotation(loc.geodet, xp=xp)
+    return rot
