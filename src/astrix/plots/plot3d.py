@@ -85,22 +85,30 @@ class Plot3D:
     p: pv.Plotter
     data: dict[str, PlotData]
     text_actors: dict[str, pv.Actor]
+    aspect_ratio: float
 
-    def __init__(self, size: int = 900, aspect_ratio: float = 1.0):
+    def __init__(self, size: int = 900, aspect_ratio: float = 1.0, aa="ms"):
+        self.aspect_ratio = aspect_ratio
         self.p = pv.Plotter()
         self.p.window_size = [
             int(size * (aspect_ratio**0.5)),
             int(size / (aspect_ratio**0.5)),
         ]
         self.p.set_background("black")  # pyright: ignore
-        self.p.disable_anti_aliasing()
-        self.p.enable_anti_aliasing("fxaa")
-        # self.p.enable_anti_aliasing("msaa", multi_samples=8)
-        # self.p.enable_anti_aliasing(None)
+        # self.p.disable_anti_aliasing()
+        # self.p.enable_anti_aliasing("ssaa")
+        if aa == "ms":
+            self.p.enable_anti_aliasing("msaa", multi_samples=16)
+        elif aa == "fx":
+            self.p.enable_anti_aliasing("fxaa")
+            self.p.enable_depth_peeling(occlusion_ratio=0.0, number_of_peels=50)
+        elif aa == "ss":
+            self.p.enable_anti_aliasing("ssaa")
+        else:
+            self.p.enable_anti_aliasing(None)
 
         self.p.add_key_event("s", self.save)
 
-        self.p.enable_depth_peeling(occlusion_ratio=0.0, number_of_peels=50)
         self.data = {}
         self.text_actors = {}
 
@@ -117,7 +125,7 @@ class Plot3D:
         rot_cam = Rotation.from_euler("ZY", [heading, pitch], degrees=True)
         rot = rot_ned * rot_cam
         cam_dir = rot.apply(np.array([1, 0, 0]))
-        cam_pos = ecef_cent + cam_dir * 2e5 / zoom  # 100 km
+        cam_pos = ecef_cent + cam_dir * 5e5 / zoom  # 100 km
 
         self.p.set_position(cam_pos, render=False)
         self.p.set_focus(ecef_cent, render=False)
@@ -130,7 +138,7 @@ class Plot3D:
             self.p.set_viewup(
                 rot_ned.apply(np.array([0.0, 0, -1])), reset=False, render=False
             )
-        # self.p.camera.zoom(zoom, render=False)
+        # self.p.camera.zoom(1)
         if parrallel:
             self.p.enable_parallel_projection()  # pyright: ignore
 
@@ -328,13 +336,20 @@ class Plot3D:
         act.mapper.SetInputData(curve)
         act.mapper.Update()
 
+    def clear_path(self, name: str):
+        if name not in self.data:
+            raise ValueError(f"Path '{name}' not found in plot data.")
+        act = self.data[name].actor
+        act.mapper.SetInputData(pv.PolyData())  # empty
+        act.mapper.Update()
+
     def add_ground_track(
         self,
         name: str,
         path: Path,
         dt: float = 10.0,
         line_width: float = 1.0,
-        color: str = "white",
+        color: str | int = "white",
         alpha: float = 0.6,
     ):
         geodet = path.points.geodet
@@ -416,6 +431,13 @@ class Plot3D:
         act.mapper.SetInputData(lines)
         act.mapper.Update()
 
+    def clear_ground_track(self, name: str):
+        if name not in self.data:
+            raise ValueError(f"Ground track '{name}' not found in plot data.")
+        act = self.data[name].actor
+        act.mapper.SetInputData(pv.PolyData())  # empty
+        act.mapper.Update()
+
     def _create_point_data(self, point: Point, size: int):
         sphere = pv.Sphere(radius=size, center=point.ecef[0])
         return sphere
@@ -442,7 +464,7 @@ class Plot3D:
             smooth_shading=True,
             render=False,
             render_points_as_spheres=True,
-            point_size=size * 5,
+            point_size=size,
         )
         # sphere = self._create_point_data(point, size * 1000)
         # act = self.p.add_mesh(
@@ -484,6 +506,7 @@ class Plot3D:
         length: float | NDArray = 1e5,
         color: str | int = "grey",
         alpha: float = 0.5,
+        line_width: float = 1.0,
     ):
         if isinstance(color, int):
             color = color_from_int(color)
@@ -496,7 +519,7 @@ class Plot3D:
             opacity=alpha,
             lighting=False,
             render=False,
-            line_width=1.0,
+            line_width=line_width,
         )
         self.data[name] = PlotData(
             name=name,
@@ -513,11 +536,14 @@ class Plot3D:
             data={"color": color, "alpha": alpha},
         )
 
-    def update_ray(self, name: str, ray: Ray, length: float | NDArray = 1e5):
+    def update_ray(self, name: str, ray: Ray | None, length: float | NDArray = 1e5):
+        act = self.data[name].actor
+        if ray is None:
+            act.mapper.SetInputData(pv.PolyData())  # empty
+            return
         if name not in self.data:
             raise ValueError(f"Ray '{name}' not found in plot data.")
         lines = self._create_ray_data(ray, length)
-        act = self.data[name].actor
         act.mapper.SetInputData(lines)
         act.mapper.Update()
 
@@ -525,29 +551,17 @@ class Plot3D:
         if name not in self.data:
             raise ValueError(f"Point '{name}' not found in plot data.")
         size = self.data[name].data.get("size", 2.0)
-        sphere = self._create_point_data(point, size * 5)
+        sphere = self._create_point_data(point, size)
         act = self.data[name].actor
         act.mapper.SetInputData(sphere)
         act.mapper.Update()
 
-    def add_2d_text(
-        self,
-        name: str,
-        test: str,
-        position: tuple[float, float] = (10, 10),
-        font_size: int = 12,
-        color: str = "white",
-    ):
-        act = self.p.add_text(
-            test,
-            position=position,
-            font_size=font_size,
-            color=color,
-            shadow=True,
-            font="arial",
-            name=name,
-        )
-        self.text_actors[name] = act
+    def clear_point(self, name: str):
+        if name not in self.data:
+            raise ValueError(f"Point '{name}' not found in plot data.")
+        act = self.data[name].actor
+        act.mapper.SetInputData(pv.PolyData())  # empty
+        act.mapper.Update()
 
     def add_labelled_point(
         self,
@@ -557,26 +571,32 @@ class Plot3D:
         font_size: int = 14,
         text_color: str | int = "lightgrey",
         marker_color: str | int = "red",
+        marker_size: float = 6.0,
+        show_points: bool = True,
+        bold: bool = False,
+        always_visible: bool = True,
     ):
         if isinstance(text_color, int):
             text_color = color_from_int(text_color)
         if isinstance(marker_color, int):
             marker_color = color_from_int(marker_color)
 
+        pt = pv.PolyData(position.ecef)
+
         act = self.p.add_point_labels(
-            position.ecef,
+            pt,
             [text],
             font_size=font_size,
             text_color=text_color,
             background_color="black",
             point_color=marker_color,
             reset_camera=False,
-            show_points=True,
+            show_points=show_points,
             shape_opacity=0.4,
-            # always_visible=True,
+            always_visible=always_visible,
             name=name,
-            bold=False,
-            point_size=6,
+            bold=bold,
+            point_size=marker_size,
             shape_color="grey",
             margin=3,
         )
@@ -587,9 +607,48 @@ class Plot3D:
             actor=act,
             lat_bounds=(position.geodet[0, 0], position.geodet[0, 0]),
             lon_bounds=(position.geodet[0, 1], position.geodet[0, 1]),
+            data={"pt": pt},
         )
 
-    def add_legend(self, labels: list[tuple[str, str]]):
+    def update_labelled_point_pos(self, name: str, position: Point):
+        if name not in self.data:
+            raise ValueError(f"Labelled point '{name}' not found in plot data.")
+        pt = self.data[name].data["pt"]
+        pt.points[0] = position.ecef
+        pt.Modified()
+        # act.mapper.SetInputData(pv.PolyData(position.ecef))
+        # act.mapper.Update()
+
+    def add_2d_text(
+        self,
+        name: str,
+        text: str,
+        pos: tuple[float, float] = (50, 50),
+        font_size: int = 12,
+        from_tl=True,
+    ):
+        if from_tl:
+            # convert from bottom-left to top-left
+            size = self.p.window_size
+            pos = (pos[0], size[1] - pos[1])
+        act = self.p.add_text(
+            text,
+            position=pos,
+            font_size=font_size,
+            color="white",
+            shadow=False,
+            font="courier",
+            name=name,
+        )
+        self.text_actors[name] = act
+
+    def update_2d_text(self, name: str, text: str):
+        if name not in self.text_actors:
+            raise ValueError(f"2D text '{name}' not found in text actors.")
+        act = self.text_actors[name]
+        act.SetInput(text)
+
+    def add_legend(self, labels: list[tuple[str, str]], pos_x: float = 0.7):
         """Add a legend to the plot
 
         Args:
@@ -601,13 +660,27 @@ class Plot3D:
             if data_name not in self.data:
                 raise ValueError(f"Data '{data_name}' not found in plot data.")
             color = self.data[data_name].actor.GetProperty().GetColor()
-            color_hex = "#{:02x}{:02x}{:02x}".format(
-                int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)
+            # color_hex = "#{:02x}{:02x}{:02x}".format(
+            #     int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)
+            # )
+            legend_entries.append([label, color])
+        # self.p.add_legend(
+        #     legend_entries, bcolor="black", size=(0.15, 0.15/self.aspect_ratio), face="rectangle", background_opacity=0.5, loc="upper right"
+        # )
+        txts = []
+        y0 = self.p.window_size[1] - 50
+        x0 = int(pos_x * self.p.window_size[0])
+        line_h = 30
+        for i, (label, rgb) in enumerate(legend_entries):
+            t = self.p.add_text(
+                "- " + label.split("-")[-1],
+                position=(x0, y0 - i * line_h),
+                font_size=10,
+                color=rgb,
+                font="courier",
             )
-            legend_entries.append([label, color_hex])
-        self.p.add_legend(
-            legend_entries, bcolor="black", size=(0.15, 0.15), face="rectangle"
-        )
+            # t.SetInput("■  " + label.split()[-1])  # content update later via SetInput
+            txts.append(t)
 
     def calc_bounds(
         self, buffer=0.3
@@ -645,7 +718,7 @@ class Plot3D:
     def show(self):
         self.p.show()
 
-    def start_animation(self, filepath: str = "./animation.mp4", fps: int = 10):
+    def start_animation(self, filepath: str = "./animation.mp4", fps: int = 30):
         self.p.open_movie(filepath, framerate=fps)  # uses imageio/ffmpeg under the hood
 
     def frame(self):

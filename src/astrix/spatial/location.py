@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar, cast
 from functools import cached_property
+from scipy.spatial.transform import Rotation
 
 from astrix._backend_utils import (
     resolve_backend,
@@ -25,6 +26,7 @@ from astrix.functs import (
     central_diff,
     finite_diff_2pt,
     interp_haversine,
+    apply_rot,
 )
 
 from astrix.time import Time, TimeInvariant, TIME_INVARIANT, TimeLike, time_linspace
@@ -424,6 +426,15 @@ class Acceleration:
             )
             return Acceleration(interp_vec, time, self._xp)
 
+    def rotate(self, rot: Rotation) -> Acceleration:
+        if not rot.single and len(rot) != len(self):
+            raise ValueError(
+                "Rotation object must be singular or have the same length as the Acceleration object."
+            )
+
+        rot_vec = apply_rot(rot, self.vec, xp=self._xp)
+        return Acceleration(rot_vec, self.time, self._xp)
+
 
 @dataclass(frozen=True)
 class Velocity:
@@ -546,6 +557,15 @@ class Velocity:
                 backend=self._xp,
             )
             return Velocity(interp_vec, time, self._xp)
+
+    def rotate(self, rot: Rotation) -> Velocity:
+        if not rot.single and len(rot) != len(self):
+            raise ValueError(
+                "Rotation object must be singular or have the same length as the Velocity object."
+            )
+
+        rot_vec = apply_rot(rot, self.vec, xp=self._xp)
+        return Velocity(rot_vec, self.time, self._xp)
 
     @cached_property
     def acc(self) -> Acceleration:

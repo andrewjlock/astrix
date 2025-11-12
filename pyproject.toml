@@ -25,16 +25,17 @@ dependencies = [
     "array-api-compat",
     "scipy>=1.17.0.dev0",
     "scipy-stubs>=1.16.2.0",
+    "matplotlib",
 ]
 
 # Runtime/optional feature buckets (install with: pip install .[viz,estimation])
 
 [project.optional-dependencies]
 jax = ["jax[cpu]>=0.6.1"]
-plot = ["basemap", "basemap-data-hires", "cartopy", "matplotlib","pyvista","rasterio","contextily","pyvista", "imageio[ffmpeg]"]
+plot = ["basemap", "basemap-data-hires", "cartopy","pyvista","rasterio","contextily","pyvista", "imageio[ffmpeg]"]
 
 [dependency-groups]
-dev = ["pytest", "pytest-cov>=7.0.0", "jax[cpu]", "cartopy", "matplotlib", "basemap", "basemap-data-hires","pyvista","rasterio","contextily","pyvista","imageio[ffmpeg]"]
+dev = ["pytest", "pytest-cov>=7.0.0", "jax[cpu]", "cartopy", "basemap", "basemap-data-hires","pyvista","rasterio","contextily","pyvista","imageio[ffmpeg]"]
 test = ["pytest", "pytest-cov>=7.0.0"]
 docs = [
     "sphinx>=4.0.0",
