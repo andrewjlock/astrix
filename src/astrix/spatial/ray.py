@@ -135,6 +135,11 @@ class Ray:
             raise ValueError(
                 "Origin and endpoint arrays must have the same shape or origin must be singular."
             )
+        if time is TIME_INVARIANT:
+            if endpoint.has_time:
+                time = endpoint.time
+            elif origin.has_time:
+                time = origin.time
         dir = endpoint.ecef - origin.ecef
         return cls(
             dir, origin.ecef, time=time, frame=FRAME_ECEF, check=check, backend=xp
