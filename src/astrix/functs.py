@@ -575,7 +575,6 @@ def vec_to_pixel(vecs: Array, mat: Array, backend: Backend = None) -> Array:
     """
     xp = coerce_ns(backend)
     vecs_cam = cam_to_frd_mat(xp).T @ vecs.T # shape (3, N)
-    # pixels_h = mat @ vecs_cam # shape (3, N)
     pixels_h = xp.einsum("ijk,ki->ji", mat.reshape(-1, 3, 3), vecs_cam) # shape (3, N)
     pixels = pixels_h[:2, :] / pixels_h[2, :] # shape (2, N)
     return pixels.T # shape (N, 2)

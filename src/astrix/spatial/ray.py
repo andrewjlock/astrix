@@ -20,7 +20,7 @@ from astrix.functs import (
     pixel_to_vec,
     vec_to_pixel,
     total_angle_from_vec,
-    interp_unit_vec
+    interp_unit_vec,
 )
 
 from astrix.time import Time, TimeLike, TimeInvariant, TIME_INVARIANT
@@ -112,7 +112,7 @@ class Ray:
         endpoint: Point,
         origin: Point,
         time: TimeLike = TIME_INVARIANT,
-        check: bool =  True,
+        check: bool = True,
         backend: BackendArg = None,
     ) -> Ray:
         """Create a Ray object from origin and endpoint arrays in ECEF frame.
@@ -136,7 +136,9 @@ class Ray:
                 "Origin and endpoint arrays must have the same shape or origin must be singular."
             )
         dir = endpoint.ecef - origin.ecef
-        return cls(dir, origin.ecef, time=time, frame=FRAME_ECEF, check=check, backend=xp)
+        return cls(
+            dir, origin.ecef, time=time, frame=FRAME_ECEF, check=check, backend=xp
+        )
 
     @classmethod
     def from_az_el(
@@ -215,7 +217,7 @@ class Ray:
         Returns:
             Ray: Ray object defined by the frame origin and direction to the target point(s).
         """
-    
+
         if check_bounds:
             if not target.has_time and not frame.is_static:
                 raise ValueError(
@@ -237,8 +239,14 @@ class Ray:
             xp=xp,
         )
         origin_frame = xp.zeros((1, 3))  # Ray origin at frame origin
-        return cls(dir_frame, origin_frame, time=target.time, frame=frame, check=False, backend=xp)
-
+        return cls(
+            dir_frame,
+            origin_frame,
+            time=target.time,
+            frame=frame,
+            check=False,
+            backend=xp,
+        )
 
     @classmethod
     def _constructor(
@@ -472,9 +480,15 @@ class Ray:
         """
 
         camera = camera.convert_to(self.backend)
-        uv = vec_to_pixel(self._unit_rel, camera.mat(self.time), self._xp)
+        valid = self._unit_rel[:, 0] > 1e-2  # Mask rays not pointing forward
+        unit_rel = self._xp.where(
+            valid[:, self._xp.newaxis], self._unit_rel, self._xp.array([1, 0, 0])
+        )
+        uv = vec_to_pixel(unit_rel, camera.mat(self.time), self._xp)
+        uv = self._xp.where(
+            valid[:, self._xp.newaxis], uv, self._xp.array([self._xp.nan, self._xp.nan])
+        )
         return Pixel(uv, time=self.time, backend=self._xp)
-
 
     def convert_to(self, backend: BackendArg) -> Ray:
         """Convert the Ray object to a different backend."""

@@ -16,7 +16,6 @@ from astrix._backend_utils import (
     warn_if_not_numpy,
 )
 
-
 from astrix.time import Time, TimeLike, TimeInvariant, TIME_INVARIANT, time_linspace
 
 
