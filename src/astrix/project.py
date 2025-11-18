@@ -78,7 +78,7 @@ class CameraLike(ABC):
 
 
 
-@dataclass
+@dataclass(frozen=True)
 class FixedZoomCamera(CameraLike):
     """A simple pinhole camera model with fixed zoom.
 
@@ -108,48 +108,46 @@ class FixedZoomCamera(CameraLike):
     _rad_coef: Array | None
     _xp: ArrayNS
 
-    def __init__(
-        self,
+    # --- Constructors ---
+
+    @classmethod
+    def from_foc_len(
+        cls,
         res: tuple[int, int],
         sensor_size: tuple[float, float],
         focal_length: float,
         rad_coef: Array | None = None,
         backend: BackendArg = None,
-    ) -> None:
-        """
-        Create a FixedZoomCamera using focal length.
+    ) -> FixedZoomCamera:
+        """Create a FixedZoomCamera from focal length.
 
         Args:
             res: Image resolution (width, height) in pixels.
             sensor_size: Physical sensor size (width, height) in mm.
             focal_length: Focal length in mm.
-            rad_coef (optional): Radial distortion coefficients, defaults to None
+            rad_coef (optional): Radial distortion coefficients.
             backend (optional): Backend to use. Either "numpy" or "jax".
-
         """
-
-        self._xp = resolve_backend(backend)
-        self._res = res
-        self._sensor_size = sensor_size
-        self._focal_length = focal_length
-        if rad_coef is not None:
-            self._rad_coef = ensure_1d(rad_coef, self._xp)
-        else:
-            self._rad_coef = None
-
-        fx = self._focal_length * self._res[0] / self._sensor_size[0]
-        fy = self._focal_length * self._res[1] / self._sensor_size[1]
-        cx = self._res[0] / 2
-        cy = self._res[1] / 2
-        self._mat = self._xp.array(
+        xp = resolve_backend(backend)
+        fx = focal_length * res[0] / sensor_size[0]
+        fy = focal_length * res[1] / sensor_size[1]
+        cx = res[0] / 2
+        cy = res[1] / 2
+        mat = xp.array(
             [
                 [fx, 0, cx],
                 [0, fy, cy],
                 [0, 0, 1],
             ]
         )
-
-    # --- Constructors ---
+        return cls(
+            _res=res,
+            _sensor_size=sensor_size,
+            _focal_length=focal_length,
+            _mat=mat,
+            _rad_coef=ensure_1d(rad_coef, xp) if rad_coef is not None else None,
+            _xp=xp,
+        )
 
     @classmethod
     def from_hoz_fov(
@@ -172,14 +170,26 @@ class FixedZoomCamera(CameraLike):
 
         xp = resolve_backend(backend)
         focal_length = (sensor_size[0] / 2) / xp.tan(xp.deg2rad(hoz_fov) / 2)
-
-        return cls(
-            res=res,
-            sensor_size=sensor_size,
-            focal_length=float(focal_length),
-            rad_coef=rad_coef,
-            backend=backend,
+        fx = focal_length * res[0] / sensor_size[0]
+        fy = focal_length * res[1] / sensor_size[1]
+        cx = res[0] / 2
+        cy = res[1] / 2
+        mat = xp.array(
+            [
+                [fx, 0, cx],
+                [0, fy, cy],
+                [0, 0, 1],
+            ]
         )
+        return cls(
+            _res=res,
+            _sensor_size=sensor_size,
+            _focal_length=float(focal_length),
+            _mat=mat,
+            _rad_coef=ensure_1d(rad_coef, xp) if rad_coef is not None else None,
+            _xp=xp,
+        )
+
 
     # --- Dunder methods and properties ---
 
