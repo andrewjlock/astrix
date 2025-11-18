@@ -604,6 +604,26 @@ def vec_to_pixel(vecs: Array, mat: Array, backend: Backend = None) -> Array:
 
 
 @backend_jit("backend")
+def refraction_correction_bennett(
+    el: Array, alt: float = 100e3, backend: Backend = None
+) -> Array:
+    """
+    Bennett, G.G. (1982). "The Calculation of Astronomical Refraction in Marine Navigation".
+    Journal of Navigation. 35 (2): 255–259. doi:10.1017/S0373463300022037.
+
+    Refraction is scaled by an exponential atmosphere model with scale height of 7.5 km.
+    Inputs/outputs are degrees.
+    """
+
+    xp = coerce_ns(backend)
+    alpha = 1 - xp.exp(-alt / 7500)  # Scale height of atmosphere ~7.5 km
+
+    Rm_ = 1 / xp.tan(xp.deg2rad(el + (7.31 / (el + 4.4))))
+    Rm = Rm_ - 0.06 * xp.sin(xp.deg2rad(14.7 * Rm_ + 13))
+    return (Rm / 60) * alpha  # in degrees
+
+
+@backend_jit("backend")
 def project_velocity_to_az_el(
     pos_frd: Array, vel_frd: Array, backend: Backend = None
 ) -> Array:
