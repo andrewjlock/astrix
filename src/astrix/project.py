@@ -244,11 +244,14 @@ class FixedZoomCamera(CameraLike):
             return self
 
         return FixedZoomCamera(
-            res=self._res,
-            sensor_size=self._sensor_size,
-            focal_length=self._focal_length,
-            rad_coef=self._rad_coef,
-            backend=xp,
+            _res=self._res,
+            _sensor_size=self._sensor_size,
+            _focal_length=self._focal_length,
+            _mat=xp.array(self._mat),
+            _rad_coef=xp.array(self._rad_coef)
+            if self._rad_coef is not None
+            else None,
+            _xp=xp,
         )
 
 
