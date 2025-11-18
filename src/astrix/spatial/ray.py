@@ -21,6 +21,7 @@ from astrix.functs import (
     vec_to_pixel,
     total_angle_from_vec,
     interp_unit_vec,
+    refraction_correction_bennett
 )
 
 from astrix.time import Time, TimeLike, TimeInvariant, TIME_INVARIANT
@@ -338,7 +339,7 @@ class Ray:
 
     @property
     def az_el(self):
-        """Return the heading (from north) and elevation (from horizontal) angles in degrees."""
+        """Return the azimuth and elevation angles from the forward axis in degrees."""
         return az_el_from_vec(self._unit_rel, backend=self._xp)
 
     @property
@@ -507,3 +508,30 @@ class Ray:
         return Ray._constructor(
             unit_converted, origin_converted, time_converted, frame_converted, xp
         )
+
+    def correct_refraction(self, alt: float = 100e3) -> Ray:
+        """Apply atmospheric refraction correction to the Ray object using Bennett's formula.
+
+        Returns:
+            Ray: New Ray object with refraction-corrected direction vectors.
+
+        Notes:
+            - Assumes standard atmospheric conditions.
+        """
+        
+        rays_ned = self.to_ned()
+        head_el = rays_ned.az_el
+        el_corrected = head_el[:,1] + refraction_correction_bennett(head_el[:, 1], alt, backend=self._xp)
+        dir_corrected = vec_from_az_el(
+            self._xp.c_[head_el[:, 0], el_corrected], backend=self._xp
+        )
+        rays_ned_corrected = Ray._constructor(
+            dir_corrected,
+            rays_ned._origin_rel,
+            rays_ned.time,
+            rays_ned._frame,
+            self._xp,
+        )
+        rays_corrected = rays_ned_corrected.to_frame(self._frame)
+        return rays_corrected
+

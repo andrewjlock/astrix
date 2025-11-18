@@ -176,3 +176,60 @@ def get_ned_rotation(loc: Location[TimeLike], backend: BackendArg = None) -> Rot
     xp = resolve_backend(backend)
     rot = ned_rotation(loc.geodet, xp=xp)
     return rot
+
+
+def solve_wahba(
+    v: Array, w: Array, weights: Array | None = None
+) -> tuple[Array, Array]:
+    """Calculate the rotation matrix R which transforms vectors w to v.
+    It is posed as Wahba's problem
+    https://en.wikipedia.org/wiki/Wahba%27s_problem
+
+    Parameters
+    ----------
+    v : nx3 dim numpy array
+        vectors in the first coordiante frame
+    w : nx3 dim numpy array
+        vectors in the second coordinate frame
+    weights : nx0 dim numpy array, optional
+        weights associated with each vector. Otherwise assumed even weights
+
+    Returns
+    -------
+    R : 3x3 numpy array
+        The rotation matrix such that w ~ Rv
+
+
+    Note these functions are very important for real-time evaluation.
+    They need robust functional testing and good coding practices.
+    """
+
+    warn_if_not_numpy(v, "solve_wahba")
+
+    # Check data
+    if v.shape[0] != w.shape[0]:
+        raise ValueError("Mismatch number of vectors in rotation estimation")
+    if weights is None:
+        a = np.ones(v.shape[0])
+    elif len(weights) != v.shape[0]:
+        raise ValueError(
+            "Number of weights does not match number of vectors in \
+                      rotation estimation"
+        )
+    else:
+        a = np.array(weights)
+
+    b = np.zeros((3, 3))
+    for v_i, w_i, a_i in zip(v, w, a):
+        b += a_i * w_i.reshape(3, 1) @ (v_i.reshape(3, 1).T)
+    u, _, v_T = np.linalg.svd(b)
+    m = np.diag([1, 1, np.linalg.det(u) * np.linalg.det(v_T.T)])
+    r = u @ m @ v_T
+
+    # Compute angle difference to estimate quality
+    v_u = v / np.linalg.norm(v, axis=0)
+    w2_u = r @ v
+    w_u = w / np.linalg.norm(w, axis=0)
+    dot_products = np.sum(w_u * w2_u, axis=0)
+    delta_angle_deg = np.rad2deg(np.arccos(dot_products))
+    return r, delta_angle_deg

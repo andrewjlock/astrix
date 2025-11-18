@@ -28,6 +28,7 @@ from ._backend_utils import (
 )
 from astrix.constants import cam_to_frd_mat
 
+
 def ensure_1d(x: ArrayLike | float | list[float], backend: Backend = None) -> Array:
     """Ensure the input array is 1-dimensional.
     Scalars are converted to shape (1,).
@@ -40,6 +41,7 @@ def ensure_1d(x: ArrayLike | float | list[float], backend: Backend = None) -> Ar
     elif x_arr.ndim > 1:
         raise ValueError("Input array must be 1-dimensional or scalar.")
     return x_arr
+
 
 def ensure_2d(
     x: ArrayLike | float | list[float] | list[list[float]],
@@ -62,7 +64,9 @@ def ensure_2d(
         if x_arr.shape[0] == n and x_arr.shape[1] != n:
             x_arr = x_arr.T
         if x_arr.shape[1] != n:
-            raise ValueError(f"Input array must have shape (m, {n}), found {x_arr.shape}.")
+            raise ValueError(
+                f"Input array must have shape (m, {n}), found {x_arr.shape}."
+            )
     return x_arr
 
 
@@ -78,6 +82,7 @@ def is_increasing(x: Array, backend: Backend = None) -> bool:
 
 t_ecef2geodet = pyproj.Transformer.from_crs("epsg:4978", "epsg:4979")
 t_geodet2ecef = pyproj.Transformer.from_crs("epsg:4979", "epsg:4978")
+
 
 def ecef2geodet(ecef: Array) -> np.ndarray:
     """
@@ -143,7 +148,6 @@ def apply_rot(r: Rotation, v: Array, inverse: bool = False, xp: ArrayNS = np) ->
         - No checks performed on input shapes or backends
     """
 
-
     if inverse:
         v_rot = xp.einsum("ijk,ik->ij", r.as_matrix().reshape(-1, 3, 3).mT, v)
     else:
@@ -177,7 +181,6 @@ def sort_by_time(
     return times_1d[sort_idx], data[sort_idx]
 
 
-
 @backend_jit("backend")
 def interp_nd(x: Array, xd: Array, fd: Array, backend: Backend = None) -> Array:
     """N-dimensional interpolation along first axis.
@@ -206,6 +209,7 @@ def interp_nd(x: Array, xd: Array, fd: Array, backend: Backend = None) -> Array:
 
     slope = (f1 - f0) / (x1 - x0)[..., xp.newaxis]
     return f0 + slope * (x - x0)[..., xp.newaxis]
+
 
 @backend_jit("backend")
 def interp_unit_vec(t: Array, td: Array, vecs: Array, backend: Backend = None) -> Array:
@@ -310,8 +314,9 @@ def central_diff(xd: Array, fd: Array, backend: Backend = None) -> Array:
 
     return dfdx
 
+
 def finite_diff_2pt(xd: Array, fd: Array, backend: Backend = None) -> Array:
-    """ Simple 2-point finite difference derivative of fd w.r.t. xd at the sample nodes.
+    """Simple 2-point finite difference derivative of fd w.r.t. xd at the sample nodes.
     Uses forward difference at the first point, backward difference at the last point,
     and central difference in the interior.
 
@@ -338,7 +343,12 @@ def finite_diff_2pt(xd: Array, fd: Array, backend: Backend = None) -> Array:
     dfdx = safe_set(dfdx, 0, (fd[1] - fd[0]) / (xd[1] - xd[0]), backend)
     dfdx = safe_set(dfdx, -1, (fd[-1] - fd[-2]) / (xd[-1] - xd[-2]), backend)
     if xd.shape[0] > 2:
-        dfdx = safe_set(dfdx, slice(1, -1), (fd[2:] - fd[:-2]) / (xd[2:] - xd[:-2])[:, None], backend)
+        dfdx = safe_set(
+            dfdx,
+            slice(1, -1),
+            (fd[2:] - fd[:-2]) / (xd[2:] - xd[:-2])[:, None],
+            backend,
+        )
     return dfdx
 
 
@@ -444,7 +454,7 @@ def interp_haversine(
 
 
 def ned_rotation(geodet: Array, xp: Backend = None) -> Rotation:
-    """Get the rotation from ECEF base to the North-East-Down frame at given 
+    """Get the rotation from ECEF base to the North-East-Down frame at given
     geodetic locations.
 
     Args:
@@ -464,7 +474,9 @@ def ned_rotation(geodet: Array, xp: Backend = None) -> Rotation:
             ]
         )
     )
-    rot_ned_ned0 = Rotation.from_euler("XY", xp.asarray([geodet[:, 1], -geodet[:, 0]]).T, degrees=True)
+    rot_ned_ned0 = Rotation.from_euler(
+        "XY", xp.asarray([geodet[:, 1], -geodet[:, 0]]).T, degrees=True
+    )
     rot_ned = rot_ned0 * rot_ned_ned0
     return rot_ned
 
@@ -472,7 +484,7 @@ def ned_rotation(geodet: Array, xp: Backend = None) -> Rotation:
 @backend_jit(["backend"])
 def az_el_from_vec(v: Array, backend: Backend = None) -> Array:
     """Compute azimuth and elevation from a set of 3D vectors.
-    
+
     Args:
         v (Array): Array of shape (m, 3) of m 3D vectors.
 
@@ -492,6 +504,7 @@ def az_el_from_vec(v: Array, backend: Backend = None) -> Array:
     el = xp.rad2deg(xp.arctan2(-v[:, 2], xp.linalg.norm(v[:, 0:2], axis=1)))
 
     return xp.stack((az, el), axis=1)
+
 
 @backend_jit("backend")
 def vec_from_az_el(az_el: Array, backend: Backend = None) -> Array:
@@ -522,6 +535,7 @@ def vec_from_az_el(az_el: Array, backend: Backend = None) -> Array:
 
     return xp.stack((x, y, z), axis=1)
 
+
 @backend_jit("backend")
 def total_angle_from_vec(v: Array, backend: Backend = None) -> Array:
     """Compute the total angle from a set of 3D vectors from forard (1, 0, 0).
@@ -540,6 +554,7 @@ def total_angle_from_vec(v: Array, backend: Backend = None) -> Array:
     total_angle = xp.rad2deg(xp.arccos(v_unit[:, 0]))
     return total_angle
 
+
 @backend_jit("backend")
 def pixel_to_vec(pixels: Array, mat: Array, backend: Backend = None) -> Array:
     """Convert pixel coordinates to 3D unit vectors in camera frame.
@@ -553,13 +568,20 @@ def pixel_to_vec(pixels: Array, mat: Array, backend: Backend = None) -> Array:
         Array: Nx3 array of 3D unit vectors in camera frame.
     """
     xp = coerce_ns(backend)
-    pixels_h = xp.concatenate((pixels, xp.ones((pixels.shape[0], 1), dtype=pixels.dtype)), axis=1)
+    pixels_h = xp.concatenate(
+        (pixels, xp.ones((pixels.shape[0], 1), dtype=pixels.dtype)), axis=1
+    )
     mat_inv = xp.linalg.inv(mat)
-    vecs_cam = xp.einsum("ijk,ik->ji", mat_inv.reshape(-1, 3, 3), pixels_h) # shape (3, N)
+    vecs_cam = xp.einsum(
+        "ijk,ik->ji", mat_inv.reshape(-1, 3, 3), pixels_h
+    )  # shape (3, N)
     # vecs_cam = mat_inv @ (pixels_h.T) # shape (3, N)
-    vecs_cam_unit = vecs_cam / xp.linalg.norm(vecs_cam, axis=0, keepdims=True) # shape (3, N)
-    vecs_frd_unit = cam_to_frd_mat(xp) @ vecs_cam_unit # shape (3, N)
-    return vecs_frd_unit.T # shape (N, 3)
+    vecs_cam_unit = vecs_cam / xp.linalg.norm(
+        vecs_cam, axis=0, keepdims=True
+    )  # shape (3, N)
+    vecs_frd_unit = cam_to_frd_mat(xp) @ vecs_cam_unit  # shape (3, N)
+    return vecs_frd_unit.T  # shape (N, 3)
+
 
 @backend_jit("backend")
 def vec_to_pixel(vecs: Array, mat: Array, backend: Backend = None) -> Array:
@@ -574,11 +596,26 @@ def vec_to_pixel(vecs: Array, mat: Array, backend: Backend = None) -> Array:
         Array: Nx2 array of pixel coordinates (u, v).
     """
     xp = coerce_ns(backend)
-    vecs_cam = cam_to_frd_mat(xp).T @ vecs.T # shape (3, N)
-    pixels_h = xp.einsum("ijk,ki->ji", mat.reshape(-1, 3, 3), vecs_cam) # shape (3, N)
-    pixels = pixels_h[:2, :] / pixels_h[2, :] # shape (2, N)
-    return pixels.T # shape (N, 2)
+    vecs_cam = cam_to_frd_mat(xp).T @ vecs.T  # shape (3, N)
+    pixels_h = xp.einsum("ijk,ki->ji", mat.reshape(-1, 3, 3), vecs_cam)  # shape (3, N)
+    pixels = pixels_h[:2, :] / pixels_h[2, :]  # shape (2, N)
+    return pixels.T  # shape (N, 2)
 
 
+@backend_jit("backend")
+def refraction_correction_bennett(el: Array, alt: float = 100e3, backend: Backend = None) -> Array:
+    """
+    Bennett, G.G. (1982). "The Calculation of Astronomical Refraction in Marine Navigation". 
+    Journal of Navigation. 35 (2): 255–259. Bibcode:1982JNav...35..255B. 
+    doi:10.1017/S0373463300022037. S2CID 140675736.
 
+    Refraction is scaled by an exponential atmosphere model with scale height of 7.5 km.
+    """
 
+    xp = coerce_ns(backend)
+    alpha = 1-xp.exp(-alt/7500)  # Scale height of atmosphere ~7.5 km
+
+    Rm_ = 1 / xp.tan(xp.deg2rad((el) + (7.31 / ((el) + 4.4))))
+    Rm = Rm_ - 0.06 * xp.sin(xp.deg2rad(14.7 * Rm_ + 13))
+    Rm = Rm
+    return (Rm / 60)  * alpha  # in degrees
