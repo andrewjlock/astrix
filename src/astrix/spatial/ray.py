@@ -41,6 +41,7 @@ class Ray:
         frame (Frame, optional): Reference frame for the ray origin and direction.
         time (Time, optional): Time object associated with the rays.
             Must be same length as origin if provided. Defaults to TIME_INVARIANT.
+        check (bool, optional): If True (default), validate non-zero direction vectors; disable for JIT paths.
         backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
 
     Notes:
@@ -119,16 +120,15 @@ class Ray:
         """Create a Ray object from origin and endpoint arrays in ECEF frame.
 
         Args:
-            origin (Point):  Origin points (ECEF coordinates). Must be length N or 1.
             endpoint (Point): End points (ECEF coordinates). Must be length N.
-            time (Time, optional): Time object associated with the rays.
-                Must be length N or 1. Defaults to TIME_INVARIANT (no time dependency).
+            origin (Point): Origin points (ECEF coordinates). Must be length N or 1.
+            time (Time, optional): Time object associated with the rays. If TIME_INVARIANT,
+                time is inferred from endpoint or origin when available.
+            check (bool, optional): If True, validate geometry (non-zero directions).
+                Disable for JIT compatibility. Defaults to True.
             backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
         Returns:
             Ray: Ray object defined by the origin and direction from origin to endpoint.
-
-        Notes:
-            - Origin and endpoint Point o
         """
 
         xp = resolve_backend(backend)
@@ -218,6 +218,7 @@ class Ray:
         Args:
             target (Point): Target point(s) in ECEF coordinates. Must be length N or 1.
             frame (Frame): Reference frame for the ray origin and direction.
+            check_bounds (bool, optional): If True, ensure target times fall within frame time ranges.
             backend (BackendArg, optional): Array backend to use (numpy, jax, etc.). Defaults to numpy.
 
         Returns:
@@ -388,7 +389,7 @@ class Ray:
             (
                 apply_rot(rots_abs, self._origin_rel, inverse=True, xp=self._xp)
                 + self._frame.interp_loc(self.time, check_bounds=False).ecef
-                - -frame.interp_loc(self.time, check_bounds=False).ecef
+                - frame.interp_loc(self.time, check_bounds=False).ecef
             ),
             xp=self._xp,
             # apply_rot(rots_new, self._origin_rel, inverse=True, xp=self._xp)
@@ -511,6 +512,7 @@ class Ray:
 
     def correct_refraction(self, alt: float = 100e3) -> Ray:
         """Apply atmospheric refraction correction to the Ray object using Bennett's formula.
+        Altitude sets the exponential scale height (metres) for the correction.
 
         Returns:
             Ray: New Ray object with refraction-corrected direction vectors.
@@ -534,4 +536,3 @@ class Ray:
         )
         rays_corrected = rays_ned_corrected.to_frame(self._frame)
         return rays_corrected
-

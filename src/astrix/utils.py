@@ -6,6 +6,7 @@ Should not be imported to core type modules to avoid circular dependencies.
 """
 
 from .spatial.location import Point, Path, Location
+from .spatial.frame import Frame
 from ._backend_utils import (
     coerce_ns,
     BackendArg,
@@ -16,7 +17,7 @@ from ._backend_utils import (
     warn_if_not_numpy,
 )
 from .time import TimeLike, TIME_INVARIANT, Time
-from .functs import ned_rotation
+from .functs import ned_rotation, project_velocity_to_az_el
 from scipy.spatial.transform import Rotation
 
 
@@ -191,13 +192,15 @@ def solve_wahba(
         vectors in the first coordiante frame
     w : nx3 dim numpy array
         vectors in the second coordinate frame
-    weights : nx0 dim numpy array, optional
-        weights associated with each vector. Otherwise assumed even weights
+    weights : (n,) numpy array, optional
+        weights associated with each vector. Otherwise assumed even weights (NumPy only)
 
     Returns
     -------
     R : 3x3 numpy array
         The rotation matrix such that w ~ Rv
+    delta_angle_deg : (n,) numpy array
+        Angle differences between rotated w and v, in degrees, as a quality metric
 
 
     Note these functions are very important for real-time evaluation.
@@ -227,9 +230,24 @@ def solve_wahba(
     r = u @ m @ v_T
 
     # Compute angle difference to estimate quality
-    v_u = v / np.linalg.norm(v, axis=0)
-    w2_u = r @ v
-    w_u = w / np.linalg.norm(w, axis=0)
-    dot_products = np.sum(w_u * w2_u, axis=0)
+    v_u = v / np.linalg.norm(v, axis=1, keepdims=True)
+    w_u = w / np.linalg.norm(w, axis=1, keepdims=True)
+    w2_u = (r @ v_u.T).T
+    dot_products = np.sum(w_u * w2_u, axis=1)
     delta_angle_deg = np.rad2deg(np.arccos(dot_products))
     return r, delta_angle_deg
+
+
+def path_to_az_el_rate(
+    path: Path, time: Time, frame: Frame, backend: BackendArg = None
+) -> Array:
+    """Project the velocity vectors of a path to azimuth and elevation components"""
+
+    pos_ecef = path.interp(time).ecef
+    vel_ecef = path.vel.interp(time).vec
+    rot = frame.interp_rot(time).inv()
+    pos_frd = rot.apply(pos_ecef)
+    vel_frd = rot.apply(vel_ecef)
+    xp = resolve_backend(backend)
+    az_el_vel = project_velocity_to_az_el(pos_frd, vel_frd, xp)
+    return az_el_vel

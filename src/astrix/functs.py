@@ -136,9 +136,10 @@ def apply_rot(r: Rotation, v: Array, inverse: bool = False, xp: ArrayNS = np) ->
     """Apply a scipy Rotation to a set of vectors.
 
     Args:
-        v (Array): Array of shape (m, 3) of m 3D vectors.
         r (Rotation): A scipy Rotation object.
-        xp (ArrayNS, optional): Backend to use. Defaults to None.
+        v (Array): Array of shape (m, 3) of m 3D vectors.
+        inverse (bool, optional): Apply the inverse rotation when True. Defaults to False.
+        xp (ArrayNS, optional): Backend to use. Defaults to NumPy.
 
     Returns:
         Array: Array of shape (m, 3) of rotated vectors.
@@ -603,19 +604,73 @@ def vec_to_pixel(vecs: Array, mat: Array, backend: Backend = None) -> Array:
 
 
 @backend_jit("backend")
-def refraction_correction_bennett(el: Array, alt: float = 100e3, backend: Backend = None) -> Array:
+def project_velocity_to_az_el(
+    pos_frd: Array, vel_frd: Array, backend: Backend = None
+) -> Array:
     """
-    Bennett, G.G. (1982). "The Calculation of Astronomical Refraction in Marine Navigation". 
-    Journal of Navigation. 35 (2): 255–259. Bibcode:1982JNav...35..255B. 
-    doi:10.1017/S0373463300022037. S2CID 140675736.
+    Compute azimuth and elevation angular rates (deg/s) and radial rate (m/s)
+    from FRD-frame position and velocity.
 
-    Refraction is scaled by an exponential atmosphere model with scale height of 7.5 km.
+    FRD frame:
+        f = forward
+        r = right
+        d = down (positive down)
+
+    Returns
+    -------
+    az_rate_deg : (...)
+        Azimuth angular rate in degrees/s.
+    el_rate_deg : (...)
+        Elevation angular rate in degrees/s (positive upward).
+    range_rate  : (...)
+        Radial velocity (m/s), positive away from observer.
     """
 
     xp = coerce_ns(backend)
-    alpha = 1-xp.exp(-alt/7500)  # Scale height of atmosphere ~7.5 km
 
-    Rm_ = 1 / xp.tan(xp.deg2rad((el) + (7.31 / ((el) + 4.4))))
-    Rm = Rm_ - 0.06 * xp.sin(xp.deg2rad(14.7 * Rm_ + 13))
-    Rm = Rm
-    return (Rm / 60)  * alpha  # in degrees
+    pos = xp.asarray(pos_frd)
+    vel = xp.asarray(vel_frd)
+
+    f = pos[..., 0]
+    r = pos[..., 1]
+    d = pos[..., 2]
+
+    az = xp.atan2(r, f)
+    horiz = xp.sqrt(f**2 + r**2)
+    el = xp.atan2(-d, horiz)
+
+    e_az = xp.stack(
+        (
+            -xp.sin(az),  # forward
+            xp.cos(az),  # right
+            xp.zeros_like(f),  # down
+        ),
+        axis=-1,
+    )
+
+    e_el = xp.stack(
+        (
+            -xp.sin(el) * xp.cos(az),  # forward
+            -xp.sin(el) * xp.sin(az),  # right
+            -xp.cos(el),  # down  (negative = upward)
+        ),
+        axis=-1,
+    )
+
+    # Linear tangential components (m/s)
+    v_az = xp.sum(vel * e_az, axis=-1)
+    v_el = xp.sum(vel * e_el, axis=-1)
+
+    # Range
+    R = xp.sqrt(f**2 + r **2 + d**2)
+
+    # Angular rates (rad/s)
+    az_rate = v_az / R
+    el_rate = v_el / R
+
+    # Convert to deg/s
+    deg = 180.0 / xp.asarray(np.pi)
+    az_rate_deg = az_rate * deg
+    el_rate_deg = el_rate * deg
+
+    return xp.array([az_rate_deg, el_rate_deg])
