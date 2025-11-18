@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 
 from ._backend_utils import (
@@ -104,8 +104,8 @@ class FixedZoomCamera(CameraLike):
     _res: tuple[int, int]
     _sensor_size: tuple[float, float]
     _focal_length: float
-    _mat: Array
-    _rad_coef: Array | None
+    _mat: Array = field(compare=False, hash=False)
+    _rad_coef: Array | None = field(compare=False, hash=False) 
     _xp: ArrayNS
 
     # --- Constructors ---
