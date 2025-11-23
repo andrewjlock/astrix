@@ -45,11 +45,11 @@ def test_path_velocity_interpolate(xp):
 
     t_interp = Time(xp.array([1577836830.0]), backend=xp)  # 2020-01-01 00:00:30
 
-    vel_interp = path.interp_vel(t_interp)
+    vel_interp = path.vel.interp(t_interp)
     
     def myfunction(t):
         time = Time(t, backend=xp)
-        return path.interp_vel(time).vec
+        return path.vel.interp(time).vec
 
     jacobian = jax.jacobian(myfunction)(t_interp.unix)
     
@@ -58,6 +58,5 @@ def test_path_velocity_interpolate(xp):
     assert vel_interp.vec.shape == (1,3)
     correct = (ecef[2] - ecef[1]) / (posix[2] - posix[1])  # velocity between point 1 and 2
     assert xp.allclose(vel_interp.vec[0], correct, atol=1e-6)
-
 
 

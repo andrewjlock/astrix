@@ -1,6 +1,7 @@
 # pyright: basic
 
 import pytest
+import warnings
 from astrix import Path, Point, Time
 from .helpers import to_text
 import numpy as np
@@ -134,7 +135,7 @@ def test_path_vel_interp(xp):
     path = Path(point)
 
     t_interp = Time(xp.array([1577836830.0]), backend=xp)  # 2020-01-01 00:00:30
-    vel_interp = path.interp_vel(t_interp)
+    vel_interp = path.vel.interp(t_interp)
     to_text(vel_interp)
     assert vel_interp.vec.shape == (1, 3)
     correct = (ecef[2] - ecef[1]) / (
@@ -148,4 +149,120 @@ def test_path_vel_interp(xp):
 
     with pytest.warns():
         t_bad = Time(xp.array([1577836790.0]), backend=xp)  # before start time
-        path.interp_vel(t_bad)
+        path.vel.interp(t_bad)
+
+
+def test_path_downsample_max_step(xp):
+    ecef = xp.array(
+        [
+            [0.0, 0.0, 0.0],
+            [10.0, 0.0, 0.0],
+            [25.0, 0.0, 0.0],
+        ]
+    )
+    times = Time(xp.array([0.0, 30.0, 90.0]), backend=xp)
+    path = Path(Point(ecef, time=times, backend=xp))
+
+    if xp.__name__.startswith("jax"):
+        ctx = warnings.catch_warnings()
+        ctx.__enter__()
+        warnings.simplefilter("ignore", UserWarning)
+    try:
+        downsampled = path.downsample(dt_max=20.0)
+    finally:
+        if xp.__name__.startswith("jax"):
+            ctx.__exit__(None, None, None)
+
+    unix = np.asarray(downsampled.time.unix)
+    assert unix[0] == 0.0 and unix[-1] == 90.0
+    assert np.all(np.diff(unix) <= 20.0 + 1e-9)
+    assert len(unix) >= len(times)
+
+
+def test_path_acceleration_constant_velocity(xp):
+    ecef = xp.array(
+        [
+            [0.0, 0.0, 0.0],
+            [10.0, 0.0, 0.0],
+            [20.0, 0.0, 0.0],
+        ]
+    )
+    times = Time(xp.array([0.0, 1.0, 2.0]), backend=xp)
+    path = Path(Point(ecef, time=times, backend=xp))
+
+    assert xp.allclose(path.vel.vec[:, 0], xp.asarray([10.0, 10.0, 10.0]))
+    assert xp.allclose(path.vel.vec[:, 1:], 0.0)
+    assert xp.allclose(path.acc.vec, 0.0, atol=1e-12)
+
+
+def test_path_truncate(xp):
+    ecef = xp.array(
+        [
+            [3877000.0, 350000.0, 5027000.0],
+            [3875000.0, 348000.0, 5029000.0],
+            [3876000.0, 349000.0, 5028000.0],
+        ]
+    )
+    posix = xp.array([0.0, 30.0, 90.0])
+    time = Time(posix, backend=xp)
+    path = Path(Point(ecef, time=time, backend=xp))
+
+    truncated = path.truncate(
+        Time(xp.array([10.0]), backend=xp),
+        Time(xp.array([60.0]), backend=xp),
+    )
+    assert xp.allclose(truncated.start_time.unix, xp.asarray([10.0]))
+    assert xp.allclose(truncated.end_time.unix, xp.asarray([60.0]))
+    assert truncated.ecef.shape[0] >= 2
+
+
+def test_path_time_at_altitude(xp):
+    geodetic = xp.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 100.0],
+            [0.0, 0.0, 200.0],
+        ]
+    )
+    times = Time(xp.array([0.0, 10.0, 20.0]), backend=xp)
+
+    if xp.__name__.startswith("jax"):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            points = Point.from_geodet(geodetic, time=times, backend=xp)
+            path = Path(points, backend=xp)
+            crossing_time = path.time_at_alt(50.0)
+    else:
+        points = Point.from_geodet(geodetic, time=times, backend=xp)
+        path = Path(points, backend=xp)
+        crossing_time = path.time_at_alt(50.0)
+    assert crossing_time.unix.shape == (1,)
+    assert xp.allclose(crossing_time.unix, xp.asarray([5.0]), atol=1e-3)
+
+
+def test_path_truncate_errors(xp):
+    ecef = xp.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0]])
+    times = Time(xp.array([0.0, 10.0]), backend=xp)
+    path = Path(Point(ecef, time=times, backend=xp))
+
+    with pytest.raises(ValueError):
+        path.truncate(
+            Time(xp.array([15.0]), backend=xp),
+            Time(xp.array([20.0]), backend=xp),
+        )
+
+    with pytest.raises(ValueError):
+        path.truncate(
+            Time(xp.array([8.0]), backend=xp),
+            Time(xp.array([5.0]), backend=xp),
+        )
+
+
+def test_path_convert_backend(xp):
+    ecef = xp.array([[1.0, 2.0, 3.0]])
+    times = Time(xp.array([0.0]), backend=xp)
+    path = Path(Point(ecef, time=times, backend=xp))
+
+    path_np = path.convert_to(np)
+    assert path_np.time.backend == "numpy"
+    assert path_np.ecef.shape == (1, 3)
