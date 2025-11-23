@@ -199,3 +199,5 @@ cython_debug/
 # Vim
 *.swp
 *.swo
+
+**/AGENTS.md
