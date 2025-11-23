@@ -1,8 +1,6 @@
-# ASTrIX: AeroSpace Trajectory Imaging toolboX 
+# ASTrIX · AeroSpace Trajectory Imaging toolboX
 
-_Under Construction..._
-
-A Python tool package for planning and analysing aerospace imaging campaigns.
+> Python-interface toolbox for planning, simulating, and analysing in-flight imaging and tracking.
 
 [![Tests](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml) [![Documentation](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml)
 [![codecov](https://codecov.io/github/andrewjlock/astrix/graph/badge.svg?token=N781FLJEI5)](https://codecov.io/github/andrewjlock/astrix)
@@ -12,18 +10,18 @@ Source code is hosted on [GitHub](https://github.com/andrewjlock/astrix).
 
 ## Features
 
-- Simple, object-oriented interface to reconstruct simultaneous moving and rotating reference frames, calculate local line-of-sight vectors, and project to image planes.
-- Many convenience tools for interpolation, intrinsic frame handling, triangulation, position conversion, data validation etc.
-- Support for NumPy and Jax backends using the [array api](https://data-apis.org/array-api/latest/) spec. Most functionality is differentiable and JIT-compilable using Jax backend, allowing efficient optimisation and state estimation.
+- Object-oriented primitives for frames, rays, rotations, and paths with consistent ECEF/geodetic handling.
+- Built-in interpolation, intrinsic frame handling, triangulation, refraction, and validation utilities.
+- Dual-backend support (NumPy + JAX via [Array API](https://data-apis.org/array-api/latest/)); JIT/differentiation ready where it matters.
 
-This toolbox has three main use cases:
-1. Planning flight paths and ground station placement for aerospace observation campaigns.
-2. Trajectory reconstruction and state estimation from observational data (e.g. optical tracking).
-3. Aiding analysis of scientific optical measurements (e.g. spectral data).
+Core use cases:
+1. Planning flight paths and ground-station placement for observation campaigns.
+2. Trajectory reconstruction and state estimation from optical or mixed-sensor data.
+3. Analysis workflows for scientific imaging (e.g., spectral/photometric pipelines).
 
 ## Install
 
-The repository is not yet published to PyPI, so installation is via cloning the repository and installing using pip.
+The repository is not yet published to PyPI; install from source.
 
 ```bash
 $ git clone https://github.com/andrewjlock/astrix.git
