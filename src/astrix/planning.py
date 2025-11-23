@@ -12,7 +12,7 @@ from ._backend_utils import (
     np,
     warn_if_not_numpy,
 )
-from .time import TimeLike, TIME_INVARIANT, Time
+from .time import TIME_INVARIANT, Time
 from .functs import ned_rotation
 
 
@@ -20,7 +20,7 @@ def point_from_heading(
     start: Point,
     head: float,
     dist: float,
-    time_new: TimeLike = TIME_INVARIANT,
+    time_new: Time = TIME_INVARIANT,
     method: str = "haversine",
 ) -> Point:
     """Calculate a new point given a start point, heading (degrees) and distance (meters).
@@ -131,4 +131,3 @@ def turn_from_radius(
     times = Time(unix)
     pts = Point(pts_ecef, time=times, backend=np)
     return pts
-

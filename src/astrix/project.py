@@ -14,7 +14,7 @@ from ._backend_utils import (
 )
 
 from astrix.functs import ensure_1d, ensure_2d
-from astrix.time import Time, TimeLike, TIME_INVARIANT
+from astrix.time import Time, TIME_INVARIANT
 from astrix.generic import AbstractValue
 
 class CameraLike(ABC):
@@ -23,7 +23,7 @@ class CameraLike(ABC):
     _res: tuple[int, int]
     _sensor_size: tuple[float, float]
     _rad_coef: Array | None
-    _zoom: AbstractValue[TimeLike] | None
+    _zoom: AbstractValue[Time] | None
     _xp: ArrayNS
 
     @property
@@ -43,12 +43,12 @@ class CameraLike(ABC):
         pass
 
     @abstractmethod
-    def mat(self, time: TimeLike) -> Array:
+    def mat(self, time: Time) -> Array:
         """Camera intrinsic matrix."""
         pass
 
     @abstractmethod
-    def rad_coef(self, time: TimeLike) -> Array:
+    def rad_coef(self, time: Time) -> Array:
         """Radial distortion coefficients."""
         pass
 
@@ -68,7 +68,7 @@ class CameraLike(ABC):
         """Whether the camera has a zoom level associated with it."""
         return self._zoom is not None
 
-    def interp_zoom(self, time: TimeLike) -> Array:
+    def interp_zoom(self, time: Time) -> Array:
         """Interpolate the zoom level at the given time.
         Returns None if the camera has no zoom level.
         """
@@ -273,7 +273,7 @@ class Pixel:
     def __init__(
         self,
         uv: Array,
-        time: TimeLike = TIME_INVARIANT,
+        time: Time = TIME_INVARIANT,
         backend: BackendArg = None,
     ) -> None:
         """Create a Pixel.
@@ -319,5 +319,3 @@ class Pixel:
     def backend(self) -> str:
         """Backend used by the pixel."""
         return self._xp.__name__
-
-

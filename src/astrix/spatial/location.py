@@ -29,10 +29,10 @@ from astrix.functs import (
     apply_rot,
 )
 
-from astrix.time import Time, TimeInvariant, TIME_INVARIANT, TimeLike, time_linspace
+from astrix.time import Time, TIME_INVARIANT, time_linspace
 
 
-T = TypeVar("T", bound=TimeLike, covariant=True)
+T = TypeVar("T", bound=Time, covariant=True)
 
 
 class Location(Generic[T], ABC):
@@ -82,7 +82,7 @@ class Location(Generic[T], ABC):
 
 
 @dataclass
-class Point(Location[TimeLike]):
+class Point(Location[Time]):
     """
     Point(s) in ECEF coordinates, stored as (x, y, z) in metres.
     Can represent a single point or multiple points, and can be associated with
@@ -92,7 +92,7 @@ class Point(Location[TimeLike]):
     ----------
     ecef : Array
         ECEF coordinates as (x, y, z) in metres. Shape (3,) or (1,3) for single points, (n, 3) for multiple points.
-    time : TimeLike, optional
+    time : Time, optional
         Time object associated with the points. If provided, the length of time must match the number of points.
         Defaults to TIME_INVARIANT for static points.
     backend : BackendArg, optional
@@ -165,13 +165,13 @@ class Point(Location[TimeLike]):
     """
 
     _ecef: Array
-    _time: TimeLike
+    _time: Time
     _xp: ArrayNS
 
     def __init__(
         self,
         ecef: ArrayLike,
-        time: TimeLike = TIME_INVARIANT,
+        time: Time = TIME_INVARIANT,
         backend: BackendArg = None,
     ) -> None:
         """Initialize a Point object with ECEF coordinates (x, y, z) in meters."""
@@ -184,6 +184,7 @@ class Point(Location[TimeLike]):
                     time = Time(
                         self._xp.repeat(time.unix, self._ecef.shape[0]),
                         backend=self._xp,
+                        invariant=time.is_invariant,
                     )
                 else:
                     raise ValueError(
@@ -198,7 +199,7 @@ class Point(Location[TimeLike]):
     def from_geodet(
         cls,
         geodet: ArrayLike,
-        time: TimeLike = TIME_INVARIANT,
+        time: Time = TIME_INVARIANT,
         backend: BackendArg = None,
     ) -> Point:
         """Create a Point object from geodetic coordinates (lat, lon, alt).
@@ -233,7 +234,7 @@ class Point(Location[TimeLike]):
         return cls(ecef_joined, time=time_joined, backend=xp)
 
     @classmethod
-    def _constructor(cls, ecef: Array, time: TimeLike, xp: ArrayNS) -> Point:
+    def _constructor(cls, ecef: Array, time: Time, xp: ArrayNS) -> Point:
         """Internal constructor to create a Point object from ECEF array
         Avoids type checking in __init__."""
 
@@ -265,7 +266,7 @@ class Point(Location[TimeLike]):
             raise ValueError("Cannot combine points with different backends.")
 
         ecef_joined = self._xp.concatenate([self.ecef, added_point.ecef])
-        if isinstance(self.time, Time) and isinstance(added_point.time, Time):
+        if (not self.time.is_invariant) and (not added_point.time.is_invariant):
             time_joined = Time(
                 self._xp.concatenate(
                     [
@@ -275,7 +276,7 @@ class Point(Location[TimeLike]):
                 )
             )
         else:
-            if any(isinstance(t, Time) for t in [self.time, added_point.time]):
+            if any(not t.is_invariant for t in [self.time, added_point.time]):
                 raise ValueError("Cannot combine points with and without time.")
             time_joined = TIME_INVARIANT
         return Point(ecef_joined, time=time_joined, backend=self._xp)
@@ -290,9 +291,9 @@ class Point(Location[TimeLike]):
     @property
     def has_time(self) -> bool:
         """Check if the Point has associated Time."""
-        return isinstance(self.time, Time)
+        return isinstance(self.time, Time) and not self.time.is_invariant
 
-    def _interp(self, time: Time | TimeInvariant) -> Point:
+    def _interp(self, time: Time) -> Point:
         """Private method to 'interpolate' (broadcast) a singular Point to multiple times.
         Enables compatibility between static Points and dynamic Paths in other modules."""
 
@@ -307,7 +308,7 @@ class Point(Location[TimeLike]):
             self._xp,
         )
 
-    def _repeat_single(self, n: int, time: TimeLike) -> Point:
+    def _repeat_single(self, n: int, time: Time) -> Point:
         """Private method to repeat a singular Point n times.
         Enables compatibility between static Points and dynamic Paths in other modules."""
 
@@ -327,10 +328,7 @@ class Point(Location[TimeLike]):
         xp = resolve_backend(backend)
         if xp == self._xp:
             return self
-        if isinstance(self._time, Time):
-            time_converted = self._time.convert_to(xp)
-        else:
-            time_converted = TIME_INVARIANT
+        time_converted = self._time.convert_to(xp)
         return Point._constructor(xp.asarray(self.ecef), time_converted, xp)
 
 
@@ -647,6 +645,8 @@ class Path(Location[Time]):
             point = Point.from_list(point)
         if not isinstance(point.time, Time):
             raise ValueError("Point must have associated Time to create a Path.")
+        if point.time.is_invariant:
+            raise ValueError("Point must have non-invariant Time to create a Path.")
         self._xp = resolve_backend(backend)
         sort_indices = self._xp.argsort(point.time.unix)
         self._time = Time(point.time.unix[sort_indices], backend=self._xp)

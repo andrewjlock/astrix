@@ -16,14 +16,7 @@ from astrix._backend_utils import (
 from astrix.functs import ned_rotation, apply_rot, az_el_from_vec
 
 
-from astrix.time import (
-    Time,
-    TimeLike,
-    TimeInvariant,
-    TIME_INVARIANT,
-    TimeGroup,
-    time_linspace,
-)
+from astrix.time import Time, TIME_INVARIANT, TimeGroup, time_linspace
 from astrix.spatial.location import Location, Point, POINT_ORIGIN, Path
 from astrix.spatial.rotation import RotationLike, RotationSequence, _RotationStatic
 
@@ -154,7 +147,7 @@ class Frame:
         # Parse and validate rotation
         # Converts scipy Rotation to RotationLike if needed
         if isinstance(rot, Rotation):
-            if rot._quat.shape[0] == 1:  # pyright: ignore[reportAttributeAccessIssue]
+            if rot.single or len(rot) == 1:
                 self._rot = _RotationStatic(rot, backend=self._xp)
             else:
                 raise ValueError(
@@ -194,13 +187,13 @@ class Frame:
         # Parse time
         # Note that ref_frame location time is included, even if loc is provided
         # This is for potential future inclusion of relative location arguments
-        _time_objs: list[TimeLike | TimeGroup] = [self._rot.time]
+        _time_objs: list[Time | TimeGroup] = [self._rot.time]
         if ref_frame is not None:
             _time_objs.append(ref_frame.time_group)
         if loc is not None:
             _time_objs.append(loc.time)
         self._time_group = TimeGroup(_time_objs, backend=self._xp)
-        if self._time_group.duration <= 0:
+        if (not self._time_group.is_invariant) and self._time_group.duration <= 0:
             raise ValueError(
                 "Frame TimeGroup has non-positive duration. \n"
                 + "Check that all time objects have overlapping time ranges."
@@ -277,7 +270,7 @@ class Frame:
         return self._time_group
 
     @property
-    def time_bounds(self) -> tuple[TimeLike, TimeLike]:
+    def time_bounds(self) -> tuple[Time, Time]:
         """Get the time bounds of the frame as a tuple (start_time, end_time).
         If the frame is static, returns TIME_INVARIANT.
         """
@@ -314,14 +307,14 @@ class Frame:
         return self._rot
 
     @property
-    def loc(self) -> Location[TimeLike]:
+    def loc(self) -> Location[Time]:
         """Get the location of the frame in ECEF coordinates."""
         return self._loc
 
     # --- Methods ---
 
     def interp_rot(
-        self, time: TimeLike = TIME_INVARIANT, check_bounds: bool = True
+        self, time: Time = TIME_INVARIANT, check_bounds: bool = True
     ) -> Rotation:
         """Get the interpolated absolute rotation of the frame at the given times.
         If all rotations are time invariant, time can be None.
@@ -334,17 +327,17 @@ class Frame:
                         Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
                         Extrapolation is not supported and will raise an error.""")
             return self._interp_rotation_unix(time.unix)
-        elif isinstance(time, TimeInvariant):
+        elif time.is_invariant:
             if not self._static_rot:
                 raise ValueError(
                     "Time must be provided to interpolate time-varying frame rotation."
                 )
             return self._interp_rotation_unix(self._xp.array([0.0]))
         else:
-            raise ValueError("time must be a Time or TimeInvariant")
+            raise ValueError("time must be a Time")
 
     def interp_loc(
-        self, time: TimeLike = TIME_INVARIANT, check_bounds: bool = True
+        self, time: Time = TIME_INVARIANT, check_bounds: bool = True
     ) -> Point:
         """Get the interpolated location of the frame at the given times.
         If the location is static, time can be None.
@@ -357,14 +350,14 @@ class Frame:
                         Interpolation time range: {time.datetime[0]} to {time.datetime[-1]}
                         Extrapolation is not supported and will raise an error.""")
             return self._loc._interp(time)
-        elif isinstance(time, TimeInvariant):
+        elif time.is_invariant:
             if not self._static_loc:
                 raise ValueError(
                     "Time must be provided to interpolate time-varying frame location."
                 )
             return self._loc  # pyright: ignore[reportReturnType]
         else:
-            raise ValueError("time must be a Time or TimeInvariant")
+            raise ValueError("time must be a Time")
 
     def index_rot(self, index: int) -> Rotation:
         """Get the absolute rotation of the frame at the given index.
@@ -551,11 +544,11 @@ def ned_frame(
             )
 
     rots = ned_rotation(loc.geodet, xp=loc._xp)
-    if isinstance(loc.time, Time):
+    if loc.time.is_invariant or len(rots) < 2:
+        frame = Frame(rots[0], loc if isinstance(loc, Point) else loc[0], backend=loc.backend, name=name)
+    else:
         rot_seq = RotationSequence(rots, loc.time, backend=loc.backend)
         frame = Frame(rot_seq, loc, backend=loc.backend, name=name)
-    else:
-        frame = Frame(rots, loc, backend=loc.backend, name=name)
     return frame
 
 

@@ -16,7 +16,7 @@ from ._backend_utils import (
     np,
     warn_if_not_numpy,
 )
-from .time import TimeLike, TIME_INVARIANT, Time
+from .time import TIME_INVARIANT, Time
 from .functs import ned_rotation, project_velocity_to_az_el
 from scipy.spatial.transform import Rotation
 
@@ -42,7 +42,7 @@ def point_from_heading(
     start: Point,
     head: float,
     dist: float,
-    time_new: TimeLike = TIME_INVARIANT,
+    time_new: Time = TIME_INVARIANT,
     method: str = "haversine",
 ) -> Point:
     """Calculate a new point given a start point, heading (degrees) and distance (meters).
@@ -159,7 +159,7 @@ def ground_path(path: Path, alt: float = 0.0) -> Path:
     return new_path
 
 
-def get_ned_rotation(loc: Location[TimeLike], backend: BackendArg = None) -> Rotation:
+def get_ned_rotation(loc: Location[Time], backend: BackendArg = None) -> Rotation:
     """Calculate the rotation matrix from ECEF to NED frame at the given location.
 
     Args:

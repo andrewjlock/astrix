@@ -24,7 +24,7 @@ from astrix.functs import (
     refraction_correction_bennett
 )
 
-from astrix.time import Time, TimeLike, TimeInvariant, TIME_INVARIANT
+from astrix.time import Time, TIME_INVARIANT
 from astrix.spatial.location import Point, POINT_ORIGIN
 from astrix.spatial.frame import Frame, FRAME_ECEF, ned_frame
 from astrix.project import Pixel, CameraLike
@@ -67,7 +67,7 @@ class Ray:
     _unit_rel: Array
     _origin_rel: Array
     _frame: Frame
-    _time: TimeLike
+    _time: Time
     _xp: ArrayNS
 
     def __init__(
@@ -75,7 +75,7 @@ class Ray:
         dir_rel: Array,
         origin_rel: Array = POINT_ORIGIN.ecef,
         frame: Frame = FRAME_ECEF,
-        time: TimeLike = TIME_INVARIANT,
+        time: Time = TIME_INVARIANT,
         check: bool = True,
         backend: BackendArg = None,
     ) -> None:
@@ -92,7 +92,7 @@ class Ray:
         self._origin_rel = ensure_2d(origin_rel, n=3, backend=self._xp)
 
         # Other data validation checks
-        if not frame.is_static and isinstance(time, TimeInvariant):
+        if not frame.is_static and time.is_invariant:
             raise ValueError(
                 "Time must be provided if frame is time-varying to create Ray."
             )
@@ -120,7 +120,7 @@ class Ray:
         cls,
         endpoint: Point,
         origin: Point,
-        time: TimeLike = TIME_INVARIANT,
+        time: Time = TIME_INVARIANT,
         check: bool = True,
         backend: BackendArg = None,
     ) -> Ray:
@@ -143,7 +143,7 @@ class Ray:
             raise ValueError(
                 "Origin and endpoint arrays must have the same shape or origin must be singular."
             )
-        if time is TIME_INVARIANT:
+        if time.is_invariant:
             if endpoint.has_time:
                 time = endpoint.time
             elif origin.has_time:
@@ -158,7 +158,7 @@ class Ray:
         cls,
         az_el: Array,
         frame: Frame = FRAME_ECEF,
-        time: TimeLike = TIME_INVARIANT,
+        time: Time = TIME_INVARIANT,
         origin_rel: Array = POINT_ORIGIN.ecef,
         check: bool = True,
         backend: BackendArg = None,
@@ -264,7 +264,7 @@ class Ray:
 
     @classmethod
     def _constructor(
-        cls, unit: Array, origin: Array, time: TimeLike, frame: Frame, xp: ArrayNS
+        cls, unit: Array, origin: Array, time: Time, frame: Frame, xp: ArrayNS
     ) -> Ray:
         """Internal constructor to create a Ray object from arrays
         Avoids type checking in __init__."""
@@ -336,7 +336,7 @@ class Ray:
         return isinstance(self._time, Time)
 
     @property
-    def time(self) -> TimeLike:
+    def time(self) -> Time:
         """Get the associated Time object, if any."""
         return self._time
 
@@ -442,6 +442,8 @@ class Ray:
         """
 
         if isinstance(self.time, Time):
+            if self.time.is_invariant:
+                raise ValueError("Cannot interpolate Ray without time variation.")
             if check_bounds:
                 if not self.time.in_bounds(time):
                     warnings.warn(f"""Ray interpolation times are out of bounds.

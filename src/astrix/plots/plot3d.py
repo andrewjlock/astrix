@@ -2,6 +2,8 @@
 # pyright: reportArgumentType = false
 
 from __future__ import annotations
+import os
+
 import pyvista as pv
 import numpy as np
 from typing import Sequence
@@ -14,10 +16,9 @@ import contextily as cx
 from scipy.spatial.transform import Rotation
 from pyproj import Transformer
 
-from astrix.functs import geodet2ecef, ned_rotation
+from astrix.functs import ned_rotation
 from astrix.spatial.location import Path, Point
 from astrix.spatial.ray import Ray
-from astrix.spatial.frame import Frame
 from astrix.time import Time, TimeGroup, time_linspace
 
 _DEFAULT_COLOR_CYCLE = [
@@ -726,16 +727,3 @@ class Plot3D:
 
     def close(self):
         self.p.close()
-
-
-if __name__ == "__main__":
-    # --- region (example) ---
-    lat_bounds = (-29.2, -20.4)
-    lon_bounds = (148.1, 157.3)
-
-    plot = Plot3D()
-    plot.add_texture(lat_bounds, lon_bounds)
-    plot.add_grid(lat_bounds, lon_bounds)
-    cent_pt = Point.from_geodet([-24.5, 152.7, 0])
-    plot.set_view(cent_pt, heading_deg=180, pitch_deg=45)
-    plot.show()

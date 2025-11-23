@@ -16,7 +16,7 @@ from astrix._backend_utils import (
     warn_if_not_numpy,
 )
 
-from astrix.time import Time, TimeLike, TimeInvariant, TIME_INVARIANT, time_linspace
+from astrix.time import Time, TIME_INVARIANT, time_linspace
 
 
 class RotationLike(ABC):
@@ -40,7 +40,7 @@ class RotationLike(ABC):
 
     @property
     @abstractmethod
-    def time(self) -> TimeLike:
+    def time(self) -> Time:
         pass
 
     @property
@@ -82,7 +82,7 @@ class _RotationStatic(RotationLike):
         return self._rot
 
     @property
-    def time(self) -> TimeInvariant:
+    def time(self) -> Time:
         """Get the Time object associated with the rotation (always static)."""
         return TIME_INVARIANT
 
@@ -93,7 +93,7 @@ class _RotationStatic(RotationLike):
             return self
         return _RotationStatic(self._rot, xp)
 
-    def interp(self, time: Time | TimeInvariant) -> Rotation:
+    def interp(self, time: Time) -> Rotation:
         """Interpolate the rotation at the given times (always returns the same rotation)."""
         return Rotation._from_raw_quat(  # pyright: ignore
             self._xp.repeat(self._rot._quat, len(time), axis=0),  # pyright: ignore[reportAttributeAccessIssue]

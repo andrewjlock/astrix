@@ -6,8 +6,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 import datetime as dt
 from abc import ABC, abstractmethod
-from typing import ClassVar
-
 from ._backend_utils import (
     resolve_backend,
     Array,
@@ -21,70 +19,8 @@ from .functs import (
 )
 
 
-class TimeLike(ABC):
-    """Abstract base class for time-like objects (Time, TimeSequence).
-    'in_bounds' function is required for integration with other modules.
-    """
-
-    @abstractmethod
-    def __getitem__(self, index: int | slice) -> TimeLike:
-        pass
-
-    @abstractmethod
-    def __len__(self) -> int:
-        pass
-
-    @property
-    def is_singular(self) -> bool:
-        """Check if the TimeLike object represents a single time instance.
-        Override if not singular"""
-        return len(self) == 1
-
-    @abstractmethod
-    def convert_to(self, backend: BackendArg) -> TimeLike:
-        pass
-
-    @abstractmethod
-    def in_bounds(self, time: Time) -> bool:
-        pass
-
-    @abstractmethod
-    def copy(self) -> TimeLike: ...
-
-
-@dataclass(frozen=True)
-class TimeInvariant(TimeLike):
-    """Class for static time-like objects (static Time).
-    'in_bounds' function is required for integration with other modules.
-    """
-
-    def __len__(self) -> int:
-        return 1
-
-    def __repr__(self) -> str:
-        return "TimeInvariant object"
-
-    def __getitem__(self, index: int | slice) -> TimeInvariant:
-        return self
-
-    def in_bounds(self, time: Time) -> bool:
-        return True
-
-    def convert_to(self, backend: BackendArg) -> TimeInvariant:
-        return self
-
-    def datetime(self) -> list[str]:
-        return ["<Time Invariant Object>"]
-
-    def copy(self) -> TimeInvariant:
-        return self
-
-
-TIME_INVARIANT = TimeInvariant()
-
-
 @dataclass
-class Time(TimeLike):
+class Time:
     """One or more time instances.
 
     Represents time using seconds since Unix epoch (1970-01-01 00:00:00 UTC).
@@ -129,14 +65,26 @@ class Time(TimeLike):
     _max: float | Array
     _xp: ArrayNS
     _n: int
+    _invariant: bool = False
     _i: int = 0  # For compatibility with TimeSequence
 
-    def __init__(self, unix: ArrayLike, backend: BackendArg = None) -> None:
+    def __init__(
+        self,
+        unix: ArrayLike,
+        backend: BackendArg = None,
+        invariant: bool = False,
+    ) -> None:
         self._xp = resolve_backend(backend)
         self._unix = ensure_1d(unix, backend=self._xp)
-        self._min = self._xp.min(self._unix)
-        self._max = self._xp.max(self._unix)
         self._n = self._unix.shape[0]
+        self._invariant = invariant
+        if not self._invariant:
+            self._min = self._xp.min(self._unix)
+            self._max = self._xp.max(self._unix)
+        else:
+            # Placeholder extrema; invariant times are treated specially.
+            self._min = self._xp.asarray(float("-inf"))
+            self._max = self._xp.asarray(float("inf"))
 
     # --- Constructors ---
 
@@ -160,21 +108,30 @@ class Time(TimeLike):
         return cls(unix, backend=backend)
 
     @classmethod
-    def _constructor(cls, unix: Array, xp: ArrayNS) -> Time:
+    def invariant(cls, n: int = 1, backend: BackendArg = None) -> Time:
+        """Create a time-invariant Time object of length n."""
+        xp = resolve_backend(backend)
+        return cls(xp.zeros(n), backend=xp, invariant=True)
+
+    @classmethod
+    def _constructor(cls, unix: Array, xp: ArrayNS, invariant: bool = False) -> Time:
         """Internal constructor to create a Time object from seconds array
         Avoids type checking in __init__."""
 
         obj = cls.__new__(cls)
         obj._xp = xp
         obj._unix = unix
-        obj._min = obj._xp.min(unix)
-        obj._max = obj._xp.max(unix)
+        obj._min = obj._xp.min(unix) if not invariant else obj._xp.asarray(float("-inf"))
+        obj._max = obj._xp.max(unix) if not invariant else obj._xp.asarray(float("inf"))
         obj._n = unix.shape[0]
+        obj._invariant = invariant
         return obj
 
     # --- Dunder methods and properties ---
 
     def __repr__(self) -> str:
+        if self._invariant:
+            return f"Time invariant (n={len(self)})"
         if len(self) == 1:
             return str(self.datetime[0])
         else:
@@ -186,7 +143,9 @@ class Time(TimeLike):
 
     def __getitem__(self, index: int | slice) -> Time:
         return Time._constructor(
-            self._xp.asarray(self.unix[index]).reshape(-1), xp=self._xp
+            self._xp.asarray(self.unix[index]).reshape(-1),
+            xp=self._xp,
+            invariant=self._invariant,
         )
 
     def __iter__(self) -> Time:
@@ -206,7 +165,7 @@ class Time(TimeLike):
         return self._unix
 
     def copy(self) -> Time:
-        return Time._constructor(self.unix.copy(), xp=self._xp)
+        return Time._constructor(self.unix.copy(), xp=self._xp, invariant=self._invariant)
 
     @property
     def datetime(self) -> list[dt.datetime]:
@@ -217,6 +176,8 @@ class Time(TimeLike):
     @property
     def is_increasing(self) -> bool:
         """Check if the time values are strictly increasing."""
+        if self._invariant:
+            return True
         return is_increasing(self._unix, backend=self._xp)
 
     @property
@@ -227,16 +188,22 @@ class Time(TimeLike):
     @property
     def start_sec(self) -> float | Array:
         """Get the start time in seconds since epoch."""
+        if self._invariant:
+            raise ValueError("Time is invariant and has no defined start time.")
         return self._min
 
     @property
     def end_sec(self) -> float | Array:
         """Get the end time in seconds since epoch."""
+        if self._invariant:
+            raise ValueError("Time is invariant and has no defined end time.")
         return self._max
 
     @property
     def duration(self) -> float | Array:
         """Get the duration between the first and last time in seconds."""
+        if self._invariant:
+            return self._xp.asarray(0.0)
         return self._max - self._min
 
     @property
@@ -244,15 +211,27 @@ class Time(TimeLike):
         """Get the name of the array backend in use (e.g., 'numpy', 'jax.numpy')."""
         return self._xp.__name__
 
+    @property
+    def is_invariant(self) -> bool:
+        """Whether the Time object represents an invariant (constant) time."""
+        return self._invariant
+
+    @property
+    def is_singular(self) -> bool:
+        """Check if the Time object represents a single time instance."""
+        return len(self) == 1
+
     # --- Methods ---
 
     def in_bounds(self, time: Time) -> bool:
         """Check if the given time(s) are within the bounds of this Time object."""
+        if self.is_invariant or time.is_invariant:
+            return True
         return bool((time.start_sec >= self._min) & (time.end_sec <= self._max))
 
     def offset(self, offset: float) -> Time:
         """Return a new Time object with offset (seconds) added to all time values."""
-        return Time(self.unix + offset, backend=self._xp)
+        return Time(self.unix + offset, backend=self._xp, invariant=self._invariant)
 
     def _repeat_single(self, n: int) -> Time:
         """Private method to repeat a singular Time n times.
@@ -263,7 +242,9 @@ class Time(TimeLike):
                 "Attempting to repeat a non-singular Time object. \n"
                 "This is not supported. Use TimeGroup objects for multiple times."
             )
-        return Time._constructor(self._xp.repeat(self.unix, n), xp=self._xp)
+        return Time._constructor(
+            self._xp.repeat(self.unix, n), xp=self._xp, invariant=self._invariant
+        )
 
     def return_in_bounds(self, time: Time) -> Time:
         """Return a new Time object containing only the times within the bounds of this Time object."""
@@ -314,17 +295,22 @@ class Time(TimeLike):
         xp = resolve_backend(backend)
         if xp == self._xp:
             return self
-        return Time._constructor(xp.asarray(self.unix), xp=xp)
+        return Time._constructor(
+            xp.asarray(self.unix), xp=xp, invariant=self._invariant
+        )
+
+
+TIME_INVARIANT = Time.invariant()
 
 
 class TimeGroup:
-    """A group of TimeLike objects (Time, TimeInvariant, TimeGroup).
+    """A group of Time objects.
     Used to manage multiple time instances and determine overlapping time bounds.
 
     Parameters
     ----------
-    times : list of TimeLike
-        List of TimeLike objects (Time, TimeInvariant, TimeGroup)
+    times : list of Time
+        List of Time objects (Time, TimeGroup)
     backend : BackendArg, optional
         Array backend to use (numpy, jax, etc.). Defaults to numpy.
 
@@ -361,7 +347,7 @@ class TimeGroup:
     True
     """
 
-    _times: list[TimeLike]
+    _times: list[Time]
     _invariant: bool
     _xp: ArrayNS
     _overlap_bounds: tuple[float | Array, float | Array]
@@ -369,10 +355,10 @@ class TimeGroup:
     _duration: float | Array
 
     def __init__(
-        self, times: list[TimeLike | TimeGroup], backend: BackendArg = None
+        self, times: list[Time | TimeGroup], backend: BackendArg = None
     ) -> None:
-        if not all(isinstance(t, TimeLike | TimeGroup) for t in times):
-            raise ValueError("All elements of times must be TimeLike objects")
+        if not all(isinstance(t, (Time, TimeGroup)) for t in times):
+            raise ValueError("All elements of times must be Time objects or TimeGroup")
         if len(times) == 0:
             raise ValueError("times list cannot be empty")
 
@@ -382,13 +368,13 @@ class TimeGroup:
         mins = []
         maxs = []
         for t in times:
-            if isinstance(t, TimeInvariant):
-                self._times.append(t)
             if isinstance(t, Time):
-                mins.append(self._xp.min(t.unix))
-                maxs.append(self._xp.max(t.unix))
-                self._times.append(t.convert_to(self._xp))
-            if isinstance(t, TimeGroup):
+                t_conv = t.convert_to(self._xp)
+                self._times.append(t_conv)
+                if not t_conv.is_invariant:
+                    mins.append(self._xp.min(t_conv.unix))
+                    maxs.append(self._xp.max(t_conv.unix))
+            elif isinstance(t, TimeGroup):
                 if not t.is_invariant:
                     mins.append(t._overlap_bounds[0])
                     maxs.append(t._overlap_bounds[1])
@@ -411,6 +397,8 @@ class TimeGroup:
                 self._xp.max(self._xp.array(maxs)),
             )
         self._duration = self._overlap_bounds[1] - self._overlap_bounds[0]
+        if self._invariant:
+            self._duration = self._xp.asarray(0.0)
 
     # --- Dunder methods and properties ---
 
@@ -431,7 +419,7 @@ class TimeGroup:
                 f"backend: {self._xp.__name__}"
             )
 
-    def __getitem__(self, index: int) -> TimeLike:
+    def __getitem__(self, index: int) -> Time:
         return self._times[index]
 
     def __len__(self) -> int:
@@ -446,7 +434,7 @@ class TimeGroup:
         return self._invariant
 
     @property
-    def times(self) -> tuple[TimeLike, ...]:
+    def times(self) -> tuple[Time, ...]:
         return tuple(self._times)
 
     @property
@@ -455,7 +443,7 @@ class TimeGroup:
         return self._duration
 
     @property
-    def overlap_bounds(self) -> tuple[TimeLike, TimeLike]:
+    def overlap_bounds(self) -> tuple[Time, Time]:
         """Get the overlap bounds of the TimeGroup as Time objects."""
         if self.is_invariant:
             return (TIME_INVARIANT, TIME_INVARIANT)
@@ -470,7 +458,7 @@ class TimeGroup:
             )
 
     @property
-    def extreme_bounds(self) -> tuple[TimeLike, TimeLike]:
+    def extreme_bounds(self) -> tuple[Time, Time]:
         """Get the extreme bounds of the TimeGroup as Time objects."""
         if self.is_invariant:
             return (TIME_INVARIANT, TIME_INVARIANT)
@@ -488,6 +476,8 @@ class TimeGroup:
 
     def in_bounds(self, time: Time) -> bool:
         """Check if the given time(s) are within the overlap bounds of this TimeGroup."""
+        if self.is_invariant or time.is_invariant:
+            return True
         return bool(
             (time.start_sec >= self._overlap_bounds[0])
             & (time.end_sec <= self._overlap_bounds[1])
@@ -498,7 +488,7 @@ class TimeGroup:
         xp = resolve_backend(backend)
         if xp == self._xp:
             return self
-        times_converted: list[TimeLike | TimeGroup] = [
+        times_converted: list[Time | TimeGroup] = [
             t.convert_to(xp) for t in self._times
         ]
         return TimeGroup(times_converted, backend=xp)
@@ -542,6 +532,8 @@ def time_linspace(t1: Time, t2: Time, num: int) -> Time:
         raise ValueError("t1 and t2 must be Time objects")
     if t1.backend != t2.backend:
         raise ValueError("t1 and t2 must have the same backend")
+    if t1.is_invariant or t2.is_invariant:
+        raise ValueError("time_linspace requires non-invariant Time objects")
     num_int = int(num)
     if num_int < 2:
         raise ValueError("num must be at least 2")
