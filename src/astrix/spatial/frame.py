@@ -68,7 +68,7 @@ class Frame:
     >>> frame_static.interp_rot().as_euler("xyz", degrees=True)  # Get absolute rotation
     array([[90.,  0.,  0.]])
     >>> frame_static.loc.geodet  # Get frame location in geodetic coordinates
-    array([[153.03, 27.47, 0.0]])
+    array([[ 27.47, 153.03,   0.  ]])
 
     Time-varying frame with rotation sequence and static location:
 
@@ -105,7 +105,7 @@ class Frame:
     ... )  # Get interpolated absolute rotation as Euler angles
     array([[45.,  0.,  0.]])
     >>> frame_dynamic_rot.loc.geodet  # Get frame location in geodetic coordinates
-    array([[153.03, 27.47, 0.0]])
+    array([[ 27.47, 153.03,   0.  ]])
 
     Frame defined relative to another frame:
 

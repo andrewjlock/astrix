@@ -50,8 +50,15 @@ class Ray:
         - Monotonically increasing time is required for interpolation. But to prevent data-dependent control flow,
             this is not checked on initialization. Use Time.is_increasing to check if needed.
 
-    Examples:
-        TBC
+    Examples
+    --------
+
+    >>> from astrix.primitives import Point, Ray
+    >>> origin = Point([0.0, 0.0, 0.0])
+    >>> target = Point([1.0, 0.0, 0.0])
+    >>> ray = Ray.from_points(target, origin)
+    >>> ray.unit_rel
+    array([[1., 0., 0.]])
 
     """
 
