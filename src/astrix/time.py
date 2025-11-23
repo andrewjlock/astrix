@@ -542,9 +542,10 @@ def time_linspace(t1: Time, t2: Time, num: int) -> Time:
         raise ValueError("t1 and t2 must be Time objects")
     if t1.backend != t2.backend:
         raise ValueError("t1 and t2 must have the same backend")
-    if num < 2:
+    num_int = int(num)
+    if num_int < 2:
         raise ValueError("num must be at least 2")
 
     xp = resolve_backend(t1.backend)
-    unix = xp.linspace(float(t1.start_sec), float(t2.end_sec), num=num)
+    unix = xp.linspace(float(t1.start_sec), float(t2.end_sec), num=num_int)
     return Time._constructor(unix=unix, xp=xp)

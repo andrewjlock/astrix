@@ -202,7 +202,7 @@ class Point(Location[TimeLike]):
         backend: BackendArg = None,
     ) -> Point:
         """Create a Point object from geodetic coordinates (lat, lon, alt).
-        Lat and lon are in degrees, alt is in meters.
+        Latitude and longitude are in degrees, altitude is in meters.
         """
 
         xp = resolve_backend(backend)
@@ -628,9 +628,9 @@ class Path(Location[Time]):
             method="linear"
         ).ecef # Interpolate to halfway between second and third point, return ECEF array
     array([[2.5, 4.9, 0.7]])
-    >>> vel = path.interp_vel(
+    >>> vel = path.vel.interp(
             Time.from_datetime(datetime(2025, 1, 1, 12, 0, 1, 500000, tzinfo=timezone.utc)),
-        )
+        )  # Interpolated velocity at the same time
     >>> vel.magnitude  # Interpolated velocity magnitude in m/s
     array([2.48997992])
     >>> vel.unit  # Interpolated unit velocity vector
@@ -774,11 +774,9 @@ class Path(Location[Time]):
 
         warn_if_not_numpy(self._xp, "Path.downsample()")
 
-        new_times = time_linspace(
-            self.start_time,
-            self.end_time,
-            self._xp.ceil(self.time.duration / dt_max),
-        )
+        duration_sec = float(self.time.duration)
+        num = max(2, int(self._xp.ceil(duration_sec / dt_max)) + 1)
+        new_times = time_linspace(self.start_time, self.end_time, num=num)
         new_points = self.interp(new_times)
         return Path(new_points, backend=self._xp)
 

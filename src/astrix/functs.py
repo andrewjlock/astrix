@@ -87,13 +87,13 @@ t_geodet2ecef = pyproj.Transformer.from_crs("epsg:4979", "epsg:4978")
 def ecef2geodet(ecef: Array) -> np.ndarray:
     """
     Use pyproj to convert from WGS84 coordinates to geodetic
-    (Cartesian Earth Centered Earth Fixed (ECEF) to lat, long, alt)
+    (Cartesian Earth Centered Earth Fixed (ECEF) to latitude, longitude, altitude).
 
     Args:
-        ecef (np.ndarray): 3xn array of ECEF x,y,z points in [m]
+        ecef (np.ndarray): Nx3 array of ECEF x,y,z points in [m]
 
     Returns:
-        np.ndarray: 3xn array of long, lat, alt [m] points
+        np.ndarray: Nx3 array of geodetic latitude [deg], longitude [deg], altitude [m]
 
     """
 
@@ -109,14 +109,14 @@ def ecef2geodet(ecef: Array) -> np.ndarray:
 
 def geodet2ecef(geodet: Array) -> np.ndarray:
     """
-    Use pyproj to convert from WGS84 coordinates to x,y,z points
-    (long, lat, alt to Cartesian Earth Centered Earth Fixed(ECEF))
+    Use pyproj to convert from WGS84 geodetic coordinates to Cartesian ECEF.
+    Inputs are latitude, longitude (degrees) and altitude (meters).
 
     Args:
-        geodet (np.ndarray): 3xn array of long, lat, alt [m] points
+        geodet (np.ndarray): Nx3 array of [lat, lon, alt]
 
     Returns:
-        np.ndarray: 3xn array of ECEF x,y,z points in [m]
+        np.ndarray: Nx3 array of ECEF x,y,z points in [m]
 
     """
 
