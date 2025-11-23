@@ -30,41 +30,27 @@ $ git clone https://github.com/andrewjlock/astrix.git
 $ cd astrix
 ```
 
-While under development editable installation is recommend
-
-```bash
-$ python3 -m pip install -e .[plot,jax]
-```
-The `plot` extra install [basemap](https://matplotlib.org/basemap/) and [cartopy](https://scitools.org.uk/cartopy/docs/latest/) for geographic plotting.
-The `jax` extra installs [Jax](https://github.com/jax-ml/jax) which is used for optional advanced automatic differentiation and state/parameter estimation capabilities. 
-For a lean install you can omit both the `[jax]` and `[plot]` extra,
-
-```bash
-$ python3 -m pip install -e .
-```
-
-For development, use the `dev` and `docs` groups, which includes linting, testing, document generation, as well as plotting and jax extras,
+### Using pip (editable)
 
 ```bash
 $ python3 -m pip install -e .[plot] --group dev --group docs
 ```
+- `plot` installs [basemap](https://matplotlib.org/basemap/) and [cartopy](https://scitools.org.uk/cartopy/docs/latest/) for geographic plotting.
+- JAX is **optional**. If you need JAX-based optimisation/differentiation, add the extra: `python3 -m pip install -e .[plot,jax] --group dev --group docs`.
+- For a lean install, omit extras/groups: `python3 -m pip install -e .`.
 
-Alternatively, this project has been developed with, and is compliant with, the `uv` package manager.
-The `dev` and `docs` groups are installed by default.
+### Using uv (recommended for dev)
 
-To develop using `uv`: 
 ```bash
-$ git clone https://github.com/andrewjlock/astrix.git
-$ cd astrix
 $ uv python install 3.12
 $ uv sync
-$ uv run pytest tests/ # to run tests
+$ uv run pytest tests/
 ```
+To add JAX support: `uv sync --extra jax`.
 
-To use in another `uv` project (from a local install):
+To consume from another `uv` project:
 ```bash
-$ cd ../path/to/your/other/uv/project
-$ uv add --editable ../path/to/astrix[plot] # or extras as needed
+$ uv add --editable ../path/to/astrix[plot]
 ```
 
 ### Dependencies
@@ -156,12 +142,13 @@ If Jax is not installed, only NumPy backend tests will be run.
 
 Documentation is generated using Sphinx. To build the documentation:
 
-1. Install dependencies: `pip install -r docs/requirements.txt`
-2. Navigate to the docs directory: `cd docs`
-3. Run the generate script `python generate_docs.py`
-4. Build the docs: `make html`
-Or, to live view the docs while editing:
 ```bash
-sphinx-autobuild . _build/html/
+$ uv run python docs/generate_docs.py
+$ uv run make -C docs html
 ```
 
+For live previews while editing docs:
+```bash
+$ cd docs
+$ sphinx-autobuild . _build/html/
+```

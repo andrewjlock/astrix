@@ -32,7 +32,16 @@ dependencies = [
 
 [project.optional-dependencies]
 jax = ["jax[cpu]>=0.6.1"]
-plot = ["basemap", "basemap-data-hires", "cartopy","pyvista","rasterio","contextily","pyvista", "imageio[ffmpeg]"]
+plot = [
+    "basemap",
+    "basemap-data-hires",
+    "cartopy",
+    "pyvista",
+    "rasterio",
+    "contextily",
+    "pyvista",
+    "imageio[ffmpeg]",
+]
 
 [dependency-groups]
 dev = ["pytest", "pytest-cov>=7.0.0", "jax[cpu]", "cartopy", "basemap", "basemap-data-hires","pyvista","rasterio","contextily","pyvista","imageio[ffmpeg]"]
