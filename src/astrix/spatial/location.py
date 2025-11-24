@@ -5,7 +5,6 @@ import warnings
 
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, cast
 from functools import cached_property
 from scipy.spatial.transform import Rotation
 
@@ -32,16 +31,13 @@ from astrix.functs import (
 from astrix.time import Time, TIME_INVARIANT, time_linspace
 
 
-T = TypeVar("T", bound=Time, covariant=True)
-
-
-class Location(Generic[T], ABC):
+class Location(ABC):
     """Abstract base class for location objects (Point, Path).
     'interp' function is required for integration with other modules.
     """
 
     _ecef: Array
-    _time: T
+    _time: Time
     _xp: ArrayNS
 
     @property
@@ -64,15 +60,15 @@ class Location(Generic[T], ABC):
         return self._xp.__name__
 
     @property
-    def time(self) -> T:
-        return cast(T, self._time.copy())
+    def time(self) -> Time:
+        return self._time.copy()
 
     @abstractmethod
     def _interp(self, time: Time) -> Point:
         pass
 
     @abstractmethod
-    def convert_to(self, backend: BackendArg) -> Location[T]:
+    def convert_to(self, backend: BackendArg) -> Location:
         pass
 
     @property
@@ -82,7 +78,7 @@ class Location(Generic[T], ABC):
 
 
 @dataclass
-class Point(Location[Time]):
+class Point(Location):
     """
     Point(s) in ECEF coordinates, stored as (x, y, z) in metres.
     Can represent a single point or multiple points, and can be associated with
@@ -583,7 +579,7 @@ class Velocity:
 POINT_ORIGIN = Point([0.0, 0.0, 0.0])
 
 
-class Path(Location[Time]):
+class Path(Location):
     """
     Path of multiple Point objects with associated Time.
     Enables interpolation between points over time and calculation of velocity.

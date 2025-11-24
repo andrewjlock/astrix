@@ -126,7 +126,7 @@ class Frame:
 
     _rot: RotationLike
     _rot_chain: dict[str, RotationLike]
-    _loc: Location[TimeLike]
+    _loc: Location
     _time_group: TimeGroup
     _xp: ArrayNS
     _has_ref: bool
@@ -137,7 +137,7 @@ class Frame:
     def __init__(
         self,
         rot: Rotation | RotationSequence,
-        loc: Location[TimeLike] | None = None,
+        loc: Location | None = None,
         ref_frame: Frame | None = None,
         backend: BackendArg = None,
         name: str = "unnamed-frame",
@@ -307,7 +307,7 @@ class Frame:
         return self._rot
 
     @property
-    def loc(self) -> Location[Time]:
+    def loc(self) -> Location:
         """Get the location of the frame in ECEF coordinates."""
         return self._loc
 
@@ -371,8 +371,8 @@ class Frame:
     def index_loc(self, index: int) -> Point:
         """Get the location of the frame at the given index.
 
-        Warning: This should only be used after downsampling so that location
-        and rotation indeces align. Prefer interp_rot for general use.
+        Warning: This should only be used after downsampling so that rotation indices
+        are time-aligned. Use with caution. Prefer interp_loc for general use.
 
         """
         return self._loc[index]
@@ -388,7 +388,6 @@ class Frame:
     @backend_jit(["self"])
     def _index_rotation(self, index: int) -> Rotation:
         """Compute the composite rotation at a given index.
-        Constructor function provided to allow backend conversion
         """
 
         rots = [r[index] for r in self._rot_chain.values()]
@@ -401,7 +400,8 @@ class Frame:
         """Replace a rotation in the rotation chain with a new rotation.
 
         This is an advanced feature and currently only applicable for static rotations.
-        Should primarily be used for optimisation purposes in autograd frameworks.
+        Should primarily be used for optimisation purposes in autograd frameworks, such as 
+        correcting misalignment.
 
         Args:
             frame_name (str): Name of the frame whose rotation is to be replaced.
@@ -506,7 +506,7 @@ FRAME_ECEF = Frame(
 
 
 def ned_frame(
-    loc: Location[TimeLike], downsample: float | None = 10.0, name: str = "NED frame"
+    loc: Location, downsample: float | None = 10.0, name: str = "NED frame"
 ) -> Frame:
     """Create a local NED (North-East-Down) frame at the given location(s).
     NED rotations are evaluated at all times in the Point/Path.

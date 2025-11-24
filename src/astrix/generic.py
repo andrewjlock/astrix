@@ -1,17 +1,15 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import ClassVar, final, TypeVar, Generic, override
+from typing import override
 
 from ._backend_utils import Array, BackendArg, ArrayNS, get_backend
-from .time import Time, TIME_INVARIANT
+from .time import Time
 from .functs import interp_nd, ensure_1d, ensure_2d
 
-T = TypeVar("T", bound="Time", covariant=True)
-
-class AbstractValue(Generic[T], ABC):
+class AbstractValue(ABC):
     """A marker interface for variable objects."""
 
-    _time: T
+    _time: Time
     _data: Array
     _xp: ArrayNS
 
@@ -20,7 +18,7 @@ class AbstractValue(Generic[T], ABC):
         return self._data
 
     @property
-    def time(self) -> T:
+    def time(self) -> Time:
         return self._time
 
     @property
@@ -40,7 +38,7 @@ class AbstractValue(Generic[T], ABC):
         ...
 
 
-class TimeSeriesValue(AbstractValue[Time]):
+class TimeSeriesValue(AbstractValue):
 
     _time: Time
     _data: Array
@@ -67,7 +65,7 @@ class TimeSeriesValue(AbstractValue[Time]):
         return False
 
     @override
-    def interp(self, time: TimeLike) -> Array:
+    def interp(self, time: Time) -> Array:
         if getattr(time, "is_invariant", False):
             raise ValueError("Cannot interpolate time-varying data with invariant time.")
         elif isinstance(time, Time):

@@ -406,14 +406,14 @@ class TimeGroup:
         if self.is_invariant:
             return "TimeGroup: Time invariant"
         else:
-            return f"TimeGroup with {len(self)} TimeLike objects"
+            return f"TimeGroup with {len(self)} Time objects"
 
     def __repr__(self) -> str:
         if self.is_invariant:
             return "<Time Group: Time invariant>"
         else:
             return (
-                f"TimeGroup with {len(self)} TimeLike objects \n"
+                f"TimeGroup with {len(self)} Time objects \n"
                 f"Overlap bounds: {self.overlap_bounds},  \n"
                 f"Extreme bounds: {self.extreme_bounds},  \n"
                 f"backend: {self._xp.__name__}"

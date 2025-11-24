@@ -23,7 +23,7 @@ class CameraLike(ABC):
     _res: tuple[int, int]
     _sensor_size: tuple[float, float]
     _rad_coef: Array | None
-    _zoom: AbstractValue[Time] | None
+    _zoom: AbstractValue | None
     _xp: ArrayNS
 
     @property
@@ -224,13 +224,13 @@ class FixedZoomCamera(CameraLike):
             ),
         )
 
-    def mat(self, time: TimeLike = TIME_INVARIANT) -> Array:
+    def mat(self, time: Time = TIME_INVARIANT) -> Array:
         """Camera intrinsic matrix.
         No zoom parameter needed as this is a fixed zoom camera.
         """
         return self._mat
 
-    def rad_coef(self, time: TimeLike = TIME_INVARIANT) -> Array:
+    def rad_coef(self, time: Time = TIME_INVARIANT) -> Array:
         """Radial distortion coefficients."""
         if self._rad_coef is None:
             raise ValueError("Camera has no distortion coefficients.")
@@ -267,7 +267,7 @@ class Pixel:
     """
 
     _uv: Array
-    _time: TimeLike
+    _time: Time
     _xp: ArrayNS
 
     def __init__(
@@ -291,7 +291,7 @@ class Pixel:
 
     # --- Constructors ---
 
-    def _constructor(self, uv: Array, time: TimeLike, xp: ArrayNS) -> Pixel:
+    def _constructor(self, uv: Array, time: Time, xp: ArrayNS) -> Pixel:
         """Initialise without data validation for speed"""
         obj = Pixel.__new__(Pixel)
         obj._uv = uv
@@ -312,7 +312,7 @@ class Pixel:
         return isinstance(self._time, Time)
 
     @property
-    def time(self) -> TimeLike:
+    def time(self) -> Time:
         return self._time
 
     @property

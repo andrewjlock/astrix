@@ -159,7 +159,7 @@ def ground_path(path: Path, alt: float = 0.0) -> Path:
     return new_path
 
 
-def get_ned_rotation(loc: Location[Time], backend: BackendArg = None) -> Rotation:
+def get_ned_rotation(loc: Location, backend: BackendArg = None) -> Rotation:
     """Calculate the rotation matrix from ECEF to NED frame at the given location.
 
     Args:
