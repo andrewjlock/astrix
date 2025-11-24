@@ -1,0 +1,7 @@
+astrix.post.analysis module
+===========================
+
+.. automodule:: astrix.post.analysis
+   :members:
+   :show-inheritance:
+   :undoc-members:
