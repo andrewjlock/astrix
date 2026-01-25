@@ -23,7 +23,7 @@ dependencies = [
     "astropy>=6.1",
     "pykml",
     "array-api-compat",
-    "scipy>=1.17.0.dev0",
+    "scipy>=1.17",
     "scipy-stubs>=1.16.2.0",
     "matplotlib",
 ]
@@ -57,14 +57,6 @@ docs = [
 
 [tool.uv]
 default-groups = ["dev", "docs"]
-
-[tool.uv.sources]
-scipy = { index = "scipy-nightly" }    # <-- only SciPy comes from the nightly index
-
-[[tool.uv.index]]
-name = "scipy-nightly"
-url = "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"
-explicit = true
 
 [tool.basedpyright]
 typeCheckingMode = "recommended"
