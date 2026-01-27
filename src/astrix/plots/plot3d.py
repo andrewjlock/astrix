@@ -2,19 +2,19 @@
 # pyright: reportArgumentType = false
 
 from __future__ import annotations
-import os
 
-import pyvista as pv
-import numpy as np
-from typing import Sequence
 from dataclasses import dataclass, field
-from numpy.typing import NDArray
-from rasterio.transform import from_bounds
-from rasterio.warp import reproject, Resampling
-from rasterio.crs import CRS
+from typing import Sequence
+
 import contextily as cx
-from scipy.spatial.transform import Rotation
+import numpy as np
+import pyvista as pv
+from numpy.typing import NDArray
 from pyproj import Transformer
+from rasterio.crs import CRS
+from rasterio.transform import from_bounds
+from rasterio.warp import Resampling, reproject
+from scipy.spatial.transform import Rotation
 
 from astrix.functs import ned_rotation
 from astrix.spatial.location import Path, Point
@@ -70,6 +70,31 @@ class ConnectingLines:
             self.points_1.time.unix <= end.unix
         )
         return ConnectingLines(self.points_1[mask], self.points_2[mask])
+
+
+def split_lon_interval(lon_min: float, lon_max: float):
+    """
+    Split a longitude interval into continuous segments in [-180, 180].
+    Handles any wrap, including multi-wrap and snapped bounds.
+    """
+
+    # Normalize to [-180, 180)
+    def norm(lon):
+        return ((lon + 180) % 360) - 180
+
+    lon_min_n = norm(lon_min)
+    lon_max_n = norm(lon_max)
+
+    # Case 1: no wrap
+    if lon_min_n <= lon_max_n:
+        return [(lon_min_n, lon_max_n)]
+
+    # Case 2: wrap across 180°
+    # Example: 165 → -125 becomes [(165, 180), (-180, -125)]
+    return [
+        (lon_min_n, 180.0),
+        (-180.0, lon_max_n),
+    ]
 
 
 @dataclass
@@ -146,116 +171,188 @@ class Plot3D:
     def add_texture(
         self, lat_bounds: Sequence[float], lon_bounds: Sequence[float], alpha=0.6
     ):
-        img, ext = cx.bounds2img(
-            lon_bounds[0],
-            lat_bounds[0],
-            lon_bounds[1],
-            lat_bounds[1],
-            zoom="auto",
-            source=cx.providers.Esri.WorldImagery,  # pyright: ignore
-            ll=True,
-        )
+        lat_min, lat_max = lat_bounds
+        lon_min, lon_max = lon_bounds
 
-        transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
-        l_bounds = transformer.transform_bounds(
-            ext[0],
-            ext[2],
-            ext[1],
-            ext[3],
-        )
-
-        # Convert original bounds to EPSG:3857
-        to_merc = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
-        x_min, y_min = to_merc.transform(lon_bounds[0], lat_bounds[0])
-        x_max, y_max = to_merc.transform(lon_bounds[1], lat_bounds[1])
-        ext_bounds = (x_min, x_max, y_min, y_max)
-
-        # Crop image to requested bounds
-        out_transform = from_bounds(
-            ext_bounds[0],
-            ext_bounds[2],
-            ext_bounds[1],
-            ext_bounds[3],
-            img.shape[1],
-            img.shape[0],
-        )
-        in_transform = from_bounds(
-            ext[0], ext[2], ext[1], ext[3], img.shape[1], img.shape[0]
-        )
-        src = np.moveaxis(img, 2, 0)  # HWC -> CHW
-        dst = np.zeros_like(src)
-        reproject(
-            source=src,
-            destination=dst,
-            src_transform=in_transform,
-            src_crs=CRS.from_epsg(3857),
-            dst_transform=out_transform,
-            dst_crs=CRS.from_epsg(3857),
-            resampling=Resampling.bilinear,
-        )
-        cropped = np.moveaxis(dst, 0, 2)  # CHW -> HWC (back to normal)
-        img = cropped
-        img = np.flip(img, axis=0)  # flip y axis
-
-        # 3) Build a WGS-84 curved patch and drape the reprojected texture
-        n_lat, n_lon = 20, 20
-        # lats = np.linspace(l_bounds[1], l_bounds[3], n_lat)
-        # lons = np.linspace(l_bounds[0], l_bounds[2], n_lon)
-        lats = np.linspace(lat_bounds[0], lat_bounds[1], n_lat)
-        lons = np.linspace(lon_bounds[0], lon_bounds[1], n_lon)
-        llon, llat = np.meshgrid(lons, lats, indexing="ij")
+        # ------------------------------------------------------------
+        # 0) Split longitude interval into continuous segments
+        # ------------------------------------------------------------
+        lon_segments = split_lon_interval(lon_min, lon_max)
 
         to_merc = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
-        xm, ym = to_merc.transform(llon, llat)  # same shapes as llon/llat
 
-        xmin, xmax, ymin, ymax = ext_bounds
-        u = (xm - xmin) / (xmax - xmin)
-        v = 1.0 - (ym - ymin) / (ymax - ymin)  # invert vertical
+        actors = []
 
-        X, Y, Z = _geodet2ecef_grid(llat, llon)
-        grid = pv.StructuredGrid(X, Y, Z)  # creates a surface grid
+        for seg_lon_min, seg_lon_max in lon_segments:
+            # --------------------------------------------------------
+            # 1) Fetch basemap tiles for this segment
+            # --------------------------------------------------------
+            img, ext = cx.bounds2img(
+                seg_lon_min,
+                lat_min,
+                seg_lon_max,
+                lat_max,
+                zoom="auto",
+                source=cx.providers.Esri.WorldImagery,
+                ll=True,
+            )
 
-        tcoords = np.c_[u.ravel(order="F"), v.ravel(order="F")].astype(np.float32)
-        grid.active_texture_coordinates = tcoords
+            xmin_img, xmax_img, ymin_img, ymax_img = ext
 
-        tex = pv.Texture(img)  # pyright: ignore
-        tex.repeat = False
+            # --------------------------------------------------------
+            # 2) Convert requested bounds (this segment) to Web Mercator
+            # --------------------------------------------------------
+            x0, y0 = to_merc.transform(seg_lon_min, lat_min)
+            x1, y1 = to_merc.transform(seg_lon_max, lat_max)
 
-        act = self.p.add_mesh(
-            grid,
-            texture=tex,
-            lighting=True,
-            smooth_shading=True,
-            show_edges=False,
-            opacity=alpha,
-            render=False,
-        )
+            xmin_req, xmax_req = min(x0, x1), max(x0, x1)
+            ymin_req, ymax_req = min(y0, y1), max(y0, y1)
 
+            # --------------------------------------------------------
+            # 3) Crop tile image to requested bounds
+            # --------------------------------------------------------
+            src = np.moveaxis(img, 2, 0)  # HWC → CHW
+            dst = np.zeros_like(src)
+
+            in_transform = from_bounds(
+                xmin_img, ymin_img, xmax_img, ymax_img, img.shape[1], img.shape[0]
+            )
+            out_transform = from_bounds(
+                xmin_req, ymin_req, xmax_req, ymax_req, img.shape[1], img.shape[0]
+            )
+
+            reproject(
+                source=src,
+                destination=dst,
+                src_transform=in_transform,
+                src_crs=CRS.from_epsg(3857),
+                dst_transform=out_transform,
+                dst_crs=CRS.from_epsg(3857),
+                resampling=Resampling.bilinear,
+            )
+
+            img_seg = np.moveaxis(dst, 0, 2)  # CHW → HWC
+
+            # --------------------------------------------------------
+            # 4) Adaptive mesh resolution for this segment
+            # --------------------------------------------------------
+            H, W = img_seg.shape[:2]
+            k = 16  # tweakable density factor
+            n_lon = max(4, W // k)
+            n_lat = max(4, H // k)
+
+            lats = np.linspace(lat_min, lat_max, n_lat)
+            lons = np.linspace(seg_lon_min, seg_lon_max, n_lon)
+            llon, llat = np.meshgrid(lons, lats, indexing="ij")
+
+            xm, ym = to_merc.transform(llon, llat)
+
+            # --------------------------------------------------------
+            # 5) UV texture coordinates for this segment
+            # --------------------------------------------------------
+            u = (xm - xmin_req) / (xmax_req - xmin_req)
+            v = (ym - ymin_req) / (ymax_req - ymin_req)
+
+            # --------------------------------------------------------
+            # 6) Build PyVista grid and apply texture
+            # --------------------------------------------------------
+            X, Y, Z = _geodet2ecef_grid(llat, llon)
+            grid = pv.StructuredGrid(X, Y, Z)
+
+            tcoords = np.c_[u.ravel(order="F"), v.ravel(order="F")].astype(np.float32)
+            grid.active_texture_coordinates = tcoords
+
+            tex = pv.Texture(img_seg)
+            tex.repeat = False
+
+            act = self.p.add_mesh(
+                grid,
+                texture=tex,
+                lighting=True,
+                smooth_shading=True,
+                show_edges=False,
+                opacity=alpha,
+                render=False,
+            )
+            actors.append(act)
+
+        # ------------------------------------------------------------
+        # 7) Store all segment actors under one logical texture entry
+        # ------------------------------------------------------------
         self.data["texture"] = PlotData(
             "texture",
             "texture",
-            act,
-            lat_bounds=(lat_bounds[0], lat_bounds[1]),
-            lon_bounds=(lon_bounds[0], lon_bounds[1]),
+            actors,  # list of actors now
+            lat_bounds=(lat_min, lat_max),
+            lon_bounds=(lon_min, lon_max),
         )
 
-    def add_grid(self, lat_bounds: Sequence[float], lon_bounds: Sequence[float]):
-        # Get grid lines to nearest 0.5 degree
-        lat_min = np.floor(lat_bounds[0] * 2) / 2
-        lat_max = np.ceil(lat_bounds[1] * 2) / 2
-        lon_min = np.floor(lon_bounds[0] * 2) / 2
-        lon_max = np.ceil(lon_bounds[1] * 2) / 2
-        n_lat = int((lat_max - lat_min) * 2) + 1
-        n_lon = int((lon_max - lon_min) * 2) + 1
-        lats = np.linspace(lat_min, lat_max, n_lat)
-        lons = np.linspace(lon_min, lon_max, n_lon)
+    def add_grid(
+        self,
+        lat_bounds: Sequence[float],
+        lon_bounds: Sequence[float],
+        spacing: float = 5.0,
+    ):
+        lat_min, lat_max = lat_bounds
+        lon_min, lon_max = lon_bounds
 
-        LLon, LLat = np.meshgrid(lons, lats, indexing="xy")
+        # ------------------------------------------------------------
+        # 0) Snap bounds to spacing
+        # ------------------------------------------------------------
+        def snap_min(v):
+            return np.floor(v / spacing) * spacing
+
+        def snap_max(v):
+            return np.ceil(v / spacing) * spacing
+
+        lat_min_s = snap_min(lat_min)
+        lat_max_s = snap_max(lat_max)
+        lon_min_s = snap_min(lon_min)
+        lon_max_s = snap_max(lon_max)
+
+        # ------------------------------------------------------------
+        # 1) Unwrap longitudes into a continuous range
+        #    (so we can cross 180° without splitting)
+        # ------------------------------------------------------------
+        lon0, lon1 = lon_min_s, lon_max_s
+        if lon1 < lon0:
+            lon1 += 360.0  # unwrap across 180°
+
+        # ------------------------------------------------------------
+        # 2) Build latitude and longitude arrays in unwrapped space
+        # ------------------------------------------------------------
+        n_lat = int(round((lat_max_s - lat_min_s) / spacing)) + 1
+        lats = np.linspace(lat_min_s, lat_max_s, n_lat)
+
+        n_lon = int(round((lon1 - lon0) / spacing)) + 1
+        lons_unwrapped = np.linspace(lon0, lon1, n_lon)
+
+        # Wrap longitudes back into [-180, 180] for ECEF / labels
+        lons = ((lons_unwrapped + 180.0) % 360.0) - 180.0
+
+        # ------------------------------------------------------------
+        # 3) Meshgrid with consistent indexing
+        # ------------------------------------------------------------
+        LLon, LLat = np.meshgrid(lons, lats, indexing="ij")
+
+        # ------------------------------------------------------------
+        # 4) Convert to ECEF and build grid
+        # ------------------------------------------------------------
         X, Y, Z = _geodet2ecef_grid(LLat, LLon, alt=10)
-        sg = pv.StructuredGrid(X, Y, Z)  # creates a surface grid
-        edges = sg.extract_all_edges()  # just the lines between nodes
-        self.p.add_mesh(edges, color="grey", line_width=1, opacity=0.5, render=False)
+        sg = pv.StructuredGrid(X, Y, Z)
+        edges = sg.extract_all_edges()
 
+        self.p.add_mesh(
+            edges,
+            color="grey",
+            line_width=1,
+            opacity=0.5,
+            render=False,
+        )
+
+        # ------------------------------------------------------------
+        # 5) Labels
+        # ------------------------------------------------------------
         def fmt_lon(deg):
             s = "E" if deg >= 0 else "W"
             return f"{abs(deg):.1f}°{s}"
@@ -264,10 +361,13 @@ class Plot3D:
             s = "N" if deg >= 0 else "S"
             return f"{abs(deg):.1f}°{s}"
 
-        lon_label_points = np.c_[X[0, ::1], Y[0, ::1], Z[0, ::1]]
-        lon_labels = [fmt_lon(lon) for lon in lons[::1]]
-        lat_label_points = np.c_[X[::1, -1], Y[::1, -1], Z[::1, -1]]
-        lat_labels = [fmt_lat(lat) for lat in lats[::1]]
+        # Longitude labels (first latitude row)
+        lon_label_points = np.c_[X[:, 0], Y[:, 0], Z[:, 0]]
+        lon_labels = [fmt_lon(lon) for lon in lons]
+
+        # Latitude labels (last longitude column)
+        lat_label_points = np.c_[X[-1, :], Y[-1, :], Z[-1, :]]
+        lat_labels = [fmt_lat(lat) for lat in lats]
 
         self.p.add_point_labels(
             lon_label_points,
@@ -487,6 +587,255 @@ class Plot3D:
             data={"size": size},
         )
 
+    def add_box(
+        self,
+        name: str,
+        lat_bounds: Sequence[float],
+        lon_bounds: Sequence[float],
+        fill: bool = True,
+        fill_color: str | int | None = None,
+        line_color: str | int | None = None,
+        alpha: float = 0.3,
+        line_width: float = 2.0,
+        resolution: int = 40,
+        alt: float = 50.0,
+    ):
+        lat_min, lat_max = lat_bounds
+        lon_min, lon_max = lon_bounds
+
+        # ------------------------------------------------------------
+        # 1) Resolve colors (same logic as add_path)
+        # ------------------------------------------------------------
+        if isinstance(fill_color, int):
+            fill_color = color_from_int(fill_color)
+        elif fill_color is None:
+            fill_color = _DEFAULT_COLOR_CYCLE[
+                len(self.data) % len(_DEFAULT_COLOR_CYCLE)
+            ]
+
+        if isinstance(line_color, int):
+            line_color = color_from_int(line_color)
+        elif line_color is None:
+            line_color = fill_color  # default: match fill
+
+        # ------------------------------------------------------------
+        # 2) Unwrap longitudes so the box can cross 180° safely
+        # ------------------------------------------------------------
+        lon0, lon1 = lon_min, lon_max
+        if lon1 < lon0:
+            lon1 += 360.0
+
+        # Build unwrapped lon array
+        lons_unwrapped = np.linspace(lon0, lon1, resolution)
+
+        # Wrap back into [-180, 180]
+        lons = ((lons_unwrapped + 180) % 360) - 180
+
+        # ------------------------------------------------------------
+        # 3) Build a lat/lon grid for the box surface
+        # ------------------------------------------------------------
+        lats = np.linspace(lat_min, lat_max, resolution)
+        LLon, LLat = np.meshgrid(lons, lats, indexing="ij")
+
+        # ------------------------------------------------------------
+        # 4) Convert to ECEF with altitude offset
+        # ------------------------------------------------------------
+        X, Y, Z = _geodet2ecef_grid(LLat, LLon, alt=alt)
+
+        # ------------------------------------------------------------
+        # 5) Build a structured grid (curved surface)
+        # ------------------------------------------------------------
+        surface_actor = None
+        if fill:
+            grid = pv.StructuredGrid(X, Y, Z)
+            surface_actor = self.p.add_mesh(
+                grid,
+                color=fill_color,
+                opacity=alpha,
+                name=name + "_fill",
+                smooth_shading=True,
+                lighting=False,
+                render=False,
+            )
+
+        # ------------------------------------------------------------
+        # 6) Build outline (4 edges)
+        # ------------------------------------------------------------
+        # Extract the four edges from the structured grid
+        # Bottom: lat_min
+        bottom = np.c_[X[:, 0], Y[:, 0], Z[:, 0]]
+        # Top: lat_max
+        top = np.c_[X[:, -1], Y[:, -1], Z[:, -1]]
+        # Left: lon_min
+        left = np.c_[X[0, :], Y[0, :], Z[0, :]]
+        # Right: lon_max
+        right = np.c_[X[-1, :], Y[-1, :], Z[-1, :]]
+
+        # Build a closed polyline
+        outline_pts = np.vstack([bottom, right, top[::-1], left[::-1]])
+
+        outline_poly = pv.lines_from_points(outline_pts, close=True)
+
+        outline_actor = self.p.add_mesh(
+            outline_poly,
+            color=line_color,
+            line_width=line_width,
+            name=name + "_outline",
+            opacity=1.0,
+            lighting=False,
+            smooth_shading=True,
+            render=False,
+        )
+
+        # ------------------------------------------------------------
+        # 7) Store bounds exactly like add_path
+        # ------------------------------------------------------------
+        self.data[name] = PlotData(
+            name=name,
+            type="box",
+            actor=(surface_actor, outline_actor),
+            lat_bounds=(lat_min, lat_max),
+            lon_bounds=(lon_min, lon_max),
+            data={
+                "fill": fill,
+                "fill_color": fill_color,
+                "line_color": line_color,
+                "alpha": alpha,
+                "line_width": line_width,
+                "resolution": resolution,
+                "alt": alt,
+            },
+        )
+
+    def add_circle(
+        self,
+        name: str,
+        center: tuple[float, float],  # (lat, lon)
+        radius_km: float,
+        fill: bool = True,
+        fill_color: str | int | None = None,
+        line_color: str | int | None = None,
+        alpha: float = 0.3,
+        line_width: float = 2.0,
+        resolution: int = 120,  # number of points around circle
+        alt: float = 150.0,  # altitude offset in meters
+    ):
+        lat_c, lon_c = center
+
+        # ------------------------------------------------------------
+        # 1) Resolve colors (same logic as add_path)
+        # ------------------------------------------------------------
+        if isinstance(fill_color, int):
+            fill_color = color_from_int(fill_color)
+        elif fill_color is None:
+            fill_color = _DEFAULT_COLOR_CYCLE[
+                len(self.data) % len(_DEFAULT_COLOR_CYCLE)
+            ]
+
+        if isinstance(line_color, int):
+            line_color = color_from_int(line_color)
+        elif line_color is None:
+            line_color = fill_color
+
+        # ------------------------------------------------------------
+        # 2) Build geodesic circle in lat/lon
+        # ------------------------------------------------------------
+        # Earth radius (WGS84 mean)
+        R_earth = 6371.0  # km
+        ang_radius = radius_km / R_earth  # radians
+
+        # Sample angles around circle
+        theta = np.linspace(0, 2 * np.pi, resolution)
+
+        # Convert center to radians
+        lat0 = np.radians(lat_c)
+        lon0 = np.radians(lon_c)
+
+        # Compute circle boundary using spherical law of cosines
+        lat_boundary = np.arcsin(
+            np.sin(lat0) * np.cos(ang_radius)
+            + np.cos(lat0) * np.sin(ang_radius) * np.cos(theta)
+        )
+
+        lon_boundary = lon0 + np.arctan2(
+            np.sin(theta) * np.sin(ang_radius) * np.cos(lat0),
+            np.cos(ang_radius) - np.sin(lat0) * np.sin(lat_boundary),
+        )
+
+        # Convert back to degrees
+        lat_boundary = np.degrees(lat_boundary)
+        lon_boundary = np.degrees(lon_boundary)
+
+        # Wrap longitudes to [-180, 180]
+        lon_boundary = ((lon_boundary + 180) % 360) - 180
+
+        # ------------------------------------------------------------
+        # 3) Convert boundary to ECEF
+        # ------------------------------------------------------------
+        Xb, Yb, Zb = _geodet2ecef_grid(
+            lat_boundary.reshape(-1, 1), lon_boundary.reshape(-1, 1), alt=alt
+        )
+
+        boundary_pts = np.c_[Xb.ravel(), Yb.ravel(), Zb.ravel()]
+
+        # ------------------------------------------------------------
+        # 4) Build outline polyline
+        # ------------------------------------------------------------
+        outline_poly = pv.lines_from_points(boundary_pts, close=True)
+
+        outline_actor = self.p.add_mesh(
+            outline_poly,
+            color=line_color,
+            line_width=line_width,
+            name=name + "_outline",
+            opacity=1.0,
+            lighting=False,
+            smooth_shading=True,
+            render=False,
+        )
+
+        # ------------------------------------------------------------
+        # 5) Build filled surface (optional)
+        # ------------------------------------------------------------
+        surface_actor = None
+        if fill:
+            # Triangulate the circle interior
+            poly = pv.PolyData(boundary_pts)
+            poly["scalars"] = np.arange(len(boundary_pts))  # dummy
+            filled = poly.delaunay_2d()
+
+            surface_actor = self.p.add_mesh(
+                filled,
+                color=fill_color,
+                opacity=alpha,
+                name=name + "_fill",
+                smooth_shading=True,
+                lighting=False,
+                render=False,
+            )
+
+        # ------------------------------------------------------------
+        # 6) Store bounds (lat/lon min/max)
+        # ------------------------------------------------------------
+        self.data[name] = PlotData(
+            name=name,
+            type="circle",
+            actor=(surface_actor, outline_actor),
+            lat_bounds=(lat_boundary.min(), lat_boundary.max()),
+            lon_bounds=(lon_boundary.min(), lon_boundary.max()),
+            data={
+                "center": center,
+                "radius_km": radius_km,
+                "fill": fill,
+                "fill_color": fill_color,
+                "line_color": line_color,
+                "alpha": alpha,
+                "line_width": line_width,
+                "resolution": resolution,
+                "alt": alt,
+            },
+        )
+
     def _create_ray_data(self, ray: Ray, length: float | NDArray) -> pv.PolyData:
         ray = ray.to_ecef()
         origins = ray.origin_rel
@@ -704,7 +1053,8 @@ class Plot3D:
         else:
             lat_bounds, lon_bounds = self.calc_bounds(buffer=0.4)
         self.add_texture(lat_bounds, lon_bounds)
-        lat_bounds, lon_bounds = self.calc_bounds(buffer=0.0)
+        if bounds is None:
+            lat_bounds, lon_bounds = self.calc_bounds(buffer=0.0)
         self.add_grid(lat_bounds, lon_bounds)
 
     def render(self):
