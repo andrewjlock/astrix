@@ -6,6 +6,7 @@ This package provides tools for aerospace trajectory analysis and visualization.
 
 from . import _backend_utils
 
+_backend_utils.ensure_scipy_array_api_enabled()
 if _backend_utils.HAS_JAX:
     _backend_utils.enforce_cpu_x64()
 

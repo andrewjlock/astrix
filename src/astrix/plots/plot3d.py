@@ -439,10 +439,6 @@ class Plot3D:
         act.mapper.SetInputData(pv.PolyData())  # empty
         act.mapper.Update()
 
-    def _create_point_data(self, point: Point, size: int):
-        sphere = pv.Sphere(radius=size, center=point.ecef[0])
-        return sphere
-
     def add_point(
         self,
         name: str,
@@ -467,16 +463,7 @@ class Plot3D:
             render_points_as_spheres=True,
             point_size=size,
         )
-        # sphere = self._create_point_data(point, size * 1000)
-        # act = self.p.add_mesh(
-        #     sphere,
-        #     color=color,
-        #     name=name,
-        #     opacity=alpha,
-        #     lighting=False,
-        #     smooth_shading=True,
-        #     render=False,
-        # )
+
         geodet = point.geodet[0]
         self.data[name] = PlotData(
             name=name,
@@ -486,6 +473,27 @@ class Plot3D:
             lon_bounds=(geodet[1], geodet[1]),
             data={"size": size},
         )
+
+    def _create_point_data(self, point: Point, size: int):
+        sphere = pv.Sphere(radius=size, center=point.ecef[0])
+        return sphere
+
+    def update_point(self, name: str, point: Point):
+        if name not in self.data:
+            raise ValueError(f"Point '{name}' not found in plot data.")
+        size = self.data[name].data.get("size", 2.0)
+        sphere = self._create_point_data(point, size)
+        act = self.data[name].actor
+        act.mapper.SetInputData(sphere)
+        act.mapper.Update()
+
+    def clear_point(self, name: str):
+        if name not in self.data:
+            raise ValueError(f"Point '{name}' not found in plot data.")
+        act = self.data[name].actor
+        act.mapper.SetInputData(pv.PolyData())  # empty
+        act.mapper.Update()
+
 
     def _create_ray_data(self, ray: Ray, length: float | NDArray) -> pv.PolyData:
         ray = ray.to_ecef()
@@ -546,22 +554,6 @@ class Plot3D:
             raise ValueError(f"Ray '{name}' not found in plot data.")
         lines = self._create_ray_data(ray, length)
         act.mapper.SetInputData(lines)
-        act.mapper.Update()
-
-    def update_point(self, name: str, point: Point):
-        if name not in self.data:
-            raise ValueError(f"Point '{name}' not found in plot data.")
-        size = self.data[name].data.get("size", 2.0)
-        sphere = self._create_point_data(point, size)
-        act = self.data[name].actor
-        act.mapper.SetInputData(sphere)
-        act.mapper.Update()
-
-    def clear_point(self, name: str):
-        if name not in self.data:
-            raise ValueError(f"Point '{name}' not found in plot data.")
-        act = self.data[name].actor
-        act.mapper.SetInputData(pv.PolyData())  # empty
         act.mapper.Update()
 
     def add_labelled_point(

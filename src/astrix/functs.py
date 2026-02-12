@@ -241,13 +241,25 @@ def interp_unit_vec(t: Array, td: Array, vecs: Array, backend: Backend = None) -
     theta = xp.arccos(dot)
 
     sin_theta = xp.sin(theta)
-    sin_theta = xp.where(sin_theta == 0, 1e-10, sin_theta)
+    sin_theta = xp.where(xp.abs(sin_theta) < 1e-8, 1e-8, sin_theta)
 
     f0 = xp.sin((t1 - t) / (t1 - t0) * theta) / sin_theta
     f1 = xp.sin((t - t0) / (t1 - t0) * theta) / sin_theta
 
     interp_vecs = f0[:, xp.newaxis] * v0 + f1[:, xp.newaxis] * v1
     interp_vecs /= xp.linalg.norm(interp_vecs, axis=1, keepdims=True)
+
+    # Find Nans from similar or near-opposite vectors
+    # In these cases use linear interpolation and renormalize
+    # Currently unusable because not jit compatible. 
+
+    # nan_mask = xp.isnan(interp_vecs).any(axis=1)
+    # if xp.any(nan_mask):
+    #     f0_lin = (t1 - t) / (t1 - t0)
+    #     f1_lin = (t - t0) / (t1 - t0)
+    #     interp_vecs_lin = f0_lin[:, xp.newaxis] * v0 + f1_lin[:, xp.newaxis] * v1
+    #     interp_vecs_lin /= xp.linalg.norm(interp_vecs_lin, axis=1, keepdims=True)
+    #     interp_vecs = safe_set(interp_vecs, nan_mask, interp_vecs_lin[nan_mask], backend)
 
     return interp_vecs
 
@@ -682,7 +694,7 @@ def project_velocity_to_az_el(
     v_el = xp.sum(vel * e_el, axis=-1)
 
     # Range
-    R = xp.sqrt(f**2 + r **2 + d**2)
+    R = xp.sqrt(f**2 + r**2 + d**2)
 
     # Angular rates (rad/s)
     az_rate = v_az / R
