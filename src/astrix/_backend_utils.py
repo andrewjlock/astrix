@@ -14,6 +14,29 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 _ENV: Final = "SCIPY_ARRAY_API"
+
+
+def ensure_scipy_array_api_enabled() -> None:
+    scipy_already = "scipy" in sys.modules
+    enabled = os.environ.get(_ENV) == "1"
+
+    if scipy_already and not enabled:
+        raise RuntimeError(
+            "astrix requires SciPy Array API mode. "
+            + "It looks like 'scipy' was imported before the environment variable "
+            + f"{_ENV}=1 was set, so SciPy has already initialized without it.\n\n"
+            + "Fix options:\n"
+            + f"  • Shell:   export {_ENV}=1\n"
+            + f"  • Python:  import os; os.environ['{_ENV}']='1'  # before importing scipy\n"
+            + "Then restart the Python process/kernel and try again."
+        )
+
+    if not enabled:
+        # Safe only if SciPy hasn't been imported yet
+        os.environ[_ENV] = "1"
+
+
+ensure_scipy_array_api_enabled()
 from scipy.spatial.transform import Rotation
 
 
@@ -116,28 +139,6 @@ def resolve_backend(
     raise ValueError(
         f"Unknown backend '{name_or_mod}'. Supported backends are None/'np'/'numpy' (NumPy) and 'jax'/'jnp' (JAX)."
     )
-
-
-
-
-def ensure_scipy_array_api_enabled() -> None:
-    scipy_already = "scipy" in sys.modules
-    enabled = os.environ.get(_ENV) == "1"
-
-    if scipy_already and not enabled:
-        raise RuntimeError(
-            "astrix requires SciPy Array API mode. "
-            + "It looks like 'scipy' was imported before the environment variable "
-            + f"{_ENV}=1 was set, so SciPy has already initialized without it.\n\n"
-            + "Fix options:\n"
-            + f"  • Shell:   export {_ENV}=1\n"
-            + f"  • Python:  import os; os.environ['{_ENV}']='1'  # before importing scipy\n"
-            + "Then restart the Python process/kernel and try again."
-        )
-
-    if not enabled:
-        # Safe only if SciPy hasn't been imported yet
-        os.environ[_ENV] = "1"
 
 
 def enforce_cpu_x64():
