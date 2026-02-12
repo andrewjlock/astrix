@@ -31,6 +31,9 @@ jobs:
       - name: sync dependencies
         run: uv lock && uv sync --locked --group test
 
+      - name: set environment variables
+        run: export SCIPY_ARRAY_API=1
+
       - name: pytest
         run: uv run pytest --cov --cov-branch --cov-report=xml
 
