@@ -249,18 +249,6 @@ def interp_unit_vec(t: Array, td: Array, vecs: Array, backend: Backend = None) -
     interp_vecs = f0[:, xp.newaxis] * v0 + f1[:, xp.newaxis] * v1
     interp_vecs /= xp.linalg.norm(interp_vecs, axis=1, keepdims=True)
 
-    # Find Nans from similar or near-opposite vectors
-    # In these cases use linear interpolation and renormalize
-    # Currently unusable because not jit compatible.
-
-    # nan_mask = xp.isnan(interp_vecs).any(axis=1)
-    # if xp.any(nan_mask):
-    #     f0_lin = (t1 - t) / (t1 - t0)
-    #     f1_lin = (t - t0) / (t1 - t0)
-    #     interp_vecs_lin = f0_lin[:, xp.newaxis] * v0 + f1_lin[:, xp.newaxis] * v1
-    #     interp_vecs_lin /= xp.linalg.norm(interp_vecs_lin, axis=1, keepdims=True)
-    #     interp_vecs = safe_set(interp_vecs, nan_mask, interp_vecs_lin[nan_mask], backend)
-
     return interp_vecs
 
 
