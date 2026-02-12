@@ -251,7 +251,7 @@ def interp_unit_vec(t: Array, td: Array, vecs: Array, backend: Backend = None) -
 
     # Find Nans from similar or near-opposite vectors
     # In these cases use linear interpolation and renormalize
-    # Currently unusable because not jit compatible. 
+    # Currently unusable because not jit compatible.
 
     # nan_mask = xp.isnan(interp_vecs).any(axis=1)
     # if xp.any(nan_mask):
