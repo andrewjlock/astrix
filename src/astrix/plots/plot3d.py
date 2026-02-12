@@ -121,8 +121,6 @@ class Plot3D:
             int(size / (aspect_ratio**0.5)),
         ]
         self.p.set_background("black")  # pyright: ignore
-        # self.p.disable_anti_aliasing()
-        # self.p.enable_anti_aliasing("ssaa")
         if aa == "ms":
             self.p.enable_anti_aliasing("msaa", multi_samples=16)
         elif aa == "fx":
@@ -450,7 +448,7 @@ class Plot3D:
         path: Path,
         dt: float = 10.0,
         line_width: float = 1.0,
-        color: str | int = "white",
+        color: str | int | None = "white",
         alpha: float = 0.6,
     ):
         geodet = path.points.geodet
@@ -539,10 +537,6 @@ class Plot3D:
         act.mapper.SetInputData(pv.PolyData())  # empty
         act.mapper.Update()
 
-    def _create_point_data(self, point: Point, size: int):
-        sphere = pv.Sphere(radius=size, center=point.ecef[0])
-        return sphere
-
     def add_point(
         self,
         name: str,
@@ -567,16 +561,7 @@ class Plot3D:
             render_points_as_spheres=True,
             point_size=size,
         )
-        # sphere = self._create_point_data(point, size * 1000)
-        # act = self.p.add_mesh(
-        #     sphere,
-        #     color=color,
-        #     name=name,
-        #     opacity=alpha,
-        #     lighting=False,
-        #     smooth_shading=True,
-        #     render=False,
-        # )
+
         geodet = point.geodet[0]
         self.data[name] = PlotData(
             name=name,
@@ -836,6 +821,26 @@ class Plot3D:
             },
         )
 
+    def _create_point_data(self, point: Point, size: int):
+        sphere = pv.Sphere(radius=size, center=point.ecef[0])
+        return sphere
+
+    def update_point(self, name: str, point: Point):
+        if name not in self.data:
+            raise ValueError(f"Point '{name}' not found in plot data.")
+        size = self.data[name].data.get("size", 2.0)
+        sphere = self._create_point_data(point, size)
+        act = self.data[name].actor
+        act.mapper.SetInputData(sphere)
+        act.mapper.Update()
+
+    def clear_point(self, name: str):
+        if name not in self.data:
+            raise ValueError(f"Point '{name}' not found in plot data.")
+        act = self.data[name].actor
+        act.mapper.SetInputData(pv.PolyData())  # empty
+        act.mapper.Update()
+
     def _create_ray_data(self, ray: Ray, length: float | NDArray) -> pv.PolyData:
         ray = ray.to_ecef()
         origins = ray.origin_rel
@@ -895,22 +900,6 @@ class Plot3D:
             raise ValueError(f"Ray '{name}' not found in plot data.")
         lines = self._create_ray_data(ray, length)
         act.mapper.SetInputData(lines)
-        act.mapper.Update()
-
-    def update_point(self, name: str, point: Point):
-        if name not in self.data:
-            raise ValueError(f"Point '{name}' not found in plot data.")
-        size = self.data[name].data.get("size", 2.0)
-        sphere = self._create_point_data(point, size)
-        act = self.data[name].actor
-        act.mapper.SetInputData(sphere)
-        act.mapper.Update()
-
-    def clear_point(self, name: str):
-        if name not in self.data:
-            raise ValueError(f"Point '{name}' not found in plot data.")
-        act = self.data[name].actor
-        act.mapper.SetInputData(pv.PolyData())  # empty
         act.mapper.Update()
 
     def add_labelled_point(
@@ -1010,13 +999,7 @@ class Plot3D:
             if data_name not in self.data:
                 raise ValueError(f"Data '{data_name}' not found in plot data.")
             color = self.data[data_name].actor.GetProperty().GetColor()
-            # color_hex = "#{:02x}{:02x}{:02x}".format(
-            #     int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)
-            # )
             legend_entries.append([label, color])
-        # self.p.add_legend(
-        #     legend_entries, bcolor="black", size=(0.15, 0.15/self.aspect_ratio), face="rectangle", background_opacity=0.5, loc="upper right"
-        # )
         txts = []
         y0 = self.p.window_size[1] - 50
         x0 = int(pos_x * self.p.window_size[0])
@@ -1060,11 +1043,14 @@ class Plot3D:
     def render(self):
         self.p.render()
 
-    def save(self, filepath: str = "./plot3d_screenshot.png"):
+    def save(self, filepath: str = "./plot3d_screenshot.png", scale: float = 1.0):
         old_size = self.p.window_size
-        # self.p.window_size = (old_size[0] * 2, old_size[1] * 2)
+        self.p.window_size = (
+            int(np.round(old_size[0] * scale)),
+            int(np.round(old_size[1] * scale)),
+        )
         self.p.screenshot(filepath)
-        # self.p.window_size = old_size
+        self.p.window_size = old_size
 
     def show(self):
         self.p.show()

@@ -506,7 +506,7 @@ FRAME_ECEF = Frame(
 
 
 def ned_frame(
-    loc: Location, downsample: float | None = 10.0, name: str = "NED frame"
+    loc: Location, downsample: float | None = 1.0, name: str = "NED frame"
 ) -> Frame:
     """Create a local NED (North-East-Down) frame at the given location(s).
     NED rotations are evaluated at all times in the Point/Path.

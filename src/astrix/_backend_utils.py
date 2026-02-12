@@ -13,7 +13,7 @@ from array_api_compat import array_namespace
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-os.environ["SCIPY_ARRAY_API"] = "True"
+_ENV: Final = "SCIPY_ARRAY_API"
 from scipy.spatial.transform import Rotation
 
 
@@ -99,7 +99,6 @@ def warn_if_not_numpy(arg: ModuleType | Array | str, fun: str = ""):
             )
 
 
-
 @lru_cache(None)
 def resolve_backend(
     name_or_mod: str | ModuleType | None = None,
@@ -117,6 +116,28 @@ def resolve_backend(
     raise ValueError(
         f"Unknown backend '{name_or_mod}'. Supported backends are None/'np'/'numpy' (NumPy) and 'jax'/'jnp' (JAX)."
     )
+
+
+
+
+def ensure_scipy_array_api_enabled() -> None:
+    scipy_already = "scipy" in sys.modules
+    enabled = os.environ.get(_ENV) == "1"
+
+    if scipy_already and not enabled:
+        raise RuntimeError(
+            "astrix requires SciPy Array API mode. "
+            + "It looks like 'scipy' was imported before the environment variable "
+            + f"{_ENV}=1 was set, so SciPy has already initialized without it.\n\n"
+            + "Fix options:\n"
+            + f"  • Shell:   export {_ENV}=1\n"
+            + f"  • Python:  import os; os.environ['{_ENV}']='1'  # before importing scipy\n"
+            + "Then restart the Python process/kernel and try again."
+        )
+
+    if not enabled:
+        # Safe only if SciPy hasn't been imported yet
+        os.environ[_ENV] = "1"
 
 
 def enforce_cpu_x64():
@@ -141,20 +162,23 @@ def enforce_cpu_x64():
 # pyright: reportUnknownArgumentType=false, reportUnknownMemberType=false
 # pyright: reportUnknownVariableType=false, reportUnknownParameterType=false
 # pyright: reportMissingParameterType=false
-def backend_jit(static_argnames: str | list[str] | None =None):
-    def decorator(func): 
+def backend_jit(static_argnames: str | list[str] | None = None):
+    def decorator(func):
         if not HAS_JAX:
             return func
-        import jax    
+        import jax
+
         jitted_func = jax.jit(func, static_argnames=static_argnames)
-        
+
         def wrapper(*args, **kwargs):
-            backend = kwargs.get('backend')
+            backend = kwargs.get("backend")
             # Only use JIT if backend is JAX
-            if backend and hasattr(backend, '__name__') and 'jax' in str(backend):
+            if backend and hasattr(backend, "__name__") and "jax" in str(backend):
                 return jitted_func(*args, **kwargs)
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -181,6 +205,7 @@ def safe_set(
     else:
         array[index] = value
         return array
+
 
 def _convert_rot_backend(rot: Rotation, backend: Backend) -> Rotation:
     """Convert a scipy Rotation object to the given backend.
