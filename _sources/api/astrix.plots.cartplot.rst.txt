@@ -1,0 +1,7 @@
+astrix.plots.cartplot module
+============================
+
+.. automodule:: astrix.plots.cartplot
+   :members:
+   :show-inheritance:
+   :undoc-members:
