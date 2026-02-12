@@ -129,6 +129,18 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 Contributions are very welcome! Please submit proposed changes via pull requests on GitHub.
 
+## Git workflow
+
+Development should be primarily done on `dev` branch. For example, using something akin to the below
+
+```bash
+$ git switch dev
+$ git pull
+# make changes, commit, push
+$ git push
+# when ready, open a PR on GitHub to merge into main
+```
+
 ## Tests
 
 Tests are implemented using pytest. To run the tests:
