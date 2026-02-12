@@ -59,6 +59,13 @@ You will need to manually install the following dependency using apt
 $ sudo apt -y install libgeos-dev
 ```
 
+To use the array api capabilities of SciPy, you will need to set the environment variable
+```bash
+$ export SCIPY_ARRAY_API=1
+```
+before importing `scipy`. 
+`astrix` will attempt to set this before importing `scipy`, but if you separately import `scipy` before `astrix`, you will need to set this manually.
+
 The package is currently tested with Python 3.12 (default on Ubuntu 24.04 LTS).
 Such a recent version of Python is required to support the recent array API spec features enabling [backend switching](#backend-compatibility---numpy-and-jax).
 
@@ -121,6 +128,18 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 ## Contributing
 
 Contributions are very welcome! Please submit proposed changes via pull requests on GitHub.
+
+## Git workflow
+
+Development should be primarily done on `dev` branch. For example, using something akin to the below
+
+```bash
+$ git switch dev
+$ git pull
+# make changes, commit, push
+$ git push
+# when ready, open a PR on GitHub to merge into main
+```
 
 ## Tests
 

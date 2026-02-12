@@ -241,7 +241,7 @@ def interp_unit_vec(t: Array, td: Array, vecs: Array, backend: Backend = None) -
     theta = xp.arccos(dot)
 
     sin_theta = xp.sin(theta)
-    sin_theta = xp.where(sin_theta == 0, 1e-10, sin_theta)
+    sin_theta = xp.where(xp.abs(sin_theta) < 1e-8, 1e-8, sin_theta)
 
     f0 = xp.sin((t1 - t) / (t1 - t0) * theta) / sin_theta
     f1 = xp.sin((t - t0) / (t1 - t0) * theta) / sin_theta
@@ -682,7 +682,7 @@ def project_velocity_to_az_el(
     v_el = xp.sum(vel * e_el, axis=-1)
 
     # Range
-    R = xp.sqrt(f**2 + r **2 + d**2)
+    R = xp.sqrt(f**2 + r**2 + d**2)
 
     # Angular rates (rad/s)
     az_rate = v_az / R

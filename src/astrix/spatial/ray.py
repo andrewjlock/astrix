@@ -458,16 +458,6 @@ class Ray:
                 backend=self._xp,
             )
 
-            # interp_unit = interp_nd(
-            #     time.unix,
-            #     self.time.unix,
-            #     self._unit_rel,
-            #     backend=self._xp,
-            # )
-            # interp_unit = (
-            #     interp_unit
-            #     / self._xp.linalg.norm(interp_unit, axis=1)[:, self._xp.newaxis]
-            # )
             interp_unit = interp_unit_vec(
                 time.unix,
                 self.time.unix,
