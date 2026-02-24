@@ -132,7 +132,7 @@ class RotationSequence(RotationLike):
     Examples
     --------
 
-    >>> from astrix.primitives import Time, RotationSequence
+    >>> from astrix import Time, RotationSequence
     >>> from scipy.spatial.transform import Rotation
     >>> from datetime import datetime, timezone
     >>> times = Time.from_datetime(

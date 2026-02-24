@@ -24,7 +24,6 @@ dependencies = [
     "pykml",
     "array-api-compat",
     "scipy>=1.17",
-    "scipy-stubs>=1.16.2.0",
     "matplotlib",
 ]
 

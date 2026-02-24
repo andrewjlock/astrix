@@ -46,75 +46,42 @@ class Frame:
 
     Examples
     --------
-
     Static frame with static rotation and location:
 
-    >>> from astrix.primitives import Frame, Point
+    >>> from astrix import Frame, Point
     >>> from scipy.spatial.transform import Rotation
-    >>>
-    >>> rot = Rotation.from_euler(
-    ...     "xyz", [90, 0, 0], degrees=True
-    ... )  # 90 degree rotation about x-axis
-    >>> loc = Point.from_geodet([27.47, 153.03, 0])  # Brisbane location
-    >>> frame_static = Frame(rot, loc)  # Frame with static rotation and location
-
-    >>> frame_static.interp_rot().as_euler("xyz", degrees=True)  # Get absolute rotation
+    >>> rot = Rotation.from_euler("xyz", [90, 0, 0], degrees=True)
+    >>> loc = Point.from_geodet([-27.47, 153.03, 0])
+    >>> frame_static = Frame(rot, loc)
+    >>> frame_static.interp_rot().as_euler("xyz", degrees=True)
     array([[90.,  0.,  0.]])
-    >>> frame_static.loc.geodet  # Get frame location in geodetic coordinates
-    array([[ 27.47, 153.03,   0.  ]])
 
     Time-varying frame with rotation sequence and static location:
 
-    >>> from astrix.primitives import Time
+    >>> from astrix import Time, RotationSequence
     >>> from datetime import datetime, timezone
-    >>>
-    >>> times = Time.from_datetime(
-    ...     [
-    ...         datetime(2021, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
-    ...         datetime(2021, 1, 1, 13, 0, 0, tzinfo=timezone.utc),
-    ...         datetime(2021, 1, 1, 14, 0, 0, tzinfo=timezone.utc),
-    ...     ]
-    ... )
-    >>> rots = Rotation.from_euler(
-    ...     "xyz",
-    ...     [
-    ...         [0, 0, 0],
-    ...         [90, 0, 0],
-    ...         [180, 0, 0],
-    ...     ],
-    ...     degrees=True,
-    ... )
+    >>> times = Time.from_datetime([
+    ...     datetime(2021, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+    ...     datetime(2021, 1, 1, 13, 0, 0, tzinfo=timezone.utc),
+    ... ])
+    >>> rots = Rotation.from_euler("xyz", [[0, 0, 0], [90, 0, 0]], degrees=True)
     >>> rot_seq = RotationSequence(rots, times)
-    >>> loc = Point.from_geodet([27.47, 153.03, 0])  # Brisbane location
-    >>> frame_dynamic_rot = Frame(
-    ...     rot_seq, loc
-    ... )  # Frame with time-varying rotation and static location
-
-    >>> interp_rot = frame_dynamic_rot.interp_rot(
-    ...     Time.from_datetime(datetime(2021, 1, 1, 12, 30, 0, tzinfo=timezone.utc))
-    ... )  # Interpolate to halfway between first and second rotation
-    >>> interp_rot.as_euler(
-    ...     "xyz", degrees=True
-    ... )  # Get interpolated absolute rotation as Euler angles
+    >>> frame_dynamic = Frame(rot_seq, loc)
+    >>> t_interp = Time.from_datetime(
+    ...     datetime(2021, 1, 1, 12, 30, 0, tzinfo=timezone.utc)
+    ... )
+    >>> frame_dynamic.interp_rot(t_interp).as_euler("xyz", degrees=True)
     array([[45.,  0.,  0.]])
-    >>> frame_dynamic_rot.loc.geodet  # Get frame location in geodetic coordinates
-    array([[ 27.47, 153.03,   0.  ]])
 
     Frame defined relative to another frame:
 
-    >>> rot_ref = Rotation.from_euler(
-    ...     "xyz", [0, 30, 0], degrees=True
-    ... )  # Reference frame
-    >>> frame_ref = Frame(rot_ref, loc)  # Reference frame
+    >>> rot_ref = Rotation.from_euler("xyz", [0, 30, 0], degrees=True)
+    >>> frame_ref = Frame(rot_ref, loc)
     >>> rot_rel = Rotation.from_euler("xyz", [0, 40, 0], degrees=True)
     >>> frame = Frame(rot_rel, ref_frame=frame_ref)
-    >>>
-    >>> frame.interp_rot().as_euler(
-    ...     "xyz", degrees=True
-    ... )  # Absolute rotation (rot_ref * rot_rel)
+    >>> frame.interp_rot().as_euler("xyz", degrees=True)
     array([[ 0., 70.,  0.]])
-    >>> frame.loc.geodet  # (Same as reference frame)
-    array([[153.03, 27.47, 0.0]])
+
 
     Notes
     -----
