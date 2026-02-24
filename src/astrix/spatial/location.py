@@ -96,7 +96,7 @@ class Point(Location):
 
     Examples
     --------
-    Single static point:
+    Single time-invariant (constant) point:
 
     >>> from astrix import Point
     >>> p1 = Point([-5047162.4, 2568329.79, -2924521.17])  # Brisbane ECEF (m)
@@ -106,7 +106,7 @@ class Point(Location):
     >>> p2.ecef
     array([[-5047162.4, 2568329.79, -2924521.17]])
 
-    Multiple static points:
+    Multiple points:
 
     >>> pts = Point([
     ...     [-5047162.4, 2568329.79, -2924521.17],  # Brisbane
@@ -116,7 +116,7 @@ class Point(Location):
     >>> len(pts)
     2
 
-    Dynamic point with time:
+    Multiple points each with associated time:
 
     >>> from datetime import datetime, timezone
     >>> from astrix import Time
