@@ -267,7 +267,7 @@ class Time:
         Examples
         --------
 
-        >>> from astrix.primitives import Time
+        >>> from astrix import Time
         >>> from datetime import datetime, timezone
         >>> t1 = Time.from_datetime(
         ...     [
@@ -515,7 +515,7 @@ def time_linspace(t1: Time, t2: Time, num: int) -> Time:
     Examples
     --------
 
-    >>> from astrix.primitives import Time
+    >>> from astrix import Time
     >>> from datetime import datetime, timezone
     >>> t_start = Time.from_datetime(datetime(2021, 1, 1, tzinfo=timezone.utc))
     >>> t_end = Time.from_datetime(datetime(2021, 1, 2, tzinfo=timezone.utc))

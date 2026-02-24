@@ -96,63 +96,42 @@ class Point(Location):
 
     Examples
     --------
-
     Single static point:
 
-    >>> from astrix.primitives import Point
-    >>> p1 = Point(
-    ...     [-5047162.4, 2568329.79, -2924521.17]
-    ... )  # ECEF coordinates of Brisbane in metres
-    >>> p1.geodet  # Convert to geodetic coordinates (lat, lon, alt)
+    >>> from astrix import Point
+    >>> p1 = Point([-5047162.4, 2568329.79, -2924521.17])  # Brisbane ECEF (m)
+    >>> p1.geodet  # Convert to geodetic (lat, lon, alt)
     array([[-27.47, 153.03, 0.0]])
-    >>> p2 = Point.from_geodet(
-    ...     [-27.47, 153.03, 0]
-    ... )  # lat, lon in degrees, alt in metres
-    >>> p2.ecef  # Convert back to ECEF coordinates
+    >>> p2 = Point.from_geodet([-27.47, 153.03, 0])
+    >>> p2.ecef
     array([[-5047162.4, 2568329.79, -2924521.17]])
 
     Multiple static points:
 
-    >>> pts = Point(
-    ...     [
-    ...         [-5047162.4, 2568329.79, -2924521.17],  # Brisbane
-    ...         [-2694045.0, -4293642.0, 3857878.0],  # San Francisco
-    ...         [3877000.0, 350000.0, 5027000.0],  # Somewhere else
-    ...     ]
-    ... )
-    >>> pt_bris = pts[0]  # First point (Brisbane)
-    >>> assert len(pts) == 3
+    >>> pts = Point([
+    ...     [-5047162.4, 2568329.79, -2924521.17],  # Brisbane
+    ...     [-2694045.0, -4293642.0, 3857878.0],  # San Francisco
+    ... ])
+    >>> pt_bris = pts[0]
+    >>> len(pts)
+    2
 
     Dynamic point with time:
 
     >>> from datetime import datetime, timezone
-    >>> from astrix.primitives import Time
-    >>> times = Time.from_datetime(
-    ...     [
-    ...         datetime(2021, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
-    ...         datetime(2021, 1, 1, 13, 0, 0, tzinfo=timezone.utc),
-    ...         datetime(2021, 1, 1, 14, 0, 0, tzinfo=timezone.utc),
-    ...     ]
-    ... )
-    >>> pts_time = Point(
-    ...     [
-    ...         [-5047162.4, 2568329.79, -2924521.17],  # Brisbane
-    ...         [-2694045.0, -4293642.0, 3857878.0],  # San Francisco
-    ...         [3877000.0, 350000.0, 5027000.0],  # Somewhere else
-    ...     ],
-    ...     time=times,
-    ... )
-    >>> pts.has_time
+    >>> from astrix import Time
+    >>> times = Time.from_datetime([
+    ...     datetime(2021, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+    ...     datetime(2021, 1, 1, 13, 0, 0, tzinfo=timezone.utc),
+    ... ])
+    >>> pts_time = Point([
+    ...     [-5047162.4, 2568329.79, -2924521.17],
+    ...     [-2694045.0, -4293642.0, 3857878.0],
+    ... ], time=times)
+    >>> pts_time.has_time
     True
-    >>> pts.is_singular
+    >>> pts_time.is_singular
     False
-    >>> pts_new = pts + Point(
-    ...     [[-1000, -1000, -1000]],
-    ...     time=Time.from_datetime(
-    ...         datetime(2021, 1, 1, 15, 0, 0, tzinfo=timezone.utc)
-    ...     ),
-    ... )
-    >>> assert len(pts_new) == 4
 
     Notes
     -----
@@ -449,32 +428,23 @@ class Velocity:
 
     Examples
     --------
-
     Velocity objects are typically created from Path objects.
 
-    >>> from astrix.primitives import Point, Time, Path
+    >>> from astrix import Point, Time, Path
     >>> from datetime import datetime, timezone
-    >>> times = Time.from_datetime(
-    ...     [
-    ...         datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
-    ...         datetime(2025, 1, 1, 12, 0, 1, tzinfo=timezone.utc),
-    ...         datetime(2025, 1, 1, 12, 0, 2, tzinfo=timezone.utc),
-    ...     ]
-    ... )
-    >>> path = Path(
-    ...     [
-    ...         Point([1, 2, 0], time=times[0]),
-    ...         Point([2, 3.8, 0.4], time=times[1]),
-    ...         Point([3, 6.0, 1], time=times[2]),
-    ...     ]
-    ... )  # Somewhere very hot in the middle of the Earth
+    >>> times = Time.from_datetime([
+    ...     datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+    ...     datetime(2025, 1, 1, 12, 0, 1, tzinfo=timezone.utc),
+    ...     datetime(2025, 1, 1, 12, 0, 2, tzinfo=timezone.utc),
+    ... ])
+    >>> path = Path([
+    ...     Point([1, 2, 0], time=times[0]),
+    ...     Point([2, 3.8, 0.4], time=times[1]),
+    ...     Point([3, 6.0, 1], time=times[2]),
+    ... ])
     >>> vel = path.vel
-    >>> vel.magnitude  # Velocity magnitudes in m/s
+    >>> vel.magnitude
     array([1.91049732, 2.29128785, 2.6925824])
-    >>> vel.unit  # Unit velocity vectors
-    array([[0.52342392, 0.83747828, 0.15702718],
-           [0.43643578, 0.87287156, 0.21821789],
-           [0.37139068, 0.89133762, 0.25997347]])
 
     """
 
@@ -595,40 +565,31 @@ class Path(Location):
 
     Examples
     --------
-
     Instantiating a Path from a list of Points:
 
-    >>> from astrix.primitives import Point, Time, Path
+    >>> from astrix import Point, Time, Path
     >>> from datetime import datetime, timezone
-    >>> times = Time.from_datetime(
-    ...     [
-    ...         datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
-    ...         datetime(2025, 1, 1, 12, 0, 1, tzinfo=timezone.utc),
-    ...         datetime(2025, 1, 1, 12, 0, 2, tzinfo=timezone.utc),
-    ...     ]
+    >>> times = Time.from_datetime([
+    ...     datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+    ...     datetime(2025, 1, 1, 12, 0, 1, tzinfo=timezone.utc),
+    ...     datetime(2025, 1, 1, 12, 0, 2, tzinfo=timezone.utc),
+    ... ])
+    >>> path = Path([
+    ...     Point([1, 2, 0], time=times[0]),
+    ...     Point([2, 3.8, 0.4], time=times[1]),
+    ...     Point([3, 6.0, 1], time=times[2]),
+    ... ])
+
+    Interpolate Path and get velocity:
+
+    >>> t_interp = Time.from_datetime(
+    ...     datetime(2025, 1, 1, 12, 0, 1, 500000, tzinfo=timezone.utc)
     ... )
-    >>> path = Path(
-    ...     [
-    ...         Point([1, 2, 0], time=times[0]),
-    ...         Point([2, 3.8, 0.4], time=times[1]),
-    ...         Point([3, 6.0, 1], time=times[2]),
-    ...     ]
-    ... )  # Somewhere very hot in the middle of the Earth
-
-    Interpolate the Path to a new time and get velocity:
-
-    >>> path.interp(
-            Time.from_datetime(datetime(2025, 1, 1, 12, 0, 1, 500000, tzinfo=timezone.utc)),
-            method="linear"
-        ).ecef # Interpolate to halfway between second and third point, return ECEF array
+    >>> path.interp(t_interp).ecef
     array([[2.5, 4.9, 0.7]])
-    >>> vel = path.vel.interp(
-            Time.from_datetime(datetime(2025, 1, 1, 12, 0, 1, 500000, tzinfo=timezone.utc)),
-        )  # Interpolated velocity at the same time
-    >>> vel.magnitude  # Interpolated velocity magnitude in m/s
+    >>> vel = path.vel.interp(t_interp)
+    >>> vel.magnitude
     array([2.48997992])
-    >>> vel.unit  # Interpolated unit velocity vector
-    array([[0.40160966, 0.88354126, 0.2409658 ]])
     """
 
     _ecef: Array

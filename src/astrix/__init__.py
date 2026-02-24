@@ -16,6 +16,7 @@ from .spatial import location, frame, rotation, ray
 from .project import FixedZoomCamera, Pixel
 from . import utils
 from ._backend_utils import resolve_backend
+from . import functs
 
 
 __all__ = [
@@ -38,4 +39,5 @@ __all__ = [
     "ray",
     "Velocity",
     "Acceleration",
+    "functs",
 ]

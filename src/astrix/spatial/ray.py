@@ -53,7 +53,7 @@ class Ray:
     Examples
     --------
 
-    >>> from astrix.primitives import Point, Ray
+    >>> from astrix import Point, Ray
     >>> origin = Point([0.0, 0.0, 0.0])
     >>> target = Point([1.0, 0.0, 0.0])
     >>> ray = Ray.from_points(target, origin)

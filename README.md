@@ -2,7 +2,7 @@
 
 > Python-interface toolbox for planning, simulating, and analysing in-flight imaging and tracking.
 
-[![Tests](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml) [![Documentation](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml)
+[![Tests](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml/badge.svg)](https://github.com/andrewjlock/astrix/actions/workflows/tests.yml) [![Documentation](https://github.com/andrewjlock/astrix/actions/workflows/docs.yml/badge.svg)](https://andrewjlock.github.io/astrix/)
 [![codecov](https://codecov.io/github/andrewjlock/astrix/graph/badge.svg?token=N781FLJEI5)](https://codecov.io/github/andrewjlock/astrix)
 
 [View the full documentation here](https://andrewjlock.github.io/astrix/).
@@ -10,162 +10,121 @@ Source code is hosted on [GitHub](https://github.com/andrewjlock/astrix).
 
 ## Features
 
-- Object-oriented primitives for frames, rays, rotations, and paths with consistent ECEF/geodetic handling.
-- Built-in interpolation, intrinsic frame handling, triangulation, refraction, and validation utilities.
-- Dual-backend support (NumPy + JAX via [Array API](https://data-apis.org/array-api/latest/)); JIT/differentiation ready where it matters.
+- Object-oriented framework for constructing and analysing dynamic frames, rays, rotations, and locations.
+- Built-in interpolation, relative frame transformations, triangulation, atmospheric refraction correction, camera projection, and validation utilities.
+- Dual-backend support (NumPy + JAX via the [Array API](https://data-apis.org/array-api/latest/)); enabling JIT compilation and automatic differentiation for optimization tasks.
 
-Core use cases:
+### Core Use Cases
 1. Planning flight paths and ground-station placement for observation campaigns.
-2. Trajectory reconstruction and state estimation from optical or mixed-sensor data.
-3. Analysis workflows for scientific imaging (e.g., spectral/photometric pipelines).
+2. Real-time pointing and tracking assistance during observation campaigns, including star and landmark tracking for orientation estimation.
+3. Campaign post-processing, including trajectory reconstruction, triangulation, and view factor analysis.
 
-## Install
+## Core Primitives
+
+The toolbox relies on several immutable spatial and temporal primitives:
+- `Time` / `TimeGroup`: Manages time instances (seconds since Unix epoch) and overlapping time bounds across multiple objects.
+- `Point`: Represents single or multiple spatial locations (ECEF or WGS84 Geodetic), optionally associated with specific time instances.
+- `Path`: Represents a time-varying trajectory composed of sequential `Point`s, supporting interpolation, downsampling, and finite-difference velocity/acceleration derivation.
+- `Frame`: Defines a 3D reference frame using a location (`Point` or `Path`) and a rotation sequence. Frames can be defined relative to one another to construct kinematic chains.
+- `Ray`: Represents directional vectors with respect to a specific `Frame`. Facilitates coordinate transformations, camera projection, interpolatoin, and refraction corrections.
+
+## Data Conventions
+
+The following conventions are strictly adhered to throughout the package:
+- **Array Shapes**: Spatial and vector data (e.g., coordinates, directions) are strictly 2D arrays of shape `(N, D)`, where `N` is the number of data points and `D` is the spatial dimensionality (e.g., 3 for 3D position). True 1D data, such as time sequences, are strictly represented as 1D arrays of shape `(N,)`.
+- **Coordinate Systems**: By default, position is stored as Cartesian Earth-Centered, Earth-Fixed (ECEF) coordinates `(x, y, z)` in metres. Geodetic coordinates are represented as `(latitude, longitude, altitude)`, where latitude and longitude are in degrees and altitude is in metres.
+- **Immutability**: All core classes are immutable to guarantee compatibility with JAX's functional transformations (`jit`, `grad`, `vmap`). Any method that modifies an object's state returns a new instance. Child objects, such as underlying arrays, may be shared depending on the operation.
+
+## Backend Compatibility - NumPy and JAX
+
+_Note: This section is relevant only for users requiring the JAX backend for automatic differentiation and JIT compilation._
+
+This project uses the [Array API](https://data-apis.org/array-api/) standard to enable switching between NumPy and [JAX](https://jax.readthedocs.io/en/latest/) backends using their common native API. NumPy is the default and is recommended for most general planning and analysis tasks. JAX provides automatic differentiation and JIT compilation capabilities, which are highly beneficial for batch processing and optimization problems.
+
+Classes and functions supporting both backends include a `backend` constructor argument, which accepts `'numpy'`/`'np'`, `'jax'`/`'jnp'`, or a direct reference to the namespace. Furthermore, objects provide a `.convert_to("desired_backend")` method. This conversion is recursive and applies to all required child objects. The suggested workflow is to construct the model using NumPy, and convert only the relevant objects to JAX immediately prior to executing JIT-compiled or differentiated functions.
+
+Functions or methods with JAX-incompatible dependencies (such as accurate geodetic conversions relying on `pyproj`) are implemented solely for the NumPy backend. Attempting to use the JAX backend in these contexts will raise warnings or errors. 
+
+### Environment Configuration
+
+To utilize the JAX backend alongside SciPy's spatial transforms, the SciPy Array API must be enabled before importing `scipy.spatial.transform.Rotation`. `astrix` attempts to configure this automatically upon import, but manual configuration is required if `scipy` is imported beforehand:
+```bash
+export SCIPY_ARRAY_API=1
+```
+
+Additionally, because JAX defaults to 32-bit floating-point precision—which is insufficient for ECEF coordinate ranges—ASTrIX enforces 64-bit precision upon import. The JAX backend is currently configured for CPU execution. If you import `jax` manually before `astrix`, ensure the following environment variables are set:
+```bash
+export JAX_ENABLE_X64=True
+export JAX_PLATFORMS=cpu
+```
+
+## Installation
 
 The repository is not yet published to PyPI; install from source.
 
 ```bash
-$ git clone https://github.com/andrewjlock/astrix.git
-$ cd astrix
+git clone https://github.com/andrewjlock/astrix.git
+cd astrix
 ```
 
-### Using pip (editable)
-
+### System Dependencies
+The `GEOS` library is required for coordinate transformations:
 ```bash
-$ python3 -m pip install -e .[plot] --group dev --group docs
+sudo apt -y install libgeos-dev
 ```
-- `plot` installs [basemap](https://matplotlib.org/basemap/) and [cartopy](https://scitools.org.uk/cartopy/docs/latest/) for geographic plotting.
-- JAX is **optional**. If you need JAX-based optimisation/differentiation, add the extra: `python3 -m pip install -e .[plot,jax] --group dev --group docs`.
-- For a lean install, omit extras/groups: `python3 -m pip install -e .`.
 
-### Using uv (recommended for dev)
+### Python Environment
+The package is currently tested with Python 3.12. A recent version of Python is required to support the Array API standard used for backend switching.
 
+**Using `uv` (Recommended)**
 ```bash
-$ uv python install 3.12
-$ uv sync
-$ uv run pytest tests/
+uv python install 3.12
+uv sync
+uv run pytest tests/
 ```
-To add JAX support: `uv sync --extra jax`.
+To include JAX support: `uv sync --extra jax`
 
 To consume from another `uv` project:
 ```bash
-$ uv add --editable ../path/to/astrix[plot]
+uv add --editable ../path/to/astrix[plot]
 ```
 
-### Dependencies
-
-You will need to manually install the following dependency using apt
-
+**Using `pip` (Editable)**
 ```bash
-$ sudo apt -y install libgeos-dev
+python3 -m pip install -e .[plot] --group dev --group docs
 ```
+- `plot` installs `basemap` and `cartopy` for geographic plotting.
+- To include JAX support: `python3 -m pip install -e .[plot,jax] --group dev --group docs`.
+- For a lean installation, omit extras/groups: `python3 -m pip install -e .`.
 
-To use the array api capabilities of SciPy, you will need to set the environment variable
+## Git Workflow
+
+Development should be primarily done on the `dev` branch:
 ```bash
-$ export SCIPY_ARRAY_API=1
-```
-before importing `scipy`. 
-`astrix` will attempt to set this before importing `scipy`, but if you separately import `scipy` before `astrix`, you will need to set this manually.
-
-The package is currently tested with Python 3.12 (default on Ubuntu 24.04 LTS).
-Such a recent version of Python is required to support the recent array API spec features enabling [backend switching](#backend-compatibility---numpy-and-jax).
-
-
-## Data Conventions
-
-The following conventions are used data representation throughout the package:
-- Time series data is represented as 2D arrays of shape `(N, D)`, where `N` is the number of time steps and `D` is the dimensionality of the vector (e.g., 3 for 3D position).
-- Single vectors are represented as 1D arrays of shape `(D,)`.
-- By default, position is stored as Cartesian ECEF coordinates represented as `(x, y, z)` in metres.
-- Geodetic coordinates are represented as `(latitude, longitude, altitude)`, where latitude and longitude are in degrees and altitude is in metres.
-
-In addition, all classes in the package are designed to be immutable (for Jax compatibiliy). 
-Any method which modifies the state of an object will return a new instance of the object with the modified state (although child objects, such as arrays, may be shared, depending on the operation).
-
-
-## Backend Compatibility - NumPy and Jax
-
-_Note: This section is only relevant for those wishing to do efficient optimisation or state estimation_
-
-This project uses the [Array API](https://data-apis.org/array-api/) standard to enable switching between NumPy and [Jax](https://jax.readthedocs.io/en/latest/) backends for most core classes and functions, using their common native API. 
-NumPy is the default, and superior for most use cases. 
-Jax provides two extra capabilities: automatic differentiation and JIT compilation, which can be useful for batch processing and optimisation problems.
-If Jax is of no interest to you, you can safely ignore backend arguments altogether.
-
-Classes and functions which support both backends have a constructor `backend` argument, which can be set to either `'numpy'`/`'np'` or `'jax'`/`'jnp'`, or a reference to either namespace.
-Moreover, classes also have a `.convert_to("desired_backend")` method to convert between backends.
-This conversion is recursive, and will also convert all required child objects. 
-The suggested use case is therefore to create a model in NumPy, and then convery only the relevant objects to Jax when needed for JIT compilation or differentiation.
-Functions/methods that have no anticipated need for Jax capabilities are implemented in NumPy only, as are those that have Jax incompatible dependencies (for example, accurate conversion between ECEF and geodetic coordinates which uses the [`pyproj`](https://github.com/pyproj4/pyproj) package).
-Users will be alerted to attempts to use Jax backend in such cases with warnings or errors.
-
-Although effort has been made to ensure any two interacting objects use similar or compatible backends, this is not guaranteed. 
-The primary CI workflows test NumPy backends only. 
-
-To use the Jax backend, you will need to ensure the SciPy environment environment variable is set, via Python before you import `scipy.spatial.transform.Rotation`. This is done automatically when you import `astrix`, but can also be done manually: 
-```python
-import os
-os.environ['SCIPY_ARRAY_API'] = "True"
-```
-or in your shell
-```bash
-$ export SCIPY_ARRAY_API=True
-```
-Failure to set this environment variable will result in errors using the SciPy Rotation module with Jax backend.
-
-Note that Jax backend is implemented on CPU only, and 64-bit precision is enforced on `astrix` import (Jax defaults to 32-bit, which often is insufficient for large ECEF values).
-However, if you import `jax` manually before `astrix`, these environment variables can be manually set in your shell:
-```bash
-$ export JAX_ENABLE_X64=True
-$ export JAX_PLATFORM_NAME=cpu
-```
-or in the header of your Python script:
-```python
-import os
-os.environ["JAX_ENABLE_X64"] = "1"
-os.environ["JAX_PLATFORMS"] = "cpu"
-```
-
-## Contributing
-
-Contributions are very welcome! Please submit proposed changes via pull requests on GitHub.
-
-## Git workflow
-
-Development should be primarily done on `dev` branch. For example, using something akin to the below
-
-```bash
-$ git switch dev
-$ git pull
+git switch dev
+git pull
 # make changes, commit, push
-$ git push
+git push
 # when ready, open a PR on GitHub to merge into main
 ```
 
 ## Tests
 
-Tests are implemented using pytest. To run the tests:
+Tests are implemented using `pytest`. If JAX is installed, tests will execute against both the NumPy and JAX backends.
 ```bash
-$ pytest tests/
+uv run pytest tests/
 ```
-or using `uv`:
-```bash
-$ uv run pytest tests/
-```
-
-If Jax is installed, tests will be run using both NumPy and Jax backends. 
-If Jax is not installed, only NumPy backend tests will be run.
 
 ## Documentation
 
 Documentation is generated using Sphinx. To build the documentation:
-
 ```bash
-$ uv run python docs/generate_docs.py
-$ uv run make -C docs html
+uv run python docs/generate_docs.py
+uv run make -C docs html
 ```
 
 For live previews while editing docs:
 ```bash
-$ cd docs
-$ sphinx-autobuild . _build/html/
+cd docs
+sphinx-autobuild . _build/html/
 ```
