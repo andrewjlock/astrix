@@ -1,0 +1,7 @@
+astrix.plots.plot3d module
+==========================
+
+.. automodule:: astrix.plots.plot3d
+   :members:
+   :show-inheritance:
+   :undoc-members:

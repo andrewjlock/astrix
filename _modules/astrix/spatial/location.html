@@ -1,0 +1,1169 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html"><link rel="search" title="Search" href="../../../search.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>astrix.spatial.location - AsTrIX documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../index.html"><div class="brand">AsTrIX  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
+  
+  <span class="sidebar-brand-text">AsTrIX  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../examples.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/example_1.html">Example 1 placeholder</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/astrix.time.html">astrix.time module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/astrix.spatial.location.html">astrix.spatial.location module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/astrix.spatial.frame.html">astrix.spatial.frame module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/astrix.spatial.ray.html">astrix.spatial.ray module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/astrix.spatial.rotation.html">astrix.spatial.rotation module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/astrix.project.html">astrix.project module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/astrix.generic.html">astrix.generic module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/astrix.planning.html">astrix.planning module</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for astrix.spatial.location</h1><div class="highlight"><pre>
+<span></span><span class="c1"># pyright: reportAny=false, reportImplicitOverride=false</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_property</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.spatial.transform</span><span class="w"> </span><span class="kn">import</span> <span class="n">Rotation</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">astrix._backend_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">resolve_backend</span><span class="p">,</span>
+    <span class="n">Array</span><span class="p">,</span>
+    <span class="n">ArrayLike</span><span class="p">,</span>
+    <span class="n">ArrayNS</span><span class="p">,</span>
+    <span class="n">BackendArg</span><span class="p">,</span>
+    <span class="n">warn_if_not_numpy</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">astrix.functs</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ensure_2d</span><span class="p">,</span>
+    <span class="n">ecef2geodet</span><span class="p">,</span>
+    <span class="n">geodet2ecef</span><span class="p">,</span>
+    <span class="n">interp_nd</span><span class="p">,</span>
+    <span class="n">central_diff</span><span class="p">,</span>
+    <span class="n">finite_diff_2pt</span><span class="p">,</span>
+    <span class="n">interp_haversine</span><span class="p">,</span>
+    <span class="n">apply_rot</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">astrix.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">Time</span><span class="p">,</span> <span class="n">TIME_INVARIANT</span><span class="p">,</span> <span class="n">time_linspace</span>
+
+
+<div class="viewcode-block" id="Location">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Location">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Location</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base class for location objects (Point, Path).</span>
+<span class="sd">    &#39;interp&#39; function is required for integration with other modules.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_ecef</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">_time</span><span class="p">:</span> <span class="n">Time</span>
+    <span class="n">_xp</span><span class="p">:</span> <span class="n">ArrayNS</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ecef</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">geodet</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ecef2geodet</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">slice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">backend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Time</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_interp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">Time</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="Location.convert_to">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Location.convert_to">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="n">BackendArg</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Location</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_singular</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="Point">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Point">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Point</span><span class="p">(</span><span class="n">Location</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Point(s) in ECEF coordinates, stored as (x, y, z) in metres.</span>
+<span class="sd">    Can represent a single point or multiple points, and can be associated with</span>
+<span class="sd">    a Time object for time instances of the points.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ecef : Array</span>
+<span class="sd">        ECEF coordinates as (x, y, z) in metres. Shape (3,) or (1,3) for single points, (n, 3) for multiple points.</span>
+<span class="sd">    time : Time, optional</span>
+<span class="sd">        Time object associated with the points. If provided, the length of time must match the number of points.</span>
+<span class="sd">        Defaults to TIME_INVARIANT for static points.</span>
+<span class="sd">    backend : BackendArg, optional</span>
+<span class="sd">        Array backend to use (numpy, jax, etc.). Defaults to numpy.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Single static point:</span>
+
+<span class="sd">    &gt;&gt;&gt; from astrix import Point</span>
+<span class="sd">    &gt;&gt;&gt; p1 = Point([-5047162.4, 2568329.79, -2924521.17])  # Brisbane ECEF (m)</span>
+<span class="sd">    &gt;&gt;&gt; p1.geodet  # Convert to geodetic (lat, lon, alt)</span>
+<span class="sd">    array([[-27.47, 153.03, 0.0]])</span>
+<span class="sd">    &gt;&gt;&gt; p2 = Point.from_geodet([-27.47, 153.03, 0])</span>
+<span class="sd">    &gt;&gt;&gt; p2.ecef</span>
+<span class="sd">    array([[-5047162.4, 2568329.79, -2924521.17]])</span>
+
+<span class="sd">    Multiple static points:</span>
+
+<span class="sd">    &gt;&gt;&gt; pts = Point([</span>
+<span class="sd">    ...     [-5047162.4, 2568329.79, -2924521.17],  # Brisbane</span>
+<span class="sd">    ...     [-2694045.0, -4293642.0, 3857878.0],  # San Francisco</span>
+<span class="sd">    ... ])</span>
+<span class="sd">    &gt;&gt;&gt; pt_bris = pts[0]</span>
+<span class="sd">    &gt;&gt;&gt; len(pts)</span>
+<span class="sd">    2</span>
+
+<span class="sd">    Dynamic point with time:</span>
+
+<span class="sd">    &gt;&gt;&gt; from datetime import datetime, timezone</span>
+<span class="sd">    &gt;&gt;&gt; from astrix import Time</span>
+<span class="sd">    &gt;&gt;&gt; times = Time.from_datetime([</span>
+<span class="sd">    ...     datetime(2021, 1, 1, 12, 0, 0, tzinfo=timezone.utc),</span>
+<span class="sd">    ...     datetime(2021, 1, 1, 13, 0, 0, tzinfo=timezone.utc),</span>
+<span class="sd">    ... ])</span>
+<span class="sd">    &gt;&gt;&gt; pts_time = Point([</span>
+<span class="sd">    ...     [-5047162.4, 2568329.79, -2924521.17],</span>
+<span class="sd">    ...     [-2694045.0, -4293642.0, 3857878.0],</span>
+<span class="sd">    ... ], time=times)</span>
+<span class="sd">    &gt;&gt;&gt; pts_time.has_time</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; pts_time.is_singular</span>
+<span class="sd">    False</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - When associating a Time object, the length of the Time must match the number of points.</span>
+<span class="sd">    - Use Path objects for interpolating between multiple points over time.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_ecef</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">_time</span><span class="p">:</span> <span class="n">Time</span>
+    <span class="n">_xp</span><span class="p">:</span> <span class="n">ArrayNS</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ecef</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">time</span><span class="p">:</span> <span class="n">Time</span> <span class="o">=</span> <span class="n">TIME_INVARIANT</span><span class="p">,</span>
+        <span class="n">backend</span><span class="p">:</span> <span class="n">BackendArg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize a Point object with ECEF coordinates (x, y, z) in meters.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span> <span class="o">=</span> <span class="n">ensure_2d</span><span class="p">(</span><span class="n">ecef</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">Time</span><span class="p">):</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">convert_to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">time</span> <span class="o">=</span> <span class="n">Time</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                        <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">,</span>
+                        <span class="n">invariant</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">is_invariant</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;Point and Time must be similar lengths if associated.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> points and </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> times.&quot;</span>
+                    <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_time</span> <span class="o">=</span> <span class="n">time</span>
+
+    <span class="c1"># --- Constructors ---</span>
+
+<div class="viewcode-block" id="Point.from_geodet">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Point.from_geodet">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_geodet</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">geodet</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">time</span><span class="p">:</span> <span class="n">Time</span> <span class="o">=</span> <span class="n">TIME_INVARIANT</span><span class="p">,</span>
+        <span class="n">backend</span><span class="p">:</span> <span class="n">BackendArg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a Point object from geodetic coordinates (lat, lon, alt).</span>
+<span class="sd">        Latitude and longitude are in degrees, altitude is in meters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">xp</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+        <span class="n">geodet</span> <span class="o">=</span> <span class="n">ensure_2d</span><span class="p">(</span><span class="n">geodet</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">xp</span><span class="p">)</span>
+        <span class="n">ecef</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">geodet2ecef</span><span class="p">(</span><span class="n">geodet</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">ecef</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">xp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Point.from_list">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Point.from_list">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_list</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Point</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a Point object from a list of Point objects.&quot;&quot;&quot;</span>
+
+        <span class="n">xp</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">backend</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">backend</span> <span class="o">==</span> <span class="n">points</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">backend</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">points</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All points must have the same backend.&quot;</span><span class="p">)</span>
+
+        <span class="n">time_types</span> <span class="o">=</span> <span class="p">[</span><span class="nb">type</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">points</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">t</span> <span class="o">==</span> <span class="n">time_types</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">time_types</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All points must either have time or not have time.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">time_types</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="n">Time</span><span class="p">:</span>
+            <span class="n">time_joined</span> <span class="o">=</span> <span class="n">Time</span><span class="p">(</span>
+                <span class="n">xp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">points</span><span class="p">]),</span>  <span class="c1"># pyright: ignore</span>
+                <span class="n">backend</span><span class="o">=</span><span class="n">xp</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">time_joined</span> <span class="o">=</span> <span class="n">TIME_INVARIANT</span>
+
+        <span class="n">ecef_joined</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">ecef</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">points</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">ecef_joined</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">time_joined</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">xp</span><span class="p">)</span></div>
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_constructor</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ecef</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">Time</span><span class="p">,</span> <span class="n">xp</span><span class="p">:</span> <span class="n">ArrayNS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal constructor to create a Point object from ECEF array</span>
+<span class="sd">        Avoids type checking in __init__.&quot;&quot;&quot;</span>
+
+        <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">_xp</span> <span class="o">=</span> <span class="n">xp</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">_ecef</span> <span class="o">=</span> <span class="n">ecef</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">_time</span> <span class="o">=</span> <span class="n">time</span>
+        <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="c1"># --- Dunder methods and properties ---</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Point of length </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span>
+<span class="s2">            with </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> backend. </span><span class="se">\n</span><span class="s2"> </span>
+<span class="s2">            First point (LLA): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">geodet</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span>
+<span class="s2">            Last point (LLA): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">geodet</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Point, n=&lt;Select&gt; </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">, backend=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">slice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">added_point</span><span class="p">:</span> <span class="n">Point</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_time</span> <span class="o">!=</span> <span class="n">added_point</span><span class="o">.</span><span class="n">has_time</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot combine points with and without time.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">backend</span> <span class="o">!=</span> <span class="n">added_point</span><span class="o">.</span><span class="n">backend</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot combine points with different backends.&quot;</span><span class="p">)</span>
+
+        <span class="n">ecef_joined</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">ecef</span><span class="p">,</span> <span class="n">added_point</span><span class="o">.</span><span class="n">ecef</span><span class="p">])</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">is_invariant</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">added_point</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">is_invariant</span><span class="p">):</span>
+            <span class="n">time_joined</span> <span class="o">=</span> <span class="n">Time</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span>
+                        <span class="n">added_point</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span>
+                    <span class="p">]</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="ow">not</span> <span class="n">t</span><span class="o">.</span><span class="n">is_invariant</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">added_point</span><span class="o">.</span><span class="n">time</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot combine points with and without time.&quot;</span><span class="p">)</span>
+            <span class="n">time_joined</span> <span class="o">=</span> <span class="n">TIME_INVARIANT</span>
+        <span class="k">return</span> <span class="n">Point</span><span class="p">(</span><span class="n">ecef_joined</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">time_joined</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+
+    <span class="c1"># --- Properties and methods ---</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_singular</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the Point object represents a single point.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">has_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the Point has associated Time.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">Time</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">is_invariant</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_interp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">Time</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Private method to &#39;interpolate&#39; (broadcast) a singular Point to multiple times.</span>
+<span class="sd">        Enables compatibility between static Points and dynamic Paths in other modules.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_singular</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Attempting to &#39;interpolate&#39; (broadcast) a non-singular Point object. </span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;This is not supported. Use Path objects for interpolation between multiple points.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Point</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ecef</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+            <span class="n">time</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_repeat_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">Time</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Private method to repeat a singular Point n times.</span>
+<span class="sd">        Enables compatibility between static Points and dynamic Paths in other modules.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_singular</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Attempting to repeat a non-singular Point object. </span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;This is not supported. Use Path objects for interpolation between multiple points.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Point</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ecef</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+            <span class="n">time</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="Point.convert_to">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Point.convert_to">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="n">BackendArg</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the Point object to a different backend.&quot;&quot;&quot;</span>
+        <span class="n">xp</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">xp</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="n">time_converted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="o">.</span><span class="n">convert_to</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Point</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ecef</span><span class="p">),</span> <span class="n">time_converted</span><span class="p">,</span> <span class="n">xp</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Acceleration">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Acceleration">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Acceleration</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Acceleration vector(s) in ECEF coordinates (ax, ay, az) in m/s².</span>
+<span class="sd">    Associated with a Time object for the time instances of the accelerations.</span>
+<span class="sd">    Internal use only, typically created from Path objects.</span>
+<span class="sd">    No data validation is performed.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vec : Array</span>
+<span class="sd">        Acceleration vectors in ECEF coordinates (ax, ay, az) in m/s². Shape (n, 3).</span>
+<span class="sd">    time : Time</span>
+<span class="sd">        Time object associated with the accelerations. Length must match number of acceleration vectors.</span>
+<span class="sd">    backend : BackendArg, optional</span>
+<span class="sd">        Array backend to use (numpy, jax, etc.). Defaults to numpy.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">vec</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">time</span><span class="p">:</span> <span class="n">Time</span>
+    <span class="n">_xp</span><span class="p">:</span> <span class="n">ArrayNS</span>
+
+    <span class="c1"># --- Dunder methods and properties ---</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Acceleration array of length </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> with </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> backend.&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Acceleration, n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">, backend=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">magnitude</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the acceleration magnitude in m/s².&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the unit acceleration vector.&quot;&quot;&quot;</span>
+        <span class="n">mag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vec</span> <span class="o">/</span> <span class="n">mag</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">backend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="c1"># --- Methods ---</span>
+
+<div class="viewcode-block" id="Acceleration.convert_to">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Acceleration.convert_to">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="n">BackendArg</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Acceleration</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the Acceleration object to a different backend.&quot;&quot;&quot;</span>
+        <span class="n">xp</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">xp</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="n">Acceleration</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">convert_to</span><span class="p">(</span><span class="n">xp</span><span class="p">),</span> <span class="n">xp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Acceleration.from_data">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Acceleration.from_data">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_data</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">vec</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">Time</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="n">BackendArg</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Acceleration</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an Acceleration object from acceleration vector array and Time object.&quot;&quot;&quot;</span>
+        <span class="n">xp</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">convert_to</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+        <span class="n">vec</span> <span class="o">=</span> <span class="n">ensure_2d</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">xp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">xp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Acceleration.interp">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Acceleration.interp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">interp</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">Time</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">check_bounds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Acceleration</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Interpolate the Acceleration to the given times using the specified method.</span>
+<span class="sd">        Currently only &#39;linear&#39; interpolation is supported.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">!=</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Currently only &#39;linear&#39; interpolation is supported.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">check_bounds</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">in_bounds</span><span class="p">(</span><span class="n">time</span><span class="p">):</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;Acceleration interpolation times are out of bounds.</span>
+<span class="s2">                    Acceleration time range: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span>
+<span class="s2">                    Interpolation time range: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span>
+<span class="s2">                    Extrapolation is not supported and will raise an error.&quot;&quot;&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
+            <span class="n">interp_vec</span> <span class="o">=</span> <span class="n">interp_nd</span><span class="p">(</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="p">,</span>
+                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">Acceleration</span><span class="p">(</span><span class="n">interp_vec</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Acceleration.rotate">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Acceleration.rotate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rot</span><span class="p">:</span> <span class="n">Rotation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Acceleration</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rot</span><span class="o">.</span><span class="n">single</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">rot</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Rotation object must be singular or have the same length as the Acceleration object.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">rot_vec</span> <span class="o">=</span> <span class="n">apply_rot</span><span class="p">(</span><span class="n">rot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="p">,</span> <span class="n">xp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Acceleration</span><span class="p">(</span><span class="n">rot_vec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Velocity">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Velocity">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Velocity</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Velocity vector(s) in ECEF coordinates (vx, vy, vz) in m/s.</span>
+<span class="sd">    Associated with a Time object for the time instances of the velocities.</span>
+<span class="sd">    Internal use only, typically created from Path objects.</span>
+<span class="sd">    No data validation is performed.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vec : Array</span>
+<span class="sd">        Velocity vectors in ECEF coordinates (vx, vy, vz) in m/s. Shape (n, 3).</span>
+<span class="sd">    time : Time</span>
+<span class="sd">        Time object associated with the velocities. Length must match number of velocity vectors.</span>
+<span class="sd">    backend : BackendArg, optional</span>
+<span class="sd">        Array backend to use (numpy, jax, etc.). Defaults to numpy.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Velocity objects are typically created from Path objects.</span>
+
+<span class="sd">    &gt;&gt;&gt; from astrix import Point, Time, Path</span>
+<span class="sd">    &gt;&gt;&gt; from datetime import datetime, timezone</span>
+<span class="sd">    &gt;&gt;&gt; times = Time.from_datetime([</span>
+<span class="sd">    ...     datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),</span>
+<span class="sd">    ...     datetime(2025, 1, 1, 12, 0, 1, tzinfo=timezone.utc),</span>
+<span class="sd">    ...     datetime(2025, 1, 1, 12, 0, 2, tzinfo=timezone.utc),</span>
+<span class="sd">    ... ])</span>
+<span class="sd">    &gt;&gt;&gt; path = Path([</span>
+<span class="sd">    ...     Point([1, 2, 0], time=times[0]),</span>
+<span class="sd">    ...     Point([2, 3.8, 0.4], time=times[1]),</span>
+<span class="sd">    ...     Point([3, 6.0, 1], time=times[2]),</span>
+<span class="sd">    ... ])</span>
+<span class="sd">    &gt;&gt;&gt; vel = path.vel</span>
+<span class="sd">    &gt;&gt;&gt; vel.magnitude</span>
+<span class="sd">    array([1.91049732, 2.29128785, 2.6925824])</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">vec</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">time</span><span class="p">:</span> <span class="n">Time</span>
+    <span class="n">_xp</span><span class="p">:</span> <span class="n">ArrayNS</span>
+
+    <span class="c1"># --- Dunder methods and properties ---</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Velocity array of length </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> with </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> backend.&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Velocity, n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">, backend=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">magnitude</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the velocity magnitude in m/s.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the unit velocity vector.&quot;&quot;&quot;</span>
+        <span class="n">mag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vec</span> <span class="o">/</span> <span class="n">mag</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">backend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="c1"># --- Methods ---</span>
+
+<div class="viewcode-block" id="Velocity.convert_to">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Velocity.convert_to">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="n">BackendArg</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Velocity</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the Velocity object to a different backend.&quot;&quot;&quot;</span>
+        <span class="n">xp</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">xp</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="n">Velocity</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">convert_to</span><span class="p">(</span><span class="n">xp</span><span class="p">),</span> <span class="n">xp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Velocity.from_data">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Velocity.from_data">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_data</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">vec</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">Time</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="n">BackendArg</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Velocity</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a Velocity object from velocity vector array and Time object.&quot;&quot;&quot;</span>
+        <span class="n">xp</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">convert_to</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+        <span class="n">vec</span> <span class="o">=</span> <span class="n">ensure_2d</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">xp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">xp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Velocity.interp">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Velocity.interp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">interp</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">Time</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">check_bounds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Velocity</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Interpolate the Velocity to the given times using the specified method.</span>
+<span class="sd">        Currently only &#39;linear&#39; interpolation is supported.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">!=</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Currently only &#39;linear&#39; interpolation is supported.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">check_bounds</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">in_bounds</span><span class="p">(</span><span class="n">time</span><span class="p">):</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;Velocity interpolation times are out of bounds.</span>
+<span class="s2">                    Velocity time range: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span>
+<span class="s2">                    Interpolation time range: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">datetime</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span>
+<span class="s2">                    Extrapolation is not supported and will raise an error.&quot;&quot;&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
+            <span class="n">interp_vec</span> <span class="o">=</span> <span class="n">interp_nd</span><span class="p">(</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="p">,</span>
+                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">Velocity</span><span class="p">(</span><span class="n">interp_vec</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Velocity.rotate">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Velocity.rotate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rot</span><span class="p">:</span> <span class="n">Rotation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Velocity</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rot</span><span class="o">.</span><span class="n">single</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">rot</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Rotation object must be singular or have the same length as the Velocity object.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">rot_vec</span> <span class="o">=</span> <span class="n">apply_rot</span><span class="p">(</span><span class="n">rot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="p">,</span> <span class="n">xp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Velocity</span><span class="p">(</span><span class="n">rot_vec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span></div>
+
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">acc</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Acceleration</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the acceleration from the velocity using central differences.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">acc_vec</span> <span class="o">=</span> <span class="n">central_diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">acc_vec</span> <span class="o">=</span> <span class="n">finite_diff_2pt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vec</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Velocity must have at least 2 points to calculate acceleration.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Acceleration</span><span class="p">(</span><span class="n">acc_vec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span></div>
+
+
+
+<span class="n">POINT_ORIGIN</span> <span class="o">=</span> <span class="n">Point</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="Path">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Path">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Path</span><span class="p">(</span><span class="n">Location</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Path of multiple Point objects with associated Time.</span>
+<span class="sd">    Enables interpolation between points over time and calculation of velocity.</span>
+<span class="sd">    Must have at least 2 points with associated Time.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    point : Point | list of Point</span>
+<span class="sd">        Point object or list of Point objects with associated Time.</span>
+<span class="sd">        If a list is provided, all Points must have the same backend and associated Time.</span>
+<span class="sd">    backend : BackendArg, optional</span>
+<span class="sd">        Array backend to use (numpy, jax, etc.). Defaults to numpy.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Instantiating a Path from a list of Points:</span>
+
+<span class="sd">    &gt;&gt;&gt; from astrix import Point, Time, Path</span>
+<span class="sd">    &gt;&gt;&gt; from datetime import datetime, timezone</span>
+<span class="sd">    &gt;&gt;&gt; times = Time.from_datetime([</span>
+<span class="sd">    ...     datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),</span>
+<span class="sd">    ...     datetime(2025, 1, 1, 12, 0, 1, tzinfo=timezone.utc),</span>
+<span class="sd">    ...     datetime(2025, 1, 1, 12, 0, 2, tzinfo=timezone.utc),</span>
+<span class="sd">    ... ])</span>
+<span class="sd">    &gt;&gt;&gt; path = Path([</span>
+<span class="sd">    ...     Point([1, 2, 0], time=times[0]),</span>
+<span class="sd">    ...     Point([2, 3.8, 0.4], time=times[1]),</span>
+<span class="sd">    ...     Point([3, 6.0, 1], time=times[2]),</span>
+<span class="sd">    ... ])</span>
+
+<span class="sd">    Interpolate Path and get velocity:</span>
+
+<span class="sd">    &gt;&gt;&gt; t_interp = Time.from_datetime(</span>
+<span class="sd">    ...     datetime(2025, 1, 1, 12, 0, 1, 500000, tzinfo=timezone.utc)</span>
+<span class="sd">    ... )</span>
+<span class="sd">    &gt;&gt;&gt; path.interp(t_interp).ecef</span>
+<span class="sd">    array([[2.5, 4.9, 0.7]])</span>
+<span class="sd">    &gt;&gt;&gt; vel = path.vel.interp(t_interp)</span>
+<span class="sd">    &gt;&gt;&gt; vel.magnitude</span>
+<span class="sd">    array([2.48997992])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_ecef</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">_time</span><span class="p">:</span> <span class="n">Time</span>
+    <span class="n">_xp</span><span class="p">:</span> <span class="n">ArrayNS</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">point</span><span class="p">:</span> <span class="n">Point</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Point</span><span class="p">],</span> <span class="n">backend</span><span class="p">:</span> <span class="n">BackendArg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize a Path object from a Point object with associated Time.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">point</span> <span class="o">=</span> <span class="n">Point</span><span class="o">.</span><span class="n">from_list</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">Time</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Point must have associated Time to create a Path.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">point</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">is_invariant</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Point must have non-invariant Time to create a Path.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+        <span class="n">sort_indices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">point</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_time</span> <span class="o">=</span> <span class="n">Time</span><span class="p">(</span><span class="n">point</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">[</span><span class="n">sort_indices</span><span class="p">],</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span> <span class="o">=</span> <span class="n">ensure_2d</span><span class="p">(</span><span class="n">point</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="n">sort_indices</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+
+    <span class="c1"># --- Constructors ---</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_constructor</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ecef</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">Time</span><span class="p">,</span> <span class="n">xp</span><span class="p">:</span> <span class="n">ArrayNS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal constructor to create a Path object from ECEF array and Time object.</span>
+<span class="sd">        Avoids type checking in __init__.&quot;&quot;&quot;</span>
+
+        <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">_xp</span> <span class="o">=</span> <span class="n">xp</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">_ecef</span> <span class="o">=</span> <span class="n">ecef</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">_time</span> <span class="o">=</span> <span class="n">time</span>
+        <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="c1"># --- Dunder methods and properties ---</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Path of length </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span>
+<span class="s2">            with </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> backend. </span><span class="se">\n</span><span class="s2"> </span>
+<span class="s2">            Start time: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span>
+<span class="s2">            End time: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="se">\n</span>
+<span class="s2">            Start point (LLA): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">geodet</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">,</span>
+<span class="s2">            End point (LLA): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">geodet</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Path, n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">, backend=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">slice</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Point</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ecef</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">xp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Time</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the start time of the Path.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">end_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Time</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the end time of the Path.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_singular</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the Path object represents a single point.</span>
+<span class="sd">        Always False for Path objects.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">points</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the list of Point objects that make up the Path.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">vel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Velocity</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the velocity from the Path using central differences.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">vel_vec</span> <span class="o">=</span> <span class="n">central_diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecef</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">vel_vec</span> <span class="o">=</span> <span class="n">finite_diff_2pt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecef</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Path must have at least 2 points to calculate velocity.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Velocity</span><span class="p">(</span><span class="n">vel_vec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">acc</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Acceleration</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the acceleration from the Path using central differences.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vel</span><span class="o">.</span><span class="n">acc</span>
+
+    <span class="c1"># --- Methods ---</span>
+
+<div class="viewcode-block" id="Path.interp">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Path.interp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">interp</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">Time</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">check_bounds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Interpolate the Path to the given times using the specified method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            time (Time): Times to interpolate to.</span>
+<span class="sd">            method (str, optional): Interpolation method. Currently only &#39;linear&#39; is supported. Defaults to &#39;linear&#39;.</span>
+<span class="sd">            check_bounds (bool, optional): Whether to check if the interpolation times are within the path time bounds. Defaults to True.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Point: Interpolated Point object at the given times.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">check_bounds</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">in_bounds</span><span class="p">(</span><span class="n">time</span><span class="p">):</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;Path interpolation times are out of bounds.</span>
+<span class="s2">                    Path time range: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span>
+<span class="s2">                    Interpolation time range: </span><span class="si">{</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span>
+<span class="s2">                    Extrapolation is not supported and will raise an error.&quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">convert_to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interp</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_interp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">Time</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Private method to interpolate the Path to the given times using the specified method.</span>
+<span class="sd">        Avoids type and bounds checking in public interp().&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
+            <span class="n">interp_ecef</span> <span class="o">=</span> <span class="n">interp_nd</span><span class="p">(</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ecef</span><span class="p">,</span>
+                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;haversine&quot;</span><span class="p">:</span>
+            <span class="n">interp_ecef</span> <span class="o">=</span> <span class="n">interp_haversine</span><span class="p">(</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ecef</span><span class="p">,</span>
+                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Currently only &#39;linear&#39; interpolation is supported.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Point</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span><span class="n">interp_ecef</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">xp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Path.downsample">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Path.downsample">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">downsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt_max</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Downsample the Path to a maximum time step of dt_max seconds.</span>
+<span class="sd">        Note: This function is not JIT-compatible due to data validation checks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">warn_if_not_numpy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">,</span> <span class="s2">&quot;Path.downsample()&quot;</span><span class="p">)</span>
+
+        <span class="n">duration_sec</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">duration_sec</span> <span class="o">/</span> <span class="n">dt_max</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">new_times</span> <span class="o">=</span> <span class="n">time_linspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">num</span><span class="p">)</span>
+        <span class="n">new_points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">new_times</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">new_points</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Path.truncate">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Path.truncate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">truncate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">start_time</span><span class="p">:</span> <span class="n">Time</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">end_time</span><span class="p">:</span> <span class="n">Time</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Truncate the Path to the given start and end times.</span>
+<span class="sd">        If start_time or end_time is None, the Path is truncated to the start or end of the Path respectively.</span>
+
+<span class="sd">        Note: This function is not JIT-compatible due to data validation checks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">warn_if_not_numpy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">,</span> <span class="s2">&quot;Path.truncate()&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">start_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span>
+        <span class="k">if</span> <span class="n">end_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">end_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span>
+        <span class="k">if</span> <span class="n">start_time</span><span class="o">.</span><span class="n">unix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">end_time</span><span class="o">.</span><span class="n">unix</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;start_time must be less than or equal to end_time.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">in_bounds</span><span class="p">(</span><span class="n">start_time</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">in_bounds</span><span class="p">(</span><span class="n">end_time</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;start_time and end_time must be within the Path time bounds.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">p0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="n">check_bounds</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">p1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">end_time</span><span class="p">,</span> <span class="n">check_bounds</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">start_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span> <span class="n">start_time</span><span class="o">.</span><span class="n">unix</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">side</span><span class="o">=</span><span class="s2">&quot;right&quot;</span>
+        <span class="p">)</span>
+        <span class="n">end_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">,</span> <span class="n">end_time</span><span class="o">.</span><span class="n">unix</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">side</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">start_idx</span> <span class="o">==</span> <span class="n">end_idx</span><span class="p">:</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">Point</span><span class="o">.</span><span class="n">from_list</span><span class="p">([</span><span class="n">p0</span><span class="p">,</span> <span class="n">p1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p_mid</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_ecef</span><span class="p">[</span><span class="n">start_idx</span><span class="p">:</span><span class="n">end_idx</span><span class="p">],</span>
+                <span class="n">time</span><span class="o">=</span><span class="n">Time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="o">.</span><span class="n">unix</span><span class="p">[</span><span class="n">start_idx</span><span class="p">:</span><span class="n">end_idx</span><span class="p">],</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">),</span>
+                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">Point</span><span class="o">.</span><span class="n">from_list</span><span class="p">([</span><span class="n">p0</span><span class="p">,</span> <span class="n">p_mid</span><span class="p">,</span> <span class="n">p1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Path.time_at_alt">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Path.time_at_alt">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">time_at_alt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alt</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Time</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find the times when the Path crosses the given altitude (in metres).</span>
+<span class="sd">        Uses linear interpolation between points to find the crossing times.</span>
+<span class="sd">        Note: This function is not JIT-compatible due to data validation checks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">warn_if_not_numpy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">,</span> <span class="s2">&quot;Path.time_at_alt()&quot;</span><span class="p">)</span>
+
+        <span class="n">altitudes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geodet</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span>  <span class="c1"># Extract altitudes from geodetic coordinates</span>
+        <span class="n">above</span> <span class="o">=</span> <span class="n">altitudes</span> <span class="o">&gt;=</span> <span class="n">alt</span>
+        <span class="n">crossings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">above</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">above</span><span class="p">[</span><span class="mi">1</span><span class="p">:])[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">crossings</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Path does not cross the specified altitude.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">crossings</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Path crosses the specified altitude </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">crossings</span><span class="p">)</span><span class="si">}</span><span class="s2"> times. Returning all crossing times.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">crossing_times</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">crossings</span><span class="p">:</span>
+            <span class="n">t0</span><span class="p">,</span> <span class="n">t1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">unix</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">a0</span><span class="p">,</span> <span class="n">a1</span> <span class="o">=</span> <span class="n">altitudes</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">altitudes</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">a1</span> <span class="o">==</span> <span class="n">a0</span><span class="p">:</span>
+                <span class="n">crossing_time</span> <span class="o">=</span> <span class="n">t0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">crossing_time</span> <span class="o">=</span> <span class="n">t0</span> <span class="o">+</span> <span class="p">(</span><span class="n">alt</span> <span class="o">-</span> <span class="n">a0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">t1</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">a1</span> <span class="o">-</span> <span class="n">a0</span><span class="p">)</span>
+            <span class="n">crossing_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">crossing_time</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">crossing_times</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;Multiple altitudes found in time_at_alt(); returning all crossing times.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">crossing_times</span><span class="p">),</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Path.convert_to">
+<a class="viewcode-back" href="../../../api/astrix.spatial.location.html#astrix.Path.convert_to">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="n">BackendArg</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the Path object to a different backend.&quot;&quot;&quot;</span>
+        <span class="n">xp</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">xp</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xp</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="n">Path</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ecef</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">convert_to</span><span class="p">(</span><span class="n">xp</span><span class="p">),</span> <span class="n">xp</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Andrew Lock
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../../_static/documentation_options.js?v=8a448e45"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

@@ -1,0 +1,700 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="astrix.spatial.ray module" href="astrix.spatial.ray.html"><link rel="prev" title="astrix.spatial.location module" href="astrix.spatial.location.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>astrix.spatial.frame module - AsTrIX documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">AsTrIX  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">AsTrIX  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../examples.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/example_1.html">Example 1 placeholder</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="astrix.time.html">astrix.time module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="astrix.spatial.location.html">astrix.spatial.location module</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">astrix.spatial.frame module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="astrix.spatial.ray.html">astrix.spatial.ray module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="astrix.spatial.rotation.html">astrix.spatial.rotation module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="astrix.project.html">astrix.project module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="astrix.generic.html">astrix.generic module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="astrix.planning.html">astrix.planning module</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/api/astrix.spatial.frame.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="module-astrix.spatial.frame">
+<span id="astrix-spatial-frame-module"></span><h1>astrix.spatial.frame module<a class="headerlink" href="#module-astrix.spatial.frame" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">Frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'unnamed-frame'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/astrix/spatial/frame.html#Frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#astrix.spatial.frame.Frame" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A reference frame defined by a rotation and location.
+Can be static or time-varying, and can have rotation defined relative to another Frame.
+Combines RotationLike and Location objects, and manages time associations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>rot</strong> (<a class="reference internal" href="astrix.spatial.html#astrix.spatial.Rotation" title="astrix.spatial.Rotation"><em>Rotation</em></a><em> | </em><a class="reference internal" href="astrix.html#astrix.RotationSequence" title="astrix.RotationSequence"><em>RotationSequence</em></a>) – A scipy Rotation object (single rotation) or RotationSequence (time-tagged rotations).
+If a single Rotation is provided, the frame rotation is static.</p></li>
+<li><p><strong>loc</strong> (<a class="reference internal" href="astrix.spatial.location.html#astrix.spatial.location.Location" title="astrix.spatial.location.Location"><em>Location</em></a><em>, </em><em>optional</em>) – A Location object (Point or Path) defining the frame origin in ECEF coordinates.
+If not provided, the frame origin is assumed to be at the origin of the reference frame.
+If loc is provided, it must be a singular Point (1x3) for static frames.
+Use Path objects for time-varying locations.</p></li>
+<li><p><strong>ref_frame</strong> (<a class="reference internal" href="#astrix.spatial.frame.Frame" title="astrix.spatial.frame.Frame"><em>Frame</em></a><em>, </em><em>optional</em>) – A reference Frame object to define the rotation relative to.
+If not provided, the rotation is assumed to be absolute (e.g., from ECEF frame).</p></li>
+<li><p><strong>backend</strong> (<em>BackendArg</em><em>, </em><em>optional</em>) – Array backend to use (numpy, jax, etc.). Defaults to numpy.</p></li>
+<li><p><strong>name</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Static frame with static rotation and location:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">astrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">Frame</span><span class="p">,</span> <span class="n">Point</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">scipy.spatial.transform</span><span class="w"> </span><span class="kn">import</span> <span class="n">Rotation</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rot</span> <span class="o">=</span> <span class="n">Rotation</span><span class="o">.</span><span class="n">from_euler</span><span class="p">(</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">90</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">degrees</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">loc</span> <span class="o">=</span> <span class="n">Point</span><span class="o">.</span><span class="n">from_geodet</span><span class="p">([</span><span class="o">-</span><span class="mf">27.47</span><span class="p">,</span> <span class="mf">153.03</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">frame_static</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span><span class="n">rot</span><span class="p">,</span> <span class="n">loc</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">frame_static</span><span class="o">.</span><span class="n">interp_rot</span><span class="p">()</span><span class="o">.</span><span class="n">as_euler</span><span class="p">(</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="n">degrees</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">array([[90.,  0.,  0.]])</span>
+</pre></div>
+</div>
+<p>Time-varying frame with rotation sequence and static location:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">astrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">Time</span><span class="p">,</span> <span class="n">RotationSequence</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">times</span> <span class="o">=</span> <span class="n">Time</span><span class="o">.</span><span class="n">from_datetime</span><span class="p">([</span>
+<span class="gp">... </span>    <span class="n">datetime</span><span class="p">(</span><span class="mi">2021</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">datetime</span><span class="p">(</span><span class="mi">2021</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">),</span>
+<span class="gp">... </span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rots</span> <span class="o">=</span> <span class="n">Rotation</span><span class="o">.</span><span class="n">from_euler</span><span class="p">(</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">90</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">degrees</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rot_seq</span> <span class="o">=</span> <span class="n">RotationSequence</span><span class="p">(</span><span class="n">rots</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">frame_dynamic</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span><span class="n">rot_seq</span><span class="p">,</span> <span class="n">loc</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t_interp</span> <span class="o">=</span> <span class="n">Time</span><span class="o">.</span><span class="n">from_datetime</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">datetime</span><span class="p">(</span><span class="mi">2021</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">frame_dynamic</span><span class="o">.</span><span class="n">interp_rot</span><span class="p">(</span><span class="n">t_interp</span><span class="p">)</span><span class="o">.</span><span class="n">as_euler</span><span class="p">(</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="n">degrees</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">array([[45.,  0.,  0.]])</span>
+</pre></div>
+</div>
+<p>Frame defined relative to another frame:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rot_ref</span> <span class="o">=</span> <span class="n">Rotation</span><span class="o">.</span><span class="n">from_euler</span><span class="p">(</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">degrees</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">frame_ref</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span><span class="n">rot_ref</span><span class="p">,</span> <span class="n">loc</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rot_rel</span> <span class="o">=</span> <span class="n">Rotation</span><span class="o">.</span><span class="n">from_euler</span><span class="p">(</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">degrees</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">frame</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span><span class="n">rot_rel</span><span class="p">,</span> <span class="n">ref_frame</span><span class="o">=</span><span class="n">frame_ref</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">frame</span><span class="o">.</span><span class="n">interp_rot</span><span class="p">()</span><span class="o">.</span><span class="n">as_euler</span><span class="p">(</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="n">degrees</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">array([[ 0., 70.,  0.]])</span>
+</pre></div>
+</div>
+<p class="rubric">Notes</p>
+<ul>
+<li><p>If both loc and ref_frame are provided, the new frame location is used and the reference frame location is disregarded.</p></li>
+<li><p>A TimeGroup object is created internally to manage time associations between rotation, location, and reference frame.</p></li>
+<li><p>If the frame is static (single rotation and singular Point), the time properties return TIME_INVARIANT.</p></li>
+<li><p>Use Path objects for time-varying locations.</p></li>
+</ul>
+<dl class="py method">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.convert_to">
+<span class="sig-name descname"><span class="pre">convert_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backend</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/astrix/spatial/frame.html#Frame.convert_to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#astrix.spatial.frame.Frame.convert_to" title="Link to this definition">¶</a></dt>
+<dd><p>Convert the Frame object to a different backend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#astrix.spatial.frame.Frame" title="astrix.spatial.frame.Frame"><code class="xref py py-class docutils literal notranslate"><span class="pre">Frame</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>backend</strong> (<em>str</em><em> | </em><em>Any</em><em> | </em><em>None</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.index_loc">
+<span class="sig-name descname"><span class="pre">index_loc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/astrix/spatial/frame.html#Frame.index_loc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#astrix.spatial.frame.Frame.index_loc" title="Link to this definition">¶</a></dt>
+<dd><p>Get the location of the frame at the given index.</p>
+<p>Warning: This should only be used after downsampling so that rotation indices
+are time-aligned. Use with caution. Prefer interp_loc for general use.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="astrix.spatial.location.html#astrix.spatial.location.Point" title="astrix.spatial.location.Point"><code class="xref py py-class docutils literal notranslate"><span class="pre">Point</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>index</strong> (<em>int</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.index_rot">
+<span class="sig-name descname"><span class="pre">index_rot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/astrix/spatial/frame.html#Frame.index_rot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#astrix.spatial.frame.Frame.index_rot" title="Link to this definition">¶</a></dt>
+<dd><p>Get the absolute rotation of the frame at the given index.</p>
+<p>Warning: This should only be used after downsampling so that location
+and rotation indeces align. Prefer interp_rot for general use.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="astrix.spatial.html#astrix.spatial.Rotation" title="scipy.spatial.transform._rotation.Rotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Rotation</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>index</strong> (<em>int</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.interp_loc">
+<span class="sig-name descname"><span class="pre">interp_loc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Time</span> <span class="pre">invariant</span> <span class="pre">(n=1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/astrix/spatial/frame.html#Frame.interp_loc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#astrix.spatial.frame.Frame.interp_loc" title="Link to this definition">¶</a></dt>
+<dd><p>Get the interpolated location of the frame at the given times.
+If the location is static, time can be None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="astrix.spatial.location.html#astrix.spatial.location.Point" title="astrix.spatial.location.Point"><code class="xref py py-class docutils literal notranslate"><span class="pre">Point</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul>
+<li><p><strong>time</strong> (<a class="reference internal" href="astrix.time.html#astrix.time.Time" title="astrix.time.Time"><em>Time</em></a>)</p></li>
+<li><p><strong>check_bounds</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.interp_rot">
+<span class="sig-name descname"><span class="pre">interp_rot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Time</span> <span class="pre">invariant</span> <span class="pre">(n=1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/astrix/spatial/frame.html#Frame.interp_rot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#astrix.spatial.frame.Frame.interp_rot" title="Link to this definition">¶</a></dt>
+<dd><p>Get the interpolated absolute rotation of the frame at the given times.
+If all rotations are time invariant, time can be None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="astrix.spatial.html#astrix.spatial.Rotation" title="scipy.spatial.transform._rotation.Rotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Rotation</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul>
+<li><p><strong>time</strong> (<a class="reference internal" href="astrix.time.html#astrix.time.Time" title="astrix.time.Time"><em>Time</em></a>)</p></li>
+<li><p><strong>check_bounds</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.replace_rot">
+<span class="sig-name descname"><span class="pre">replace_rot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frame_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_rot</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/astrix/spatial/frame.html#Frame.replace_rot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#astrix.spatial.frame.Frame.replace_rot" title="Link to this definition">¶</a></dt>
+<dd><p>Replace a rotation in the rotation chain with a new rotation.</p>
+<p>This is an advanced feature and currently only applicable for static rotations.
+Should primarily be used for optimisation purposes in autograd frameworks, such as
+correcting misalignment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>frame_name</strong> (<em>str</em>) – Name of the frame whose rotation is to be replaced.</p></li>
+<li><p><strong>new_rot</strong> (<a class="reference internal" href="astrix.spatial.html#astrix.spatial.Rotation" title="astrix.spatial.Rotation"><em>Rotation</em></a>) – New scipy Rotation object to replace the existing rotation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#astrix.spatial.frame.Frame" title="astrix.spatial.frame.Frame"><code class="xref py py-class docutils literal notranslate"><span class="pre">Frame</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.sample_at_time">
+<span class="sig-name descname"><span class="pre">sample_at_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/astrix/spatial/frame.html#Frame.sample_at_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#astrix.spatial.frame.Frame.sample_at_time" title="Link to this definition">¶</a></dt>
+<dd><p>Sample the Frame object at specific times, returning a new Frame with
+time-varying components sampled at those times. The new frame can then be
+indexed at these times directly to avoid interpolation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference internal" href="astrix.html#astrix.Time" title="astrix.Time"><em>Time</em></a>) – Time object specifying the times to sample the Frame at.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>New Frame object with components sampled at the specified times.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#astrix.spatial.frame.Frame" title="astrix.spatial.frame.Frame">Frame</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.backend">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">backend</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#astrix.spatial.frame.Frame.backend" title="Link to this definition">¶</a></dt>
+<dd><p>Get the name of the array backend in use (e.g., ‘numpy’, ‘jax’).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.has_ref">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">has_ref</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></span><a class="headerlink" href="#astrix.spatial.frame.Frame.has_ref" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the frame has a reference frame.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.is_static">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">is_static</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></span><a class="headerlink" href="#astrix.spatial.frame.Frame.is_static" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the frame is static (single rotation and singular Point location).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.loc">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">loc</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="astrix.spatial.location.html#astrix.spatial.location.Location" title="astrix.spatial.location.Location"><span class="pre">Location</span></a></span><a class="headerlink" href="#astrix.spatial.frame.Frame.loc" title="Link to this definition">¶</a></dt>
+<dd><p>Get the location of the frame in ECEF coordinates.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.name">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">name</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#astrix.spatial.frame.Frame.name" title="Link to this definition">¶</a></dt>
+<dd><p>Get the name of the frame.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.name_chain">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">name_chain</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#astrix.spatial.frame.Frame.name_chain" title="Link to this definition">¶</a></dt>
+<dd><p>Get the names of all frames in the rotation chain, from base to current.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.path">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">path</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="astrix.spatial.location.html#astrix.spatial.location.Path" title="astrix.spatial.location.Path"><span class="pre">Path</span></a></span><a class="headerlink" href="#astrix.spatial.frame.Frame.path" title="Link to this definition">¶</a></dt>
+<dd><p>Get the time-varying Path of the frame location, if applicable.
+If the frame location is static, raises AttributeError.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.point">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">point</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="astrix.spatial.location.html#astrix.spatial.location.Point" title="astrix.spatial.location.Point"><span class="pre">Point</span></a></span><a class="headerlink" href="#astrix.spatial.frame.Frame.point" title="Link to this definition">¶</a></dt>
+<dd><p>Get the singular Point of the frame location, if applicable.
+If the frame location is time-varying, raises AttributeError.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.rel_rot">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">rel_rot</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="astrix.spatial.rotation.html#astrix.spatial.rotation.RotationLike" title="astrix.spatial.rotation.RotationLike"><span class="pre">RotationLike</span></a></span><a class="headerlink" href="#astrix.spatial.frame.Frame.rel_rot" title="Link to this definition">¶</a></dt>
+<dd><p>Get the last rotation of the frame relative to the reference frame.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.time_bounds">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">time_bounds</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="astrix.time.html#astrix.time.Time" title="astrix.time.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="astrix.time.html#astrix.time.Time" title="astrix.time.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#astrix.spatial.frame.Frame.time_bounds" title="Link to this definition">¶</a></dt>
+<dd><p>Get the time bounds of the frame as a tuple (start_time, end_time).
+If the frame is static, returns TIME_INVARIANT.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="astrix.spatial.frame.Frame.time_group">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">time_group</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="astrix.time.html#astrix.time.TimeGroup" title="astrix.time.TimeGroup"><span class="pre">TimeGroup</span></a></span><a class="headerlink" href="#astrix.spatial.frame.Frame.time_group" title="Link to this definition">¶</a></dt>
+<dd><p>Get the Time object associated with the frame, if any.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="astrix.spatial.frame.heading_frame">
+<span class="sig-name descname"><span class="pre">heading_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'heading</span> <span class="pre">frame'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/astrix/spatial/frame.html#heading_frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#astrix.spatial.frame.heading_frame" title="Link to this definition">¶</a></dt>
+<dd><p>Create a heading-aligned frame at each point along a Path.
+The frame is defined such that the first aligns with the heading direction (azimuth),
+the z-axis aligns with the local vertical plane, and the y-axis completes the right-handed system.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>path</strong> (<a class="reference internal" href="astrix.html#astrix.Path" title="astrix.Path"><em>Path</em></a>) – Path object defining the trajectory.</p></li>
+<li><p><strong>downsample</strong> (<em>float</em><em>, </em><em>optional</em>) – Downsample interval for Path objects in seconds.
+If None, no downsampling is performed. Defaults to 10s.
+If path time resolution is greater than downsample interval,
+the Path will be downsampled before creating the heading frame to reduce computational load.</p></li>
+<li><p><strong>name</strong> (<em>str</em><em>, </em><em>optional</em>) – Name of the frame. Defaults to “heading frame”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Heading-aligned frame along the Path.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#astrix.spatial.frame.Frame" title="astrix.spatial.frame.Frame">Frame</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul>
+<li><p>Adopts backend from Path object.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="astrix.spatial.frame.ned_frame">
+<span class="sig-name descname"><span class="pre">ned_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'NED</span> <span class="pre">frame'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/astrix/spatial/frame.html#ned_frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#astrix.spatial.frame.ned_frame" title="Link to this definition">¶</a></dt>
+<dd><p>Create a local NED (North-East-Down) frame at the given location(s).
+NED rotations are evaluated at all times in the Point/Path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>loc</strong> (<a class="reference internal" href="astrix.spatial.location.html#astrix.spatial.location.Location" title="astrix.spatial.location.Location"><em>Location</em></a>) – Location(s) to define the NED frame origin.
+Must be single point or time-varying Path.</p></li>
+<li><p><strong>downsample</strong> (<em>float</em><em>, </em><em>optional</em>) – Downsample interval for Path objects in seconds.
+If None, no downsampling is performed. Defaults to 10s.
+If loc is a Path and time resolution is greater than downsample interval,
+the Path will be downsampled before creating the NED frame to reduce computational load.
+Note that NED frames likely vary slowly compared to other frames (gimbals, aircraft, etc.),
+so downsampling is recommended for high-resolution paths.</p></li>
+<li><p><strong>name</strong> (<em>str</em><em>, </em><em>optional</em>) – Name of the frame. Defaults to “NED frame”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>NED frame at the given location(s).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#astrix.spatial.frame.Frame" title="astrix.spatial.frame.Frame">Frame</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul>
+<li><p>Adopts backend from Location object.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="astrix.spatial.frame.velocity_frame">
+<span class="sig-name descname"><span class="pre">velocity_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'velocity</span> <span class="pre">frame'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/astrix/spatial/frame.html#velocity_frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#astrix.spatial.frame.velocity_frame" title="Link to this definition">¶</a></dt>
+<dd><p>Create a velocity-aligned frame at each point along a Path.
+The frame is defined such that the x-axis aligns with the velocity vector,
+the z-axis aligns with the local vertical plane, and the y-axis completes the right-handed system.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>path</strong> (<a class="reference internal" href="astrix.html#astrix.Path" title="astrix.Path"><em>Path</em></a>) – Path object defining the trajectory.</p></li>
+<li><p><strong>downsample</strong> (<em>float</em><em>, </em><em>optional</em>) – Downsample interval for Path objects in seconds.
+If None, no downsampling is performed. Defaults to 10s.
+If path time resolution is greater than downsample interval,
+the Path will be downsampled before creating the velocity frame to reduce computational load.</p></li>
+<li><p><strong>name</strong> (<em>str</em><em>, </em><em>optional</em>) – Name of the frame. Defaults to “velocity frame”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Velocity-aligned frame along the Path.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#astrix.spatial.frame.Frame" title="astrix.spatial.frame.Frame">Frame</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul>
+<li><p>Adopts backend from Path object.</p></li>
+</ul>
+</dd></dl>
+
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="astrix.spatial.ray.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">astrix.spatial.ray module</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="astrix.spatial.location.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">astrix.spatial.location module</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Andrew Lock
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">astrix.spatial.frame module</a><ul>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame"><code class="docutils literal notranslate"><span class="pre">Frame</span></code></a><ul>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.convert_to"><code class="docutils literal notranslate"><span class="pre">Frame.convert_to()</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.index_loc"><code class="docutils literal notranslate"><span class="pre">Frame.index_loc()</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.index_rot"><code class="docutils literal notranslate"><span class="pre">Frame.index_rot()</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.interp_loc"><code class="docutils literal notranslate"><span class="pre">Frame.interp_loc()</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.interp_rot"><code class="docutils literal notranslate"><span class="pre">Frame.interp_rot()</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.replace_rot"><code class="docutils literal notranslate"><span class="pre">Frame.replace_rot()</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.sample_at_time"><code class="docutils literal notranslate"><span class="pre">Frame.sample_at_time()</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.backend"><code class="docutils literal notranslate"><span class="pre">Frame.backend</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.has_ref"><code class="docutils literal notranslate"><span class="pre">Frame.has_ref</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.is_static"><code class="docutils literal notranslate"><span class="pre">Frame.is_static</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.loc"><code class="docutils literal notranslate"><span class="pre">Frame.loc</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.name"><code class="docutils literal notranslate"><span class="pre">Frame.name</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.name_chain"><code class="docutils literal notranslate"><span class="pre">Frame.name_chain</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.path"><code class="docutils literal notranslate"><span class="pre">Frame.path</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.point"><code class="docutils literal notranslate"><span class="pre">Frame.point</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.rel_rot"><code class="docutils literal notranslate"><span class="pre">Frame.rel_rot</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.time_bounds"><code class="docutils literal notranslate"><span class="pre">Frame.time_bounds</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.Frame.time_group"><code class="docutils literal notranslate"><span class="pre">Frame.time_group</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#astrix.spatial.frame.heading_frame"><code class="docutils literal notranslate"><span class="pre">heading_frame()</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.ned_frame"><code class="docutils literal notranslate"><span class="pre">ned_frame()</span></code></a></li>
+<li><a class="reference internal" href="#astrix.spatial.frame.velocity_frame"><code class="docutils literal notranslate"><span class="pre">velocity_frame()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=8a448e45"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

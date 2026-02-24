@@ -1,0 +1,7 @@
+astrix.planning module
+======================
+
+.. automodule:: astrix.planning
+   :members:
+   :show-inheritance:
+   :undoc-members:
