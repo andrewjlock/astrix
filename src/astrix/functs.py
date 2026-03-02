@@ -455,14 +455,17 @@ def interp_haversine(
 
 
 def ned_rotation(geodet: Array, xp: Backend = None) -> Rotation:
-    """Get the rotation from ECEF base to the North-East-Down frame at given
-    geodetic locations.
+    """Get the orientation of the local North-East-Down (NED) frame relative 
+    to the ECEF frame at given geodetic locations.
+
+    This rotation represents the NED-to-ECEF orientation. Applying this rotation
+    to a vector in NED coordinates transforms it to ECEF coordinates.
 
     Args:
         pos_geodet (Array): Nx3 array of lat, long, alt [deg, deg, m]
 
     Returns:
-        Rotation: scipy Rotation object representing the NED frame rotation
+        Rotation: scipy Rotation object representing the NED frame orientation
     """
 
     xp = coerce_ns(xp)
@@ -618,6 +621,9 @@ def refraction_correction_bennett(
     xp = coerce_ns(backend)
     alpha = 1 - xp.exp(-alt / 7500)  # Scale height of atmosphere ~7.5 km
 
+    # Clip elevation to avoid singularities at or below horizon
+    el = xp.clip(el, 0.001, 90.0)
+
     Rm_ = 1 / xp.tan(xp.deg2rad(el + (7.31 / (el + 4.4))))
     Rm = Rm_ - 0.06 * xp.sin(xp.deg2rad(14.7 * Rm_ + 13))
     return (Rm / 60) * alpha  # in degrees
@@ -636,14 +642,22 @@ def project_velocity_to_az_el(
         r = right
         d = down (positive down)
 
+    Args
+    ----
+    pos_frd : (N, 3) array
+        Position vectors in FRD frame (m).
+    vel_frd : (N, 3) array
+        Velocity vectors in FRD frame (m/s).
+    backend : Backend, optional
+        Array backend to use. Defaults to None.
+
     Returns
     -------
-    az_rate_deg : (...)
-        Azimuth angular rate in degrees/s.
-    el_rate_deg : (...)
-        Elevation angular rate in degrees/s (positive upward).
-    range_rate  : (...)
-        Radial velocity (m/s), positive away from observer.
+    rates : (N, 3) array
+        Angular and radial rates:
+            - Column 0: Azimuth angular rate (deg/s).
+            - Column 1: Elevation angular rate (deg/s, positive upward).
+            - Column 2: Radial velocity (m/s, positive away from observer).
     """
 
     xp = coerce_ns(backend)
@@ -655,8 +669,12 @@ def project_velocity_to_az_el(
     r = pos[..., 1]
     d = pos[..., 2]
 
+    horiz_sq = f**2 + r**2
+    horiz = xp.sqrt(horiz_sq)
+    R_sq = horiz_sq + d**2
+    R = xp.sqrt(R_sq)
+
     az = xp.atan2(r, f)
-    horiz = xp.sqrt(f**2 + r**2)
     el = xp.atan2(-d, horiz)
 
     e_az = xp.stack(
@@ -681,11 +699,12 @@ def project_velocity_to_az_el(
     v_az = xp.sum(vel * e_az, axis=-1)
     v_el = xp.sum(vel * e_el, axis=-1)
 
-    # Range
-    R = xp.sqrt(f**2 + r**2 + d**2)
+    # Range rate (m/s)
+    range_rate = xp.sum(vel * (pos / R[..., xp.newaxis]), axis=-1)
 
     # Angular rates (rad/s)
-    az_rate = v_az / R
+    # az_rate = v_az / (R * cos(el)) = v_az / horiz
+    az_rate = v_az / xp.where(horiz < 1e-6, 1e-6, horiz)
     el_rate = v_el / R
 
     # Convert to deg/s
@@ -693,4 +712,5 @@ def project_velocity_to_az_el(
     az_rate_deg = az_rate * deg
     el_rate_deg = el_rate * deg
 
-    return xp.array([az_rate_deg, el_rate_deg])
+    return xp.stack([az_rate_deg, el_rate_deg, range_rate], axis=-1)
+

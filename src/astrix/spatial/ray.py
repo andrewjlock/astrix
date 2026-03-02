@@ -509,9 +509,18 @@ class Ray:
             unit_converted, origin_converted, time_converted, frame_converted, xp
         )
 
-    def correct_refraction(self, alt: float = 100e3) -> Ray:
+    def correct_refraction(
+        self, alt: float = 100e3, mode: str = "observed_to_true"
+    ) -> Ray:
         """Apply atmospheric refraction correction to the Ray object using Bennett's formula.
         Altitude sets the exponential scale height (metres) for the correction.
+
+        Args:
+            alt (float, optional): Altitude in metres for the exponential scale height.
+                Defaults to 100e3 (100 km).
+            mode (str, optional): Direction of correction. Either 'observed_to_true'
+                (subtract correction from apparent elevation) or 'true_to_observed'
+                (add correction to true elevation). Defaults to 'observed_to_true'.
 
         Returns:
             Ray: New Ray object with refraction-corrected direction vectors.
@@ -519,12 +528,26 @@ class Ray:
         Notes:
             - Assumes standard atmospheric conditions.
         """
-        
+
+        if mode not in ["observed_to_true", "true_to_observed"]:
+            raise ValueError(
+                "mode must be either 'observed_to_true' or 'true_to_observed'"
+            )
+
         rays_ned = self.to_ned()
         head_el = rays_ned.az_el
-        el_corrected = head_el[:,1] + refraction_correction_bennett(head_el[:, 1], alt, backend=self._xp)
+
+        correction = refraction_correction_bennett(
+            head_el[:, 1], alt, backend=self._xp
+        )
+
+        if mode == "observed_to_true":
+            el_corrected = head_el[:, 1] - correction
+        else:
+            el_corrected = head_el[:, 1] + correction
+
         dir_corrected = vec_from_az_el(
-            self._xp.c_[head_el[:, 0], el_corrected], backend=self._xp
+            self._xp.stack((head_el[:, 0], el_corrected), axis=1), backend=self._xp
         )
         rays_ned_corrected = Ray._constructor(
             dir_corrected,
