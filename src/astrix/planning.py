@@ -6,14 +6,13 @@
 Note: These functions are typically only applicable for the NumPy backend.
 """
 
-
-from .spatial.location import Point
 from ._backend_utils import (
     np,
     warn_if_not_numpy,
 )
-from .time import TIME_INVARIANT, Time
 from .functs import ned_rotation
+from .spatial.location import Point
+from .time import TIME_INVARIANT, Time
 
 
 def point_from_heading(
@@ -35,6 +34,7 @@ def point_from_heading(
     start = start[-1]
     a = np.deg2rad(head)
     lat1, lon1, alt = start.geodet.T
+    lat1, lon1 = np.radians([lat1, lon1])
     r = np.linalg.norm(start.ecef)
 
     if method == "const":
@@ -59,9 +59,9 @@ def point_from_heading(
             np.sin(a) * np.sin(dist / r) * np.cos(lat1),
             np.cos(dist / r) - np.sin(lat1) * np.sin(lat2_r),
         )
+
     else:
         raise ValueError("Method must be 'const' or 'haversine'")
-
     lat2 = np.rad2deg(lat2_r)
     lon2 = np.rad2deg(lon2_r)
     point2 = Point.from_geodet(np.array([lat2, lon2, alt]), time=time_new, backend=np)
