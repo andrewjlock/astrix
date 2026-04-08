@@ -1,0 +1,18 @@
+astrix.spatial package
+======================
+
+.. automodule:: astrix.spatial
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   astrix.spatial.frame
+   astrix.spatial.location
+   astrix.spatial.ray
+   astrix.spatial.rotation

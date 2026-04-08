@@ -1,0 +1,7 @@
+astrix.spatial.rotation module
+==============================
+
+.. automodule:: astrix.spatial.rotation
+   :members:
+   :show-inheritance:
+   :undoc-members:

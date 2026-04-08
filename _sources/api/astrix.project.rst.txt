@@ -1,0 +1,7 @@
+astrix.project module
+=====================
+
+.. automodule:: astrix.project
+   :members:
+   :show-inheritance:
+   :undoc-members:

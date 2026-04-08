@@ -1,0 +1,7 @@
+astrix.constants module
+=======================
+
+.. automodule:: astrix.constants
+   :members:
+   :show-inheritance:
+   :undoc-members:

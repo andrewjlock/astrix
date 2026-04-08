@@ -1,0 +1,7 @@
+astrix.utils module
+===================
+
+.. automodule:: astrix.utils
+   :members:
+   :show-inheritance:
+   :undoc-members:
