@@ -89,6 +89,7 @@ def turn_from_radius(
         initial heading, in degrees
     degrees : float
         degrees of the turn, in degrees (i.e. 180 for half-turn)
+                             +ve for clockwise, -ve for anti-clockwise
     radius : float
         radius of the turn (in metres)
     speed : float
@@ -116,17 +117,29 @@ def turn_from_radius(
         radius,
         method="haversine",
     )
+
+    # Need to provide a vector for these points
+    ecef_start = np.asarray(point_start.ecef).reshape(
+        3,
+    )
+    ecef_centre = np.asarray(point_centre.ecef).reshape(
+        3,
+    )
+
     ned_rot = ned_rotation(point_centre.geodet)
-    start_rel_ned = ned_rot.as_matrix().T @ (point_start.ecef - point_centre.ecef)
+    start_rel_ned = ned_rot.as_matrix()[0].T @ (ecef_start - ecef_centre)
     start_angle = np.rad2deg(np.arctan2(start_rel_ned[1], start_rel_ned[0]))
 
-    t = np.linspace(0.0, np.deg2rad(degrees), n + 1)[1:]  # skip first point
-    xt = radius * np.cos(np.deg2rad(start_angle) + t * turn_rate * np.sign(degrees))
-    yt = radius * np.sin(np.deg2rad(start_angle) + t * turn_rate * np.sign(degrees))
+    theta = np.linspace(0.0, np.deg2rad(degrees), n + 1)[1:]  # skip first point
+    t = theta / turn_rate
+    xt = radius * np.cos(
+        np.deg2rad(start_angle) + theta
+    )  # FZ: I've removed the sign as it is already inherent in theta
+    yt = radius * np.sin(np.deg2rad(start_angle) + theta)
     zt = np.repeat(0.0, n)
 
     pts_rel = np.vstack((xt, yt, zt)).T
-    pts_ecef = (ned_rot.as_matrix() @ pts_rel.T).T + point_centre.ecef
+    pts_ecef = (ned_rot.as_matrix()[0] @ pts_rel.T).T + ecef_centre
     unix = point_start.time.unix + t
     times = Time(unix)
     pts = Point(pts_ecef, time=times, backend=np)
