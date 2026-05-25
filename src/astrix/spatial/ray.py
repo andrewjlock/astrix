@@ -513,11 +513,14 @@ class Ray:
         self, alt: float = 100e3, mode: str = "observed_to_true"
     ) -> Ray:
         """Apply atmospheric refraction correction to the Ray object using Bennett's formula.
-        Altitude sets the exponential scale height (metres) for the correction.
+        The ``alt`` parameter is the altitude in metres supplied to the model's
+        exponential attenuation term; it does not set the scale height itself.
 
         Args:
-            alt (float, optional): Altitude in metres for the exponential scale height.
-                Defaults to 100e3 (100 km).
+            alt (float, optional): Altitude in metres at which to evaluate the
+                correction scaling. A value of 0 applies the sea-level scaling,
+                and larger values reduce the correction according to the underlying
+                Bennett model. Defaults to 100e3 (100 km).
             mode (str, optional): Direction of correction. Either 'observed_to_true'
                 (subtract correction from apparent elevation) or 'true_to_observed'
                 (add correction to true elevation). Defaults to 'observed_to_true'.
