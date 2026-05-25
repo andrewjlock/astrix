@@ -622,6 +622,8 @@ def refraction_correction_bennett(
 
     Refraction is scaled by an exponential atmosphere model with scale height of 7.5 km.
     Inputs/outputs are degrees.
+
+    Note: Clips refraction correction from 0.01 to 90 degrees elevation.
     """
 
     xp = coerce_ns(backend)
