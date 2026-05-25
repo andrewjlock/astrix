@@ -72,3 +72,9 @@ docstring-code-format = true  # Formats code in docstrings
 # If you plan a src/ layout later, this keeps installs sane even without code yet
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:.*Force converting.*:UserWarning",
+]
+

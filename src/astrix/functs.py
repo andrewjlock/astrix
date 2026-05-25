@@ -99,9 +99,12 @@ def ecef2geodet(ecef: Array) -> np.ndarray:
 
     warn_if_not_numpy(ecef)
     ecef_np = np.array(ecef)
+    x, y, z = ecef_np[:, 0], ecef_np[:, 1], ecef_np[:, 2]
+    if len(x) == 1:
+        x, y, z = x.tolist(), y.tolist(), z.tolist()
     geodet = np.array(
         t_ecef2geodet.transform(
-            ecef_np[:, 0], ecef_np[:, 1], ecef_np[:, 2], radians=False
+            x, y, z, radians=False
         )
     ).T
     return geodet
@@ -122,13 +125,16 @@ def geodet2ecef(geodet: Array) -> np.ndarray:
 
     warn_if_not_numpy(geodet)
     geodet_np = np.array(geodet)
+    x, y, z = geodet_np[:, 0], geodet_np[:, 1], geodet_np[:, 2]
+    if len(x) == 1:
+        x, y, z = x.tolist(), y.tolist(), z.tolist()
     ecef = np.array(
         t_geodet2ecef.transform(
-            geodet_np[:, 0], geodet_np[:, 1], geodet_np[:, 2], radians=False
+            x, y, z, radians=False
         )
     ).T
-
     return ecef
+
 
 
 @backend_jit(["inverse", "xp"])
