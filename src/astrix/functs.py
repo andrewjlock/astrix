@@ -468,7 +468,7 @@ def ned_rotation(geodet: Array, xp: Backend = None) -> Rotation:
     to a vector in NED coordinates transforms it to ECEF coordinates.
 
     Args:
-        pos_geodet (Array): Nx3 array of lat, long, alt [deg, deg, m]
+        geodet (Array): Nx3 array of lat, long, alt [deg, deg, m]
 
     Returns:
         Rotation: scipy Rotation object representing the NED frame orientation
