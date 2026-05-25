@@ -2,6 +2,7 @@ import pytest
 import warnings
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+from astrix._backend_utils import _convert_rot_backend
 
 from astrix.functs import (
     great_circle_distance,
@@ -190,27 +191,46 @@ def test_angles_and_vectors_roundtrip(xp):
 
 
 def test_apply_rot_and_refraction(xp):
-    if xp.__name__.startswith("jax"):
-        pytest.skip("Rotation.as_matrix returns NumPy; skip inverse check on JAX backend")
-
     rot = R.from_euler("z", 90, degrees=True)
-    vec = np.asarray([[1.0, 0.0, 0.0]])
-    out = apply_rot(rot, vec, xp=np)
-    assert np.allclose(out, np.asarray([[0.0, 1.0, 0.0]]))
-    inv = apply_rot(rot, out, inverse=True, xp=np)
-    assert np.allclose(inv, vec)
+    rot = _convert_rot_backend(rot, xp)
+    vec = xp.asarray([[1.0, 0.0, 0.0]])
+    out = apply_rot(rot, vec, xp=xp)
+    assert xp.allclose(out, xp.asarray([[0.0, 1.0, 0.0]]))
+    inv = apply_rot(rot, out, inverse=True, xp=xp)
+    assert xp.allclose(inv, vec)
 
-    correction = refraction_correction_bennett(np.asarray([10.0]), alt=0.0, backend=np)
-    assert np.allclose(correction, 0.0)
-    high_alt = refraction_correction_bennett(np.asarray([10.0]), alt=20000.0, backend=np)
-    assert (high_alt > correction).all()
+    correction = refraction_correction_bennett(xp.asarray([10.0]), alt=0.0, backend=xp)
+    assert xp.allclose(correction, xp.asarray([0.0]))
+    high_alt = refraction_correction_bennett(xp.asarray([10.0]), alt=20000.0, backend=xp)
+    assert xp.all(high_alt > correction)
+
 
 
 def test_project_velocity_to_az_el(xp):
+    # Test case 1: Pure horizontal motion at el=0
     pos = xp.asarray([[1.0, 0.0, 0.0]])
     vel = xp.asarray([[0.0, 1.0, 0.0]])  # yawing right
 
     rates = project_velocity_to_az_el(pos, vel, backend=xp)
-    assert rates.shape == (2, 1)
-    assert xp.allclose(rates[1], 0.0, atol=1e-8)  # no elevation rate
-    assert xp.allclose(rates[0], xp.asarray([57.2957795]), atol=1e-6)
+    assert rates.shape == (1, 3)
+    assert xp.allclose(rates[0, 1], 0.0, atol=1e-8)  # no elevation rate
+    assert xp.allclose(rates[0, 2], 0.0, atol=1e-8)  # no range rate
+    assert xp.allclose(rates[0, 0], xp.asarray([57.2957795]), atol=1e-6)
+
+    # Test case 2: Motion at el=-45 degrees (looking down)
+    # R=sqrt(2), horiz=1, el=-45 deg
+    pos2 = xp.asarray([[1.0, 0.0, 1.0]])
+    vel2 = xp.asarray([[0.0, 1.0, 0.0]])  # motion in 'right' direction
+    # v_az = 1, horiz = 1 => az_rate = 1 rad/s
+    rates2 = project_velocity_to_az_el(pos2, vel2, backend=xp)
+    assert xp.allclose(rates2[0, 0], xp.asarray([57.2957795]), atol=1e-6)
+    assert xp.allclose(rates2[0, 1], 0.0, atol=1e-8)
+    assert xp.allclose(rates2[0, 2], 0.0, atol=1e-8)
+
+    # Test case 3: Radial motion
+    pos3 = xp.asarray([[1.0, 0.0, 0.0]])
+    vel3 = xp.asarray([[2.0, 0.0, 0.0]])  # moving away
+    rates3 = project_velocity_to_az_el(pos3, vel3, backend=xp)
+    assert xp.allclose(rates3[0, 0], 0.0, atol=1e-8)
+    assert xp.allclose(rates3[0, 1], 0.0, atol=1e-8)
+    assert xp.allclose(rates3[0, 2], 2.0, atol=1e-8)

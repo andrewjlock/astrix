@@ -4,6 +4,7 @@ import pytest
 import numpy as np
 from .helpers import to_text
 from astrix import Ray, Time, Point, Path, Frame, RotationSequence
+from astrix.spatial.frame import ned_frame
 from scipy.spatial.transform import Rotation as R
 
 @pytest.mark.filterwarnings("ignore:.*deprecated.*:DeprecationWarning")
@@ -124,3 +125,26 @@ def test_ray_moving_frame(xp):
     )
     assert np.allclose(ray_ecef.unit_rel, xp.array([[0.0, 1.0, 0.0],
                                                     [0, -0.70710678, 0.70710678]]))
+
+
+def test_ray_refraction(xp):
+    # Create a ray at some location
+    origin = Point.from_geodet([0.0, 0.0, 0.0], backend=xp)
+    # Pointing at elevation 10 degrees in NED frame
+    ray = Ray.from_az_el(xp.asarray([[0.0, 10.0]]), frame=ned_frame(origin), backend=xp)
+    
+    # Observed to true: apparent is 10, true should be < 10
+    ray_true = ray.correct_refraction(mode="observed_to_true")
+    assert ray_true.to_ned().az_el[0, 1] < 10.0
+    
+    # True to observed: true is 10, apparent should be > 10
+    ray_obs = ray.correct_refraction(mode="true_to_observed")
+    assert ray_obs.to_ned().az_el[0, 1] > 10.0
+    
+    # Check default mode is observed_to_true
+    ray_default = ray.correct_refraction()
+    assert xp.allclose(ray_default.unit_rel, ray_true.unit_rel)
+
+    # Check error on invalid mode
+    with pytest.raises(ValueError):
+        ray.correct_refraction(mode="invalid")

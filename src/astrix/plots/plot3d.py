@@ -1008,7 +1008,7 @@ class Plot3D:
             t = self.p.add_text(
                 "- " + label.split("-")[-1],
                 position=(x0, y0 - i * line_h),
-                font_size=10,
+                font_size=12,
                 color=rgb,
                 font="courier",
             )
