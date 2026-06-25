@@ -9,6 +9,7 @@ from typing import Sequence
 import contextily as cx
 import numpy as np
 import pyvista as pv
+from matplotlib.path import Path as mPath  # for point-in-polygon test
 from numpy.typing import NDArray
 from pyproj import Transformer
 from rasterio.crs import CRS
@@ -692,6 +693,124 @@ class Plot3D:
             },
         )
 
+    def add_polygon(
+        self,
+        name: str,
+        lat_lon_points,  # list of (lat, lon) vertices, in order
+        fill: bool = True,
+        fill_color=None,
+        line_color=None,
+        alpha: float = 0.3,
+        line_width: float = 2.0,
+        edge_resolution: int = 40,  # points densified along each edge
+        grid_resolution: int = 40,  # interior grid density (curvature)
+        alt: float = 50.0,
+    ):
+        lats = np.array([p[0] for p in lat_lon_points], dtype=float)
+
+        # --- unwrap longitudes so edges crossing 180° interpolate correctly ---
+        lons = np.array([p[1] for p in lat_lon_points], dtype=float)
+        lons = ((lons + 180) % 360) - 180  # normalise any > 180 input to [-180, 180]
+        lons_uw = np.degrees(np.unwrap(np.radians(lons)))
+
+        # --- colors (same logic as add_box) ---
+        if isinstance(fill_color, int):
+            fill_color = color_from_int(fill_color)
+        elif fill_color is None:
+            fill_color = _DEFAULT_COLOR_CYCLE[
+                len(self.data) % len(_DEFAULT_COLOR_CYCLE)
+            ]
+        if isinstance(line_color, int):
+            line_color = color_from_int(line_color)
+        elif line_color is None:
+            line_color = fill_color
+
+        # --- densified boundary ring in (lat, lon) space ---
+        n = len(lats)
+        edge_pts = []
+        for i in range(n):
+            j = (i + 1) % n  # wrap to close
+            seg_lat = np.linspace(lats[i], lats[j], edge_resolution, endpoint=False)
+            seg_lon = np.linspace(
+                lons_uw[i], lons_uw[j], edge_resolution, endpoint=False
+            )
+            edge_pts.append(np.column_stack([seg_lat, seg_lon]))
+        ring = np.vstack(edge_pts)  # (N, 2), does not repeat first point
+
+        def to_ecef(latlon):
+            lon_wrapped = ((latlon[:, 1] + 180) % 360) - 180
+            lat2d = latlon[:, 0].reshape(-1, 1)  # (N,) -> (N, 1)
+            lon2d = lon_wrapped.reshape(-1, 1)
+            X, Y, Z = _geodet2ecef_grid(lat2d, lon2d, alt=alt)
+            return np.column_stack([X.ravel(), Y.ravel(), Z.ravel()])
+
+        # --- outline ---
+        outline_poly = pv.lines_from_points(to_ecef(ring), close=True)
+        outline_actor = self.p.add_mesh(
+            outline_poly,
+            color=line_color,
+            line_width=line_width,
+            name=name + "_outline",
+            opacity=1.0,
+            lighting=False,
+            render=False,
+        )
+
+        # --- fill ---
+        surface_actor = None
+        if fill:
+            # interior grid points (for curvature) clipped to the polygon
+            gl = np.linspace(lats.min(), lats.max(), grid_resolution)
+            go = np.linspace(lons_uw.min(), lons_uw.max(), grid_resolution)
+            GLat, GLon = np.meshgrid(gl, go)
+            cand = np.column_stack([GLat.ravel(), GLon.ravel()])
+
+            poly_path = mPath(np.column_stack([lats, lons_uw]))
+            interior = cand[poly_path.contains_points(cand)]
+
+            all_pts = np.vstack([ring, interior]) if len(interior) else ring
+
+            # 2D cloud (lat, lon, 0) + boundary loop as the constraint
+            cloud = pv.PolyData(np.column_stack([all_pts, np.zeros(len(all_pts))]))
+            edge_source = pv.lines_from_points(
+                np.column_stack([ring, np.zeros(len(ring))]), close=True
+            )
+            surf = cloud.delaunay_2d(
+                edge_source=edge_source
+            )  # constrained → non-convex safe
+
+            # project the flat triangulation onto the globe
+            surf.points = to_ecef(surf.points[:, :2])
+
+            surface_actor = self.p.add_mesh(
+                surf,
+                color=fill_color,
+                opacity=alpha,
+                name=name + "_fill",
+                smooth_shading=True,
+                lighting=False,
+                render=False,
+            )
+
+        self.data[name] = PlotData(
+            name=name,
+            type="polygon",
+            actor=(surface_actor, outline_actor),
+            lat_bounds=(lats.min(), lats.max()),
+            lon_bounds=(lons_uw.min(), lons_uw.max()),
+            data={
+                "vertices": list(lat_lon_points),
+                "fill": fill,
+                "fill_color": fill_color,
+                "line_color": line_color,
+                "alpha": alpha,
+                "line_width": line_width,
+                "edge_resolution": edge_resolution,
+                "grid_resolution": grid_resolution,
+                "alt": alt,
+            },
+        )
+
     def add_circle(
         self,
         name: str,
@@ -1022,6 +1141,11 @@ class Plot3D:
         lat_maxs = [d.lat_bounds[1] for d in self.data.values()]
         lon_mins = [d.lon_bounds[0] for d in self.data.values()]
         lon_maxs = [d.lon_bounds[1] for d in self.data.values()]
+
+        all_lons = lon_mins + lon_maxs
+        if any(v > 180 for v in all_lons) and any(v < 0 for v in all_lons):
+            lon_mins = [v % 360 for v in lon_mins]
+            lon_maxs = [v % 360 for v in lon_maxs]
 
         return (min(lat_mins) - buffer, max(lat_maxs) + buffer), (
             min(lon_mins) - buffer,
