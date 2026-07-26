@@ -177,7 +177,11 @@ class Plot3D:
             self.p.enable_parallel_projection()  # pyright: ignore
 
     def add_texture(
-        self, lat_bounds: Sequence[float], lon_bounds: Sequence[float], alpha=0.6
+        self,
+        lat_bounds: Sequence[float],
+        lon_bounds: Sequence[float],
+        alpha=0.6,
+        zoom_bias: int = -1,
     ):
         lat_min, lat_max = lat_bounds
         lon_min, lon_max = lon_bounds
@@ -201,7 +205,7 @@ class Plot3D:
             if lon_min_n <= lon_max_n
             else (lon_max_n + 360) - lon_min_n
         )
-        zoom = _calc_zoom(total_lon_width, lat_max - lat_min)
+        zoom = _calc_zoom(total_lon_width, lat_max - lat_min) + zoom_bias
 
         to_merc = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
 
