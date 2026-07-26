@@ -73,6 +73,15 @@ class ConnectingLines:
         return ConnectingLines(self.points_1[mask], self.points_2[mask])
 
 
+def _calc_zoom(lon_length: float, lat_length: float) -> int:
+    """Mirrors contextily's internal auto-zoom formula
+    (contextily.tile._calculate_zoom), exposed here so a single zoom
+    level can be shared across dateline-split segments in add_texture."""
+    zoom_lon = np.ceil(np.log2(360 * 2.0 / lon_length))
+    zoom_lat = np.ceil(np.log2(360 * 2.0 / lat_length))
+    return int(np.min([zoom_lon, zoom_lat]))
+
+
 def split_lon_interval(lon_min: float, lon_max: float):
     """
     Split a longitude interval into continuous segments in [-180, 180].
@@ -178,6 +187,22 @@ class Plot3D:
         # ------------------------------------------------------------
         lon_segments = split_lon_interval(lon_min, lon_max)
 
+        # Use ONE zoom level across all segments, rather than letting each
+        # segment's cx.bounds2img(zoom="auto") pick independently — segments
+        # split at the dateline are rarely the same width, so "auto" was
+        # choosing different resolutions per side and creating a visible
+        # seam right at 180°. Base it on the total requested width (not each
+        # split segment's own width), otherwise a narrow sliver on one side
+        # of the split forces an excessively fine zoom onto the far side.
+        lon_min_n = ((lon_min + 180) % 360) - 180
+        lon_max_n = ((lon_max + 180) % 360) - 180
+        total_lon_width = (
+            lon_max_n - lon_min_n
+            if lon_min_n <= lon_max_n
+            else (lon_max_n + 360) - lon_min_n
+        )
+        zoom = _calc_zoom(total_lon_width, lat_max - lat_min)
+
         to_merc = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
 
         actors = []
@@ -191,7 +216,7 @@ class Plot3D:
                 lat_min,
                 seg_lon_max,
                 lat_max,
-                zoom="auto",
+                zoom=zoom,
                 source=cx.providers.Esri.WorldImagery,
                 ll=True,
             )
@@ -291,6 +316,7 @@ class Plot3D:
         lat_bounds: Sequence[float],
         lon_bounds: Sequence[float],
         spacing: float = 5.0,
+        alt: float = 100.0,
     ):
         lat_min, lat_max = lat_bounds
         lon_min, lon_max = lon_bounds
@@ -337,7 +363,7 @@ class Plot3D:
         # ------------------------------------------------------------
         # 4) Convert to ECEF and build grid
         # ------------------------------------------------------------
-        X, Y, Z = _geodet2ecef_grid(LLat, LLon, alt=10)
+        X, Y, Z = _geodet2ecef_grid(LLat, LLon, alt=alt)
         sg = pv.StructuredGrid(X, Y, Z)
         edges = sg.extract_all_edges()
 
@@ -751,7 +777,7 @@ class Plot3D:
             color=line_color,
             line_width=line_width,
             name=name + "_outline",
-            opacity=1.0,
+            opacity=alpha,
             lighting=False,
             render=False,
         )
