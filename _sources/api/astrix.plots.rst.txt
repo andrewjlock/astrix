@@ -1,0 +1,16 @@
+astrix.plots package
+====================
+
+.. automodule:: astrix.plots
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   astrix.plots.cartplot
+   astrix.plots.plot3d

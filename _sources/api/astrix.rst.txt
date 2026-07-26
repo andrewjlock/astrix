@@ -1,0 +1,31 @@
+astrix package
+==============
+
+.. automodule:: astrix
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   astrix.plots
+   astrix.post
+   astrix.spatial
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   astrix.constants
+   astrix.functs
+   astrix.generic
+   astrix.planning
+   astrix.project
+   astrix.time
+   astrix.utils

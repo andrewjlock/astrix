@@ -1,0 +1,7 @@
+astrix.spatial.location module
+==============================
+
+.. automodule:: astrix.spatial.location
+   :members:
+   :show-inheritance:
+   :undoc-members:
